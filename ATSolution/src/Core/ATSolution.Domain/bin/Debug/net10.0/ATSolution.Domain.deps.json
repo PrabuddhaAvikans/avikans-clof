@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "ATSolution.Domain/1.0.0": {
+        "runtime": {
+          "ATSolution.Domain.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ATSolution.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

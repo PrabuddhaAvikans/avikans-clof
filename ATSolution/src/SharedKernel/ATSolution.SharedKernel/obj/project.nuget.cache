@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "8Ze1QWaBU/I=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Prabuddha\\Desktop\\Project\\Avikans\\ATSolution\\src\\SharedKernel\\ATSolution.SharedKernel\\ATSolution.SharedKernel.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Prabuddha\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\10.0.10\\microsoft.extensions.configuration.abstractions.10.0.10.nupkg.sha512",
+    "C:\\Users\\Prabuddha\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.10\\microsoft.extensions.dependencyinjection.abstractions.10.0.10.nupkg.sha512",
+    "C:\\Users\\Prabuddha\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.10\\microsoft.extensions.primitives.10.0.10.nupkg.sha512"
+  ],
+  "logs": []
+}

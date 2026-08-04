@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/docs/">
+    <File Path="docs/DBMigration.md" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/ATSolution.Application/ATSolution.Application.csproj" />
+    <Project Path="src/Core/ATSolution.Domain/ATSolution.Domain.csproj" />
+    <Project Path="src/Core/ATSolution.Infrastructure/ATSolution.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/" />
+  <Folder Name="/src/Host/Api/">
+    <Project Path="src/Host/Api/ATSolution.Api/ATSolution.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/Client/" />
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Identity.Api/Identity.Api.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Application/Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/SharedKernel/">
+    <Project Path="src/SharedKernel/ATSolution.SharedKernel/ATSolution.SharedKernel.csproj" Id="a54ec77d-1095-4f09-8bd6-acacefc3abba" />
+  </Folder>
+</Solution>
