@@ -12,8 +12,12 @@ import { manufacturingEpic } from "@/features/manufacturing/store/manufacturingE
 import { productionTrackingEpic } from "@/features/manufacturing/store/productionTrackingEpics";
 import { costingEpic } from "@/features/costing/store/costingEpics";
 import { usersEpic } from "@/features/admin/store/usersEpics";
+import { auditLogsEpic } from "@/features/admin/store/auditLogsEpics";
 import { notificationsEpic } from "@/features/admin/store/notificationsEpics";
 import { dashboardEpic } from "@/features/dashboard/store/dashboardEpics";
+import { reportsEpic } from "@/features/reports/store/reportsEpics";
+import { reprocessingEpic } from "@/features/reprocessing/store/reprocessingEpics";
+import { periodCloseEpic } from "@/features/period-close/store/periodCloseEpics";
 
 export const rootEpic: AppEpic = combineEpics(
   salesOrdersEpic,
@@ -28,6 +32,10 @@ export const rootEpic: AppEpic = combineEpics(
   productionTrackingEpic,
   costingEpic,
   usersEpic,
+  auditLogsEpic,
   notificationsEpic,
   dashboardEpic,
+  reportsEpic,
+  reprocessingEpic,
+  periodCloseEpic,
 );

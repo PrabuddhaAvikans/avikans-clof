@@ -12,12 +12,22 @@ import { Button, StatusBadge } from "@/components/ui";
 import type { ProductFormSchemaValues } from "@/features/products/schemas/productSchema";
 import { cn } from "@/lib/utils";
 
+const PRODUCT_TYPE_LABELS: Record<string, string> = {
+  custom_lighting: "Custom Lighting",
+  finished_good: "Finished Good",
+  component: "Component",
+  raw_material: "Raw Material",
+  service: "Service",
+  standard_fixture: "Standard Fixture",
+  component_kit: "Component Kit",
+};
+
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border py-1.5 last:border-0">
       <dt className="text-[11px] text-muted-foreground">{label}</dt>
-      <dd className="max-w-[60%] truncate text-right text-[12px] font-medium text-foreground">
-        {value || "—"}
+      <dd className="max-w-[60%] truncate text-right text-[12px] font-medium text-foreground" title={value || "-"}>
+        {value || "-"}
       </dd>
     </div>
   );
@@ -26,9 +36,11 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
 export function ProductFormPreview({
   categoryLabel,
   brandLabel,
+  previewImageUrl,
 }: {
   categoryLabel: string;
   brandLabel: string;
+  previewImageUrl?: string;
 }) {
   const { values } = useFormikContext<ProductFormSchemaValues>();
   const statusLabel = values.status === "active" ? "Active" : "Draft";
@@ -36,8 +48,16 @@ export function ProductFormPreview({
   return (
     <aside className="space-y-3">
       <section className="overflow-hidden rounded-md border border-border bg-card">
-        <div className="flex aspect-[4/3] items-center justify-center border-b border-border bg-muted">
-          <ImageIcon className="h-10 w-10 text-muted-foreground" aria-hidden />
+        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-border bg-muted">
+          {previewImageUrl ? (
+            <img
+              src={previewImageUrl}
+              alt={values.name || "Product preview"}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <ImageIcon className="h-10 w-10 text-muted-foreground" aria-hidden />
+          )}
         </div>
         <div className="space-y-3 p-3">
           <div>
@@ -46,10 +66,10 @@ export function ProductFormPreview({
             </p>
             <div className="mt-1 flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate text-[12px] font-semibold tabular-nums text-foreground">
-                  {values.sku || "SKU"}
+                <p className="truncate text-[12px] font-semibold tabular-nums text-foreground" title={values.sku || "Product code"}>
+                  {values.sku || "Product code"}
                 </p>
-                <p className="truncate text-sm font-semibold text-foreground">
+                <p className="truncate text-sm font-semibold text-foreground" title={values.name || "Product name"}>
                   {values.name || "Product name"}
                 </p>
               </div>
@@ -63,8 +83,12 @@ export function ProductFormPreview({
           </div>
 
           <dl>
-            <PreviewRow label="Family" value={values.productFamily || categoryLabel} />
-            <PreviewRow label="Base Model" value={values.baseModel || brandLabel} />
+            <PreviewRow
+              label="Type"
+              value={PRODUCT_TYPE_LABELS[values.productType] ?? values.productType}
+            />
+            <PreviewRow label="Category" value={categoryLabel} />
+            <PreviewRow label="Brand" value={brandLabel} />
             <PreviewRow
               label="Wattage"
               value={values.wattage != null ? `${values.wattage} W` : ""}
@@ -96,7 +120,7 @@ export function ProductFormPreview({
                     <span className="min-w-0">
                       <span className="font-medium">{group.name || "Group"}</span>
                       {group.optionsText ? (
-                        <span className="text-muted-foreground"> — {group.optionsText}</span>
+                        <span className="text-muted-foreground"> - {group.optionsText}</span>
                       ) : null}
                     </span>
                   </li>
@@ -114,7 +138,7 @@ export function ProductFormPreview({
         <QuickAction icon={<Copy className="h-3.5 w-3.5" />} label="Clone Product" />
         <QuickAction
           icon={<Layers className="h-3.5 w-3.5" />}
-          label="Create Variant from this Base Model"
+          label="Create variant"
         />
         <QuickAction icon={<Eye className="h-3.5 w-3.5" />} label="Preview as Customer" />
         <Button

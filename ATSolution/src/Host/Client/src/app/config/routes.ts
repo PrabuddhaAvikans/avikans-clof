@@ -1,14 +1,20 @@
 export const ROUTES = {
   home: "/",
+  login: "/login",
   dashboard: "/dashboard",
+
+  reports: {
+    hub: "/reports",
+    view: (id: string) => `/reports/${id}` as const,
+  },
 
   products: {
     list: "/products",
     new: "/products/new",
     detail: (id: string) => `/products/${id}` as const,
     edit: (id: string) => `/products/${id}/edit` as const,
-    categories: "/products/categories",
-    brands: "/products/brands",
+    categories: "/configuration/categories",
+    brands: "/configuration/brands",
     attributes: "/products/attributes",
     priceLists: "/products/price-lists",
   },
@@ -21,7 +27,23 @@ export const ROUTES = {
     movements: "/inventory/movements",
     lowStock: "/inventory/low-stock",
     stock: "/inventory/stock",
-    units: "/inventory/units",
+    units: "/configuration/units",
+    warehouses: "/configuration/warehouses",
+  },
+
+  configuration: {
+    hub: "/configuration",
+    units: "/configuration/units",
+    warehouses: "/configuration/warehouses",
+    categories: "/configuration/categories",
+    brands: "/configuration/brands",
+    workflows: "/configuration/workflows",
+    settings: "/configuration/settings",
+  },
+
+  reprocessing: {
+    list: "/inventory/reprocessing",
+    detail: (id: string) => `/inventory/reprocessing/${id}` as const,
   },
 
   customers: {
@@ -43,6 +65,14 @@ export const ROUTES = {
 
   costing: {
     workspace: "/costing/approval",
+    forOrder: (salesOrderId: string) =>
+      `/costing/approval?salesOrderId=${encodeURIComponent(salesOrderId)}` as const,
+  },
+
+  estimation: {
+    workspace: "/operations/estimation",
+    forOrder: (salesOrderId: string) =>
+      `/operations/estimation?salesOrderId=${encodeURIComponent(salesOrderId)}` as const,
   },
 
   quotations: {
@@ -60,6 +90,20 @@ export const ROUTES = {
     detail: (id: string) => `/sales-orders/${id}` as const,
     edit: (id: string) => `/sales-orders/${id}/edit` as const,
     review: (id: string) => `/sales-orders/${id}/review` as const,
+  },
+
+  finance: {
+    invoices: "/finance/invoices",
+    invoiceDetail: (id: string) => `/finance/invoices/${id}` as const,
+    creditNotes: "/finance/credit-notes",
+    creditNoteDetail: (id: string) => `/finance/credit-notes/${id}` as const,
+  },
+
+  periodClose: {
+    day: "/period-close/day",
+    dayDetail: (id: string) => `/period-close/day/${id}` as const,
+    month: "/period-close/month",
+    monthDetail: (id: string) => `/period-close/month/${id}` as const,
   },
 
   manufacturing: {
@@ -91,12 +135,10 @@ export const ROUTES = {
     roles: "/admin/roles",
     roleGroups: "/admin/role-groups",
     permissions: "/admin/permissions",
-    settings: "/admin/settings",
-    notifications: "/admin/notifications",
+    settings: "/configuration/settings",
     auditLogs: "/admin/audit-logs",
   },
 
-  // Legacy aliases kept for gradual migration
   sales: {
     root: "/quotations",
     estimates: "/quotations",

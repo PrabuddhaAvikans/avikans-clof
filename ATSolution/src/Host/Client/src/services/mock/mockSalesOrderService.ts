@@ -5,22 +5,33 @@ import {
   nowIso,
 } from "@/services/http";
 import type { SalesOrderService } from "@/services/interfaces/salesOrderService";
+import {
+  computeLineTotal,
+  computeQuotationTotals,
+} from "@/features/sales/schemas/quotationSchema";
 import { applyListQuery, cloneData } from "@/services/mock/helpers";
 import { initialCustomers } from "@/services/mock/data/customers";
-import { initialQuotations } from "@/services/mock/data/quotations";
 import { initialUsers } from "@/services/mock/data/users";
 import { initialSalesOrders } from "@/services/mock/data/sales-orders";
+import { initialSalesOrderCostingRequests } from "@/services/mock/data/sales-order-costing";
+import { mockCostingService } from "@/services/mock/mockCostingService";
+import {
+  attachSalesOrderToQuotation,
+  peekMockQuotation,
+} from "@/services/mock/mockQuotationService";
+import {
+  deepCloneCustomization,
+  lockCustomization,
+} from "@/lib/quotationCustomization";
+import { loadSystemSettings } from "@/lib/systemSettings";
 import type { SalesOrder, SalesOrderLineItem } from "@/types/sales-order";
 
-let salesOrders = cloneData(initialSalesOrders);
-
-function computeLineTotal(
-  item: Pick<SalesOrderLineItem, "quantity" | "unitPrice" | "discountPercent" | "taxPercent">,
-): number {
-  const subtotal = item.quantity * item.unitPrice;
-  const afterDiscount = subtotal * (1 - item.discountPercent / 100);
-  return afterDiscount * (1 + item.taxPercent / 100);
-}
+let salesOrders: SalesOrder[] = cloneData(initialSalesOrders).map((order) => ({
+  ...order,
+  costingRequestId:
+    order.costingRequestId ??
+    initialSalesOrderCostingRequests.find((item) => item.salesOrderId === order.id)?.id,
+}));
 
 function buildLineItems(
   items: Omit<SalesOrderLineItem, "id" | "lineTotal" | "quantityDelivered" | "quantityInManufacturing">[],
@@ -35,20 +46,19 @@ function buildLineItems(
 }
 
 function computeTotals(lineItems: SalesOrderLineItem[], discountAmount = 0) {
-  const subtotal = lineItems.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice * (1 - item.discountPercent / 100),
-    0,
-  );
-  const taxAmount = lineItems.reduce((sum, item) => {
-    const base = item.quantity * item.unitPrice * (1 - item.discountPercent / 100);
-    return sum + base * (item.taxPercent / 100);
-  }, 0);
-  return { subtotal, discountAmount, taxAmount, totalAmount: subtotal - discountAmount + taxAmount };
+  const totals = computeQuotationTotals(lineItems, discountAmount);
+  return {
+    subtotal: totals.subtotal,
+    discountAmount: totals.discountAmount,
+    taxAmount: totals.taxAmount,
+    totalAmount: totals.totalAmount,
+  };
 }
 
 function nextOrderNumber(): string {
   const year = new Date().getFullYear();
-  return `SO-${year}-${String(salesOrders.length + 1).padStart(4, "0")}`;
+  const prefix = loadSystemSettings().salesOrderPrefix || "SO";
+  return `${prefix}-${year}-${String(salesOrders.length + 1).padStart(4, "0")}`;
 }
 
 export const mockSalesOrderService: SalesOrderService = {
@@ -80,11 +90,22 @@ export const mockSalesOrderService: SalesOrderService = {
     const customer = initialCustomers.find((c) => c.id === data.customerId);
     if (!customer) notFoundError("Customer", data.customerId);
 
-    const quotation = data.quotationId
-      ? initialQuotations.find((q) => q.id === data.quotationId)
-      : undefined;
+    const billingActive =
+      customer.billingAddresses?.[customer.activeBillingAddressIndex] ?? customer.billingAddresses[0];
+    const shippingActive = customer.deliverySameAsBilling
+      ? undefined
+      : customer.shippingAddresses?.[customer.activeShippingAddressIndex ?? 0];
 
-    const lineItems = buildLineItems(data.lineItems);
+    const quotation = data.quotationId ? peekMockQuotation(data.quotationId) : undefined;
+
+    const lineItems = buildLineItems(
+      data.lineItems.map((item) => ({
+        ...item,
+        customization: item.customization
+          ? lockCustomization(deepCloneCustomization(item.customization))
+          : undefined,
+      })),
+    );
     const totals = computeTotals(lineItems, data.discountAmount ?? 0);
     const timestamp = nowIso();
 
@@ -94,26 +115,34 @@ export const mockSalesOrderService: SalesOrderService = {
       customerId: customer.id,
       customerName: customer.name,
       customerEmail: customer.email,
-      quotationId: data.quotationId,
-      quotationNumber: quotation?.quotationNumber,
+      quotationId: data.quotationId ?? quotation?.id,
+      quotationNumber: data.quotationNumber ?? quotation?.quotationNumber,
       status: "draft",
       priority: data.priority,
       lineItems,
       ...totals,
       currency: "LKR",
       paymentStatus: "unpaid",
-      billingAddress: customer.billingAddress,
-      shippingAddress: customer.shippingAddress,
+      billingAddress: billingActive,
+      shippingAddress: shippingActive,
       requestedDeliveryDate: data.requestedDeliveryDate,
       notes: data.notes,
       manufacturingJobIds: [],
       deliveryIds: [],
       createdBy: "usr-001",
-      createdByName: "John Doe",
+      createdByName: "Prabuddha Jayawardhana",
       createdAt: timestamp,
       updatedAt: timestamp,
     };
     salesOrders.push(order);
+
+    const costing = await mockCostingService.createFromSalesOrder(order);
+    order.costingRequestId = costing.id;
+
+    if (order.quotationId) {
+      attachSalesOrderToQuotation(order.quotationId, order.id);
+    }
+
     return order;
   },
 
@@ -133,7 +162,17 @@ export const mockSalesOrderService: SalesOrderService = {
       ...totals,
       updatedAt: nowIso(),
     };
-    return salesOrders[index];
+    const updated = salesOrders[index];
+
+    if (
+      data.lineItems &&
+      ["draft", "pending_review", "submitted"].includes(updated.status)
+    ) {
+      const costing = await mockCostingService.syncFromSalesOrder(updated);
+      updated.costingRequestId = costing.id;
+    }
+
+    return updated;
   },
 
   async delete(id) {
@@ -156,6 +195,15 @@ export const mockSalesOrderService: SalesOrderService = {
     await delay();
     const index = salesOrders.findIndex((o) => o.id === id);
     if (index === -1) notFoundError("SalesOrder", id);
+
+    const costing = await mockCostingService.getBySalesOrderId(id);
+    if (!costing || costing.status !== "approved") {
+      throw {
+        code: "INVALID_STATE",
+        message: "Complete estimation and costing approval before confirming this sales order.",
+      };
+    }
+
     salesOrders[index] = {
       ...salesOrders[index],
       status: "confirmed",

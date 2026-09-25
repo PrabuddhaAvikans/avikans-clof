@@ -9,13 +9,19 @@ import { applyListQuery, cloneData } from "@/services/mock/helpers";
 import { initialDeliveries } from "@/services/mock/data/deliveries";
 import { initialSalesOrders } from "@/services/mock/data/sales-orders";
 import { initialUsers } from "@/services/mock/data/users";
+import { loadSystemSettings } from "@/lib/systemSettings";
 import type { Delivery } from "@/types/delivery";
 
 let deliveries = cloneData(initialDeliveries);
 
+export function getDeliveries() {
+  return deliveries;
+}
+
 function nextDeliveryNumber(): string {
   const year = new Date().getFullYear();
-  return `DL-${year}-${String(500 + deliveries.length)}`;
+  const prefix = loadSystemSettings().deliveryPrefix || "DL";
+  return `${prefix}-${year}-${String(500 + deliveries.length).padStart(4, "0")}`;
 }
 
 export const mockDeliveryService: DeliveryService = {
@@ -71,7 +77,7 @@ export const mockDeliveryService: DeliveryService = {
       scheduledDate: data.scheduledDate,
       notes: data.notes,
       createdBy: "usr-001",
-      createdByName: "John Doe",
+      createdByName: "Prabuddha Jayawardhana",
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -111,10 +117,53 @@ export const mockDeliveryService: DeliveryService = {
     deliveries.splice(index, 1);
   },
 
+  async updateStatus(id, status) {
+    await delay();
+    const index = deliveries.findIndex((d) => d.id === id);
+    if (index === -1) notFoundError("Delivery", id);
+
+    const current = deliveries[index].status;
+    const allowed: Record<string, string[]> = {
+      planned: ["ready_for_dispatch", "cancelled"],
+      ready_for_dispatch: ["dispatched", "planned", "cancelled"],
+      dispatched: ["in_transit", "cancelled"],
+      in_transit: ["delivered", "partially_delivered", "failed", "returned"],
+      partially_delivered: ["delivered", "failed", "returned"],
+    };
+    if (!(allowed[current] ?? []).includes(status)) {
+      throw {
+        code: "INVALID_STATE",
+        message: `Cannot move delivery from ${current} to ${status}.`,
+      };
+    }
+
+    const timestamp = nowIso();
+    deliveries[index] = {
+      ...deliveries[index],
+      status,
+      dispatchedAt:
+        status === "dispatched" || status === "in_transit"
+          ? (deliveries[index].dispatchedAt ?? timestamp)
+          : deliveries[index].dispatchedAt,
+      deliveredAt:
+        status === "delivered" ? (deliveries[index].deliveredAt ?? timestamp) : deliveries[index].deliveredAt,
+      updatedAt: timestamp,
+    };
+    return deliveries[index];
+  },
+
   async dispatchDelivery(id) {
     await delay();
     const index = deliveries.findIndex((d) => d.id === id);
     if (index === -1) notFoundError("Delivery", id);
+
+    const current = deliveries[index].status;
+    if (current !== "planned" && current !== "ready_for_dispatch") {
+      throw {
+        code: "INVALID_STATE",
+        message: "Only planned or ready deliveries can be dispatched.",
+      };
+    }
 
     deliveries[index] = {
       ...deliveries[index],

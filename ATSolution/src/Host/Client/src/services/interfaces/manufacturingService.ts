@@ -1,5 +1,13 @@
 import type { PaginatedRequest, PaginatedResponse } from "@/types/common";
-import type { ManufacturingJob, Operation } from "@/types/manufacturing";
+import type {
+  ManufacturingJob,
+  ManufacturingTask,
+  ManufacturingTaskAction,
+  ProductionCompletionInput,
+  QualityInspection,
+  TaskContributorInput,
+} from "@/types/manufacturing";
+import type { ActiveSessionSwitch } from "@/types/employee-work";
 import type {
   ManufacturingJobStatusValue,
   PriorityValue,
@@ -15,6 +23,7 @@ export interface ManufacturingListFilters extends PaginatedRequest {
 export interface ManufacturingJobFormData {
   salesOrderId: string;
   productId: string;
+  productVersionId?: string;
   quantity: number;
   priority: PriorityValue;
   plannedStartDate: string;
@@ -22,7 +31,27 @@ export interface ManufacturingJobFormData {
   assignedTo?: string;
   notes?: string;
   status?: ManufacturingJobStatusValue;
-  operations?: Operation[];
+  tasks?: ManufacturingTask[];
+  qualityInspection?: QualityInspection;
+}
+
+export interface BulkCompleteTaskEntry {
+  taskId: string;
+  completedQuantity?: number;
+  rejectedQuantity?: number;
+  wasteQuantity?: number;
+  contributors?: TaskContributorInput[];
+  actualHours?: number;
+  normalOvertimeHours?: number;
+  doubleOvertimeHours?: number;
+  notes?: string;
+}
+
+export interface BulkCompleteTasksInput {
+  tasks?: BulkCompleteTaskEntry[];
+  taskIds?: string[];
+  notes?: string;
+  activeSessionSwitch?: ActiveSessionSwitch;
 }
 
 export interface ManufacturingService {
@@ -33,5 +62,8 @@ export interface ManufacturingService {
   delete(id: string): Promise<void>;
   reserveMaterials(id: string): Promise<ManufacturingJob>;
   startJob(id: string): Promise<ManufacturingJob>;
-  completeJob(id: string): Promise<ManufacturingJob>;
+  completeJob(id: string, completion?: ProductionCompletionInput): Promise<ManufacturingJob>;
+  holdJob(id: string, reason?: string): Promise<ManufacturingJob>;
+  applyTaskAction(id: string, action: ManufacturingTaskAction): Promise<ManufacturingJob>;
+  completeTasks(id: string, input: BulkCompleteTasksInput): Promise<ManufacturingJob>;
 }

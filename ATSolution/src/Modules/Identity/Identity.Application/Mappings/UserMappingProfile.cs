@@ -21,13 +21,15 @@ public sealed class UserMappingProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedOnUtc, opt => opt.Ignore())
-            .ForMember(dest => dest.ModifiedOnUtc, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow));
+            .ForMember(dest => dest.ModifiedOnUtc, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))
+            .ForSourceMember(src => src.CurrentEmail, opt => opt.DoNotValidate());
 
         CreateMap<PatchUserCommand, User>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedOnUtc, opt => opt.Ignore())
             .ForMember(dest => dest.ModifiedOnUtc, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))
+            .ForSourceMember(src => src.CurrentEmail, opt => opt.DoNotValidate())
             .ForAllMembers(opt => opt.Condition((_, _, srcMember) => srcMember is not null));
     }
 }

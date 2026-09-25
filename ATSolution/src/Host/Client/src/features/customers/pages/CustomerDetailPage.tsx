@@ -46,6 +46,15 @@ export function CustomerDetailPage() {
   const primaryContact =
     customer?.contactPersons.find((c) => c.isPrimary) ?? customer?.contactPersons[0];
 
+  const billingActiveAddress =
+    customer?.billingAddresses?.[customer.activeBillingAddressIndex] ?? customer?.billingAddresses?.[0];
+
+  const deliveryActiveAddress = customer
+    ? customer.deliverySameAsBilling
+      ? billingActiveAddress
+      : customer.shippingAddresses?.[customer.activeShippingAddressIndex ?? 0] ?? billingActiveAddress
+    : undefined;
+
   const quotationColumns = useMemo<ColumnDef<Quotation>[]>(
     () => [
       { accessorKey: "quotationNumber", header: "Quotation #" },
@@ -121,7 +130,7 @@ export function CustomerDetailPage() {
               description={customer.code}
               breadcrumbs={[
                 { label: "Customers", href: ROUTES.customers.list },
-                { label: customer.name },
+                { label: "Customer List", href: ROUTES.customers.list },
               ]}
               actions={
                 <>
@@ -220,15 +229,33 @@ export function CustomerDetailPage() {
                       <div className="flex gap-2 text-sm">
                         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                         <address className="not-italic">
-                          {customer.billingAddress.line1}
-                          {customer.billingAddress.line2 && (
-                            <>, {customer.billingAddress.line2}</>
+                          {billingActiveAddress?.line1}
+                          {billingActiveAddress?.line2 && (
+                            <>, {billingActiveAddress?.line2}</>
                           )}
                           <br />
-                          {customer.billingAddress.city}, {customer.billingAddress.state}{" "}
-                          {customer.billingAddress.postalCode}
+                          {billingActiveAddress?.city}, {billingActiveAddress?.state}{" "}
+                          {billingActiveAddress?.postalCode}
                           <br />
-                          {customer.billingAddress.country}
+                          {billingActiveAddress?.country}
+                        </address>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border bg-card p-5">
+                      <h3 className="mb-3 font-semibold">Delivery Address</h3>
+                      <div className="flex gap-2 text-sm">
+                        <Truck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <address className="not-italic">
+                          {deliveryActiveAddress?.line1}
+                          {deliveryActiveAddress?.line2 && (
+                            <>, {deliveryActiveAddress?.line2}</>
+                          )}
+                          <br />
+                          {deliveryActiveAddress?.city}, {deliveryActiveAddress?.state}{" "}
+                          {deliveryActiveAddress?.postalCode}
+                          <br />
+                          {deliveryActiveAddress?.country}
                         </address>
                       </div>
                     </div>
@@ -285,7 +312,22 @@ export function CustomerDetailPage() {
               </TabPanel>
 
               <TabPanel value="attachments">
-                <AttachmentPanel attachments={[]} />
+                <AttachmentPanel
+                  attachments={[
+                    {
+                      id: "cust-att-1",
+                      name: "Customer Agreement.pdf",
+                      size: 312_000,
+                      type: "pdf",
+                    },
+                    {
+                      id: "cust-att-2",
+                      name: "Credit Application.pdf",
+                      size: 198_000,
+                      type: "pdf",
+                    },
+                  ]}
+                />
               </TabPanel>
 
               <TabPanel value="activity">

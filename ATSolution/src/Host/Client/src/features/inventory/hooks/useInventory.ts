@@ -9,6 +9,7 @@ import type {
 } from "@/services";
 import type {
   InventoryItem,
+  InventoryPriceHistoryEntry,
   StockMovement,
   StockMovementTypeValue,
 } from "@/types/inventory";
@@ -32,6 +33,16 @@ export function useInventoryItem(id: string) {
   });
 }
 
+export function useInventoryPriceHistory(id: string) {
+  return useEpicQuery<string, InventoryPriceHistoryEntry[]>({
+    arg: id,
+    enabled: Boolean(id),
+    getKey: (value) => `price-history:${value}`,
+    request: inventoryActions.fetchPriceHistoryRequest,
+    selectEntry: (state, key) => state.inventory.priceHistory[key],
+  });
+}
+
 export function useLowStockItems() {
   return useEpicQuery<null, InventoryItem[]>({
     arg: null,
@@ -41,9 +52,13 @@ export function useLowStockItems() {
   });
 }
 
-export function useStockMovements(filters: StockMovementFilters) {
+export function useStockMovements(
+  filters: StockMovementFilters,
+  options?: { enabled?: boolean },
+) {
   return useEpicQuery<StockMovementFilters, PaginatedResponse<StockMovement>>({
     arg: filters,
+    enabled: options?.enabled ?? true,
     request: inventoryActions.fetchMovementsRequest,
     selectEntry: (state, key) => state.inventory.movements[key],
   });

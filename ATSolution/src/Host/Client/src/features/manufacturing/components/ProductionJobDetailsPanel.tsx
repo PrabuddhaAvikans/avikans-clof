@@ -9,10 +9,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatCurrency, formatDateTime } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ProductionJob } from "@/types/production-tracking";
-import { PRODUCTION_STAGE_LABELS } from "@/types/production-tracking";
 
 export type ProductionJobDetailsPanelProps = {
   job: ProductionJob | null;
@@ -21,9 +20,10 @@ export type ProductionJobDetailsPanelProps = {
   className?: string;
 };
 
-function statusVariant(status: ProductionJob["status"]) {
+function statusVariantForJob(status: ProductionJob["status"]) {
   if (status === "on_hold") return "danger" as const;
-  if (status === "packed" || status === "qc") return "success" as const;
+  if (status === "completed") return "success" as const;
+  if (status === "quality_check" || status === "rework") return "warning" as const;
   return "default" as const;
 }
 
@@ -61,9 +61,9 @@ export function ProductionJobDetailsPanel({
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
             Job detail
           </p>
-          <p className="truncate text-sm font-semibold text-foreground">{job.jobNumber}</p>
+          <p className="truncate text-sm font-semibold text-foreground" title={job.jobNumber}>{job.jobNumber}</p>
         </div>
-        <StatusBadge variant={statusVariant(job.status)} size="sm">
+        <StatusBadge variant={statusVariantForJob(job.status)} size="sm">
           {job.statusLabel}
         </StatusBadge>
       </div>
@@ -74,7 +74,7 @@ export function ProductionJobDetailsPanel({
             <Package className="h-4 w-4 text-muted-foreground" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-foreground">{job.productName}</p>
+            <p className="truncate font-medium text-foreground" title={job.productName}>{job.productName}</p>
             <p className="text-[10px] text-muted-foreground">{job.productSku}</p>
             <div className="mt-1.5 grid grid-cols-3 gap-1 text-[10px]">
               <Meta label="Qty" value={String(job.quantity)} />
@@ -99,14 +99,14 @@ export function ProductionJobDetailsPanel({
 
         <div>
           <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Stages
+            Tasks
           </p>
           <ol className="space-y-1">
             {job.stages.map((stage) => (
-              <li key={stage.stage} className="flex items-center gap-2">
+              <li key={stage.id} className="flex items-center gap-2">
                 {stage.status === "completed" ? (
                   <CheckCircle2 className="h-3 w-3 shrink-0 text-foreground" />
-                ) : stage.status === "in_progress" ? (
+                ) : stage.status === "in_progress" || stage.status === "ready" ? (
                   <Loader2 className="h-3 w-3 shrink-0 animate-spin text-foreground" />
                 ) : (
                   <Circle className="h-3 w-3 shrink-0 text-muted-foreground/50" />
@@ -117,13 +117,19 @@ export function ProductionJobDetailsPanel({
                     stage.status === "pending" ? "text-muted-foreground" : "text-foreground",
                   )}
                 >
-                  {PRODUCTION_STAGE_LABELS[stage.stage]}
+                  {stage.name}
                 </span>
-                {stage.completedAt && (
-                  <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground">
-                    {formatDateTime(stage.completedAt, "dd MMM HH:mm")}
+                <span className="w-16 shrink-0">
+                  <span className="mb-0.5 block text-right text-[9px] tabular-nums text-muted-foreground">
+                    {stage.completedQuantity}/{stage.plannedQuantity} · {stage.progressPercent}%
                   </span>
-                )}
+                  <span className="block h-1 overflow-hidden rounded-full bg-muted">
+                    <span
+                      className="block h-full bg-foreground"
+                      style={{ width: `${stage.progressPercent}%` }}
+                    />
+                  </span>
+                </span>
               </li>
             ))}
           </ol>
@@ -150,7 +156,13 @@ export function ProductionJobDetailsPanel({
           <Stat
             title="Labor"
             primary={`${job.laborHours}h`}
-            secondary={formatCurrency(job.laborCost, "LKR")}
+            secondary={
+              job.overtimeHours > 0
+                ? `${formatCurrency(job.laborCost, "LKR")} · ${job.normalOvertimeHours}h OT${
+                    job.doubleOvertimeHours > 0 ? ` · ${job.doubleOvertimeHours}h DOT` : ""
+                  }`
+                : formatCurrency(job.laborCost, "LKR")
+            }
           />
           <Stat
             title="Quality"
@@ -181,9 +193,9 @@ export function ProductionJobDetailsPanel({
           className="w-full"
           onClick={onUpdateStage}
           loading={updating}
-          disabled={job.status === "packed"}
+          disabled={job.status === "completed" || job.status === "cancelled"}
         >
-          Update Stage
+          Open Tasks
         </Button>
       </div>
     </div>
@@ -194,7 +206,7 @@ function Meta({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-muted-foreground">{label}</p>
-      <p className="truncate font-medium text-foreground">{value}</p>
+      <p className="truncate font-medium text-foreground" title={value}>{value}</p>
     </div>
   );
 }

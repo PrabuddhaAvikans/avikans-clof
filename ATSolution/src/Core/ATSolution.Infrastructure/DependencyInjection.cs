@@ -1,6 +1,8 @@
 using ATSolution.Application.Abstractions.Persistence;
+using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Infrastructure.Persistence;
 using ATSolution.Infrastructure.Persistence.Data;
+using ATSolution.Infrastructure.Validation;
 using ATSolution.SharedKernel.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +23,7 @@ public static class DependencyInjection
             provider.GetRequiredService<SqlDbContext>());
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IApplicationValidator, ApplicationValidator>();
 
         return services;
     }

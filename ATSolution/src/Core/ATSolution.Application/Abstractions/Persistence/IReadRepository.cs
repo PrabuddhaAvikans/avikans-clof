@@ -5,13 +5,24 @@ namespace ATSolution.Application.Abstractions.Persistence;
 
 public interface IReadRepository<TEntity, in TId> where TEntity : class, IEntity<TId> where TId : notnull
 {
-    Task<TEntity?> GetByIdAsync(TId id, CancellationToken cancellationToken = default);
+    Task<TEntity?> GetByIdAsync(
+        TId id,
+        CancellationToken cancellationToken = default,
+        bool asNoTracking = true);
 
-    Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<TEntity?> FirstOrDefaultAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default,
+        bool asNoTracking = true);
 
-    Task<IReadOnlyList<TEntity>> ListAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TEntity>> ListAsync(
+        CancellationToken cancellationToken = default,
+        bool asNoTracking = true);
 
-    Task<IReadOnlyList<TEntity>> ListAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TEntity>> ListAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default,
+        bool asNoTracking = true);
 
     Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
 

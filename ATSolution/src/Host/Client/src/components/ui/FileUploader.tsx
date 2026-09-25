@@ -1,13 +1,31 @@
 import { useCallback, useId, useRef, useState } from 'react';
-import { File, Upload, X } from 'lucide-react';
+import { Download, Upload, X } from 'lucide-react';
+import { downloadAttachment, openAttachment } from '@/lib/attachment';
 import { cn, formatBytes } from '@/lib/utils';
+import { AttachmentIcon } from './AttachmentIcon';
 import { Button } from './Button';
 import { IconButton } from './IconButton';
 
 export type UploadedFile = {
   id: string;
-  file: File;
+  file?: File;
+  name?: string;
+  size?: number;
+  mimeType?: string;
+  url?: string;
 };
+
+function uploadedFileName(item: UploadedFile): string {
+  return item.file?.name ?? item.name ?? 'Untitled';
+}
+
+function uploadedFileSize(item: UploadedFile): number {
+  return item.file?.size ?? item.size ?? 0;
+}
+
+function uploadedMimeType(item: UploadedFile): string | undefined {
+  return item.file?.type || item.mimeType;
+}
 
 export type FileUploaderProps = {
   value?: UploadedFile[];
@@ -23,7 +41,13 @@ export type FileUploaderProps = {
 };
 
 function createUploadedFile(file: File): UploadedFile {
-  return { id: `${file.name}-${file.size}-${file.lastModified}`, file };
+  return {
+    id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID().slice(0, 8)}`,
+    file,
+    name: file.name,
+    size: file.size,
+    mimeType: file.type,
+  };
 }
 
 export function FileUploader({
@@ -140,29 +164,71 @@ export function FileUploader({
 
       {value.length > 0 && (
         <ul className="space-y-2">
-          {value.map((item) => (
+          {value.map((item) => {
+            const name = uploadedFileName(item);
+            const size = uploadedFileSize(item);
+            const mimeType = uploadedMimeType(item);
+
+            return (
             <li
               key={item.id}
               className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
             >
-              <div className="flex min-w-0 items-center gap-2">
-                <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                disabled={disabled}
+                onClick={() =>
+                  openAttachment({
+                    name,
+                    mimeType,
+                    file: item.file,
+                    url: item.url,
+                  })
+                }
+                title={`Open ${name}`}
+              >
+                <AttachmentIcon
+                  fileName={name}
+                  mimeType={mimeType}
+                  className="shrink-0 text-muted-foreground"
+                />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{item.file.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatBytes(item.file.size)}</p>
+                  <p className="cursor-pointer truncate text-sm font-medium text-foreground underline-offset-2 hover:underline" title={name}>
+                    {name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{formatBytes(size)}</p>
                 </div>
-              </div>
-              {!disabled && (
+              </button>
+              <div className="flex shrink-0 items-center gap-1">
                 <IconButton
                   variant="ghost"
                   size="sm"
-                  icon={<X className="h-4 w-4" />}
-                  aria-label={`Remove ${item.file.name}`}
-                  onClick={() => removeFile(item.id)}
+                  icon={<Download className="h-4 w-4" />}
+                  aria-label={`Download ${name}`}
+                  disabled={disabled}
+                  onClick={() =>
+                    downloadAttachment({
+                      name,
+                      mimeType,
+                      file: item.file,
+                      url: item.url,
+                    })
+                  }
                 />
-              )}
+                {!disabled && (
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    icon={<X className="h-4 w-4" />}
+                    aria-label={`Remove ${name}`}
+                    onClick={() => removeFile(item.id)}
+                  />
+                )}
+              </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

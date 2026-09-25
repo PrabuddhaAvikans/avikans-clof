@@ -14,6 +14,7 @@ const METRICS: {
   { key: "jobsInProduction", trendKey: "jobsInProductionTrend", label: "In production" },
   { key: "onHold", trendKey: "onHoldTrend", label: "On hold" },
   { key: "inQualityCheck", trendKey: "inQualityCheckTrend", label: "In QC" },
+  { key: "delayedJobs", trendKey: "delayedJobsTrend", label: "Delayed" },
   { key: "readyToShip", trendKey: "readyToShipTrend", label: "Ready to ship" },
 ];
 
@@ -22,6 +23,7 @@ export function ProductionKpiCards({ kpis, className }: ProductionKpiCardsProps)
     kpis.jobsInProduction,
     kpis.onHold,
     kpis.inQualityCheck,
+    kpis.delayedJobs,
     kpis.readyToShip,
     1,
   );
@@ -29,7 +31,7 @@ export function ProductionKpiCards({ kpis, className }: ProductionKpiCardsProps)
   return (
     <div
       className={cn(
-        "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+        "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5",
         className,
       )}
     >
@@ -41,9 +43,10 @@ export function ProductionKpiCards({ kpis, className }: ProductionKpiCardsProps)
           <div
             key={metric.key}
             className="min-w-0 border border-border bg-card px-2.5 py-2"
+            title={metric.label}
           >
             <div className="flex items-baseline justify-between gap-2">
-              <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground" title={metric.label}>
                 {metric.label}
               </p>
               <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">

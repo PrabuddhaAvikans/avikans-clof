@@ -1,20 +1,11 @@
 import { useMemo } from "react";
-import {
-  Check,
-  Copy,
-  Download,
-  FileSpreadsheet,
-  Link2,
-  Mail,
-  Pencil,
-  Phone,
-  Printer,
-  Trash2,
-  ArrowRightLeft,
-} from "lucide-react";
+import { ArrowRightLeft, Check } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "@/app/config/routes";
 import { Button } from "@/components/ui/Button";
 import { Stepper, type StepItem, type StepStatus } from "@/components/ui/Stepper";
 import { cn } from "@/lib/utils";
+import { workspacePanelBody, workspacePanelEmpty, workspacePanelShell } from "@/lib/panelLayout";
 import type { Quotation } from "@/types/quotation";
 import type { QuotationStatusValue } from "@/types/status";
 
@@ -84,16 +75,8 @@ export type QuotationWorkflowPanelProps = {
 
 export function QuotationWorkflowPanel({
   quotation,
-  onEdit,
-  onDelete,
-  onSend,
-  onDuplicate,
   onConvert,
-  onDownloadPdf,
-  onOpenContacts,
-  isSending,
   isConverting,
-  isDeleting,
   className,
 }: QuotationWorkflowPanelProps) {
   const steps = useMemo(
@@ -103,103 +86,32 @@ export function QuotationWorkflowPanel({
 
   if (!quotation) {
     return (
-      <div
-        className={cn(
-          "flex h-full items-center justify-center rounded-lg border border-border bg-card p-8 shadow-xs",
-          className,
-        )}
-      >
+      <div className={cn(workspacePanelEmpty, className)}>
         <p className="text-sm text-muted-foreground">Select a quotation to view workflow.</p>
       </div>
     );
   }
 
-  const canEdit =
-    quotation.status === "draft" || quotation.status === "ready_to_send";
-  const canDelete =
-    quotation.status === "draft" || quotation.status === "ready_to_send";
-  const canSend =
-    quotation.status === "draft" || quotation.status === "ready_to_send";
   const canConvert =
     quotation.status === "accepted" || quotation.status === "sent";
 
   return (
-    <div
-      className={cn(
-        "flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xs",
-        className,
-      )}
-    >
+    <div className={cn(workspacePanelShell, className)}>
       <div className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold text-foreground">Quotation Workflow</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Quotation → Sales Order → Product Estimation (auto BOM) → Approval → Confirm
+        </p>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
+      <div className={workspacePanelBody}>
         <Stepper steps={steps} orientation="vertical" />
 
         <section>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Quick Actions
+            Next in flow
           </h3>
           <div className="space-y-1.5">
-            {onOpenContacts && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                leftIcon={<Phone className="h-4 w-4" />}
-                onClick={onOpenContacts}
-              >
-                Calls & Contacts
-                {(quotation.contactHistory?.length ?? 0) > 0
-                  ? ` (${quotation.contactHistory.length})`
-                  : ""}
-              </Button>
-            )}
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                leftIcon={<Pencil className="h-4 w-4" />}
-                onClick={onEdit}
-              >
-                Edit Quotation
-              </Button>
-            )}
-            {canDelete && (
-              <Button
-                variant="danger"
-                size="sm"
-                className="w-full justify-start"
-                leftIcon={<Trash2 className="h-4 w-4" />}
-                loading={isDeleting}
-                onClick={onDelete}
-              >
-                Delete Quotation
-              </Button>
-            )}
-            {canSend && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                leftIcon={<Mail className="h-4 w-4" />}
-                loading={isSending}
-                onClick={onSend}
-              >
-                Send to Customer
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start"
-              leftIcon={<Copy className="h-4 w-4" />}
-              onClick={onDuplicate}
-            >
-              Duplicate
-            </Button>
             {canConvert && (
               <Button
                 variant="primary"
@@ -209,47 +121,21 @@ export function QuotationWorkflowPanel({
                 loading={isConverting}
                 onClick={onConvert}
               >
-                Convert to Order
+                Convert to Sales Order
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start"
-              leftIcon={<Download className="h-4 w-4" />}
-              onClick={onDownloadPdf}
-            >
-              Download PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start"
-              leftIcon={<FileSpreadsheet className="h-4 w-4" />}
-              onClick={() => onDownloadPdf?.()}
-            >
-              Export to Excel
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start"
-              leftIcon={<Printer className="h-4 w-4" />}
-              onClick={onDownloadPdf}
-            >
-              Print Quotation
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start"
-              leftIcon={<Link2 className="h-4 w-4" />}
-              onClick={() => {
-                void navigator.clipboard.writeText(window.location.href);
-              }}
-            >
-              Share Link
-            </Button>
+            {quotation.salesOrderId && (
+              <Link to={ROUTES.salesOrders.detail(quotation.salesOrderId)} className="block">
+                <Button variant="outline" size="sm" className="w-full justify-start">
+                  Open sales order
+                </Button>
+              </Link>
+            )}
+            {!canConvert && quotation.status !== "converted" && (
+              <p className="text-xs text-muted-foreground">
+                Accept this quotation before converting it to a sales order.
+              </p>
+            )}
           </div>
         </section>
 
@@ -258,11 +144,13 @@ export function QuotationWorkflowPanel({
             <div className="flex items-start gap-2">
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
               <div>
-                <p className="text-sm font-medium text-foreground">Ready for fulfillment</p>
+                <p className="text-sm font-medium text-foreground">
+                  {quotation.salesOrderId ? "Continue costing approval" : "Ready to convert"}
+                </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {quotation.salesOrderId
-                    ? `Linked sales order: ${quotation.salesOrderId}`
-                    : "Convert this quotation to create a sales order."}
+                    ? "A BOM estimation is generated from the sales order. Costing must be approved before the order can be confirmed."
+                    : "Convert this quotation to create a sales order. Estimation with BOM is generated automatically."}
                 </p>
               </div>
             </div>

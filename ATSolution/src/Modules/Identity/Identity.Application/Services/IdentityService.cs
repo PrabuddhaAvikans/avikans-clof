@@ -1,4 +1,7 @@
-﻿using ATSolution.Application.Abstractions.Persistence;
+﻿using ATSolution.Application;
+using ATSolution.Application.Abstractions.Persistence;
+using ATSolution.Application.Abstractions.Validation;
+using ATSolution.Application.Exceptions;
 using ATSolution.SharedKernel.Constants;
 using AutoMapper;
 using Identity.Application.Abstractions;
@@ -11,15 +14,18 @@ public sealed class IdentityService : IIdentityService
 {
     private readonly IIdentityRepository _identityRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IApplicationValidator _validator;
     private readonly IMapper _mapper;
 
     public IdentityService(
         IIdentityRepository identityRepository,
         IUnitOfWork unitOfWork,
+        IApplicationValidator validator,
         IMapper mapper)
     {
         _identityRepository = identityRepository;
         _unitOfWork = unitOfWork;
+        _validator = validator;
         _mapper = mapper;
     }
 
@@ -54,7 +60,9 @@ public sealed class IdentityService : IIdentityService
         string email,
         CancellationToken cancellationToken = default)
     {
-        var user = await _identityRepository.GetByEmailAsync(email, cancellationToken);
+        var user = await _identityRepository.FirstOrDefaultAsync(
+            user => user.Email == email,
+            cancellationToken);
 
         return user is null ? null : _mapper.Map<UserDto>(user);
     }
@@ -63,14 +71,7 @@ public sealed class IdentityService : IIdentityService
         CreateUserCommand command,
         CancellationToken cancellationToken = default)
     {
-        var existingUser = await _identityRepository.GetByEmailAsync(
-            command.Email,
-            cancellationToken);
-
-        if (existingUser is not null)
-        {
-            throw new InvalidOperationException(string.Format(IdentityMessages.UserEmailAlreadyExists, command.Email));
-        }
+        await _validator.ValidateAsync(command, cancellationToken);
 
         var user = _mapper.Map<User>(command);
 
@@ -80,85 +81,72 @@ public sealed class IdentityService : IIdentityService
         return _mapper.Map<UserDto>(user);
     }
 
-    public async Task<UserDto?> UpdateUserAsync(
-        string email,
+    public async Task<UserDto> UpdateUserAsync(
         UpdateUserCommand command,
         CancellationToken cancellationToken = default)
     {
-        var user = await _identityRepository.GetByEmailForUpdateAsync(email, cancellationToken);
+        await _validator.ValidateAsync(command, cancellationToken);
+
+        var user = await _identityRepository.FirstOrDefaultAsync(
+            entity => entity.Email == command.CurrentEmail,
+            cancellationToken,
+            asNoTracking: false);
 
         if (user is null)
         {
-            return null;
-        }
-
-        if (!string.Equals(user.Email, command.Email, StringComparison.OrdinalIgnoreCase))
-        {
-            var existingUser = await _identityRepository.GetByEmailAsync(
-                command.Email,
-                cancellationToken);
-
-            if (existingUser is not null)
-            {
-                throw new InvalidOperationException(string.Format(IdentityMessages.UserEmailAlreadyExists, command.Email));
-            }
+            throw new NotFoundException(
+                string.Format(IdentityMessages.UserNotFoundByEmail, command.CurrentEmail));
         }
 
         _mapper.Map(command, user);
-
         _identityRepository.Update(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return _mapper.Map<UserDto>(user);
     }
 
-    public async Task<UserDto?> PatchUserAsync(
-        string email,
+    public async Task<UserDto> PatchUserAsync(
         PatchUserCommand command,
         CancellationToken cancellationToken = default)
     {
-        var user = await _identityRepository.GetByEmailForUpdateAsync(email, cancellationToken);
+        await _validator.ValidateAsync(command, cancellationToken);
+
+        var user = await _identityRepository.FirstOrDefaultAsync(
+            entity => entity.Email == command.CurrentEmail,
+            cancellationToken,
+            asNoTracking: false);
 
         if (user is null)
         {
-            return null;
-        }
-
-        if (command.Email is not null &&
-            !string.Equals(user.Email, command.Email, StringComparison.OrdinalIgnoreCase))
-        {
-            var existingUser = await _identityRepository.GetByEmailAsync(
-                command.Email,
-                cancellationToken);
-
-            if (existingUser is not null)
-            {
-                throw new InvalidOperationException(string.Format(IdentityMessages.UserEmailAlreadyExists, command.Email));
-            }
+            throw new NotFoundException(
+                string.Format(IdentityMessages.UserNotFoundByEmail, command.CurrentEmail));
         }
 
         _mapper.Map(command, user);
-
         _identityRepository.Update(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return _mapper.Map<UserDto>(user);
     }
 
-    public async Task<bool> DeleteUserAsync(
-        string email,
+    public async Task DeleteUserAsync(
+        DeleteUserCommand command,
         CancellationToken cancellationToken = default)
     {
-        var user = await _identityRepository.GetByEmailForUpdateAsync(email, cancellationToken);
+        await _validator.ValidateAsync(command, cancellationToken);
+
+        var user = await _identityRepository.FirstOrDefaultAsync(
+            entity => entity.Email == command.Email,
+            cancellationToken,
+            asNoTracking: false);
 
         if (user is null)
         {
-            return false;
+            throw new NotFoundException(
+                string.Format(IdentityMessages.UserNotFoundByEmail, command.Email));
         }
 
         _identityRepository.Remove(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return true;
     }
 }

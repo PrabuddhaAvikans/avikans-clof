@@ -12,13 +12,13 @@ import {
   Plus,
   Search,
   Truck,
-  User,
+  UserCog,
   Users,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { ROUTES } from "@/app/config/routes";
 import type { AppDispatch, RootState } from "@/app/store";
-import { signOut } from "@/app/store/authSlice";
+import { useAuthSession } from "@/features/auth/hooks/useAuthSession";
 import {
   setGlobalSearchOpen,
   toggleGlobalSearchOpen,
@@ -26,9 +26,9 @@ import {
   toggleSidebarCollapsed,
 } from "@/app/store/uiSlice";
 import { useBreakpoint } from "@/hooks/useMediaQuery";
+import { usePermissions } from "@/hooks/usePermissions";
 import { APP_HEADER_HEIGHT } from "@/lib/layout";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Modal } from "@/components/ui/Modal";
 import { SearchBar } from "@/components/ui/SearchBar";
@@ -49,6 +49,8 @@ export function Header() {
     (state: RootState) => state.ui.globalSearchOpen,
   );
   const user = useSelector((state: RootState) => state.auth.user);
+  const { signOutUser } = useAuthSession();
+  const { hasPermission } = usePermissions();
   const isMobile = !useBreakpoint("md");
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,8 +102,9 @@ export function Header() {
   };
 
   const handleLogout = () => {
-    dispatch(signOut());
+    signOutUser();
     setProfileOpen(false);
+    navigate(ROUTES.login);
   };
 
   const displayName = user?.displayName ?? "Guest";
@@ -128,7 +131,6 @@ export function Header() {
           onClick={handleMenuClick}
         />
 
-        {/* Centered search matching screenshot */}
         <div className="mx-auto flex w-full max-w-xl flex-1 justify-center px-2">
           <SearchBar
             value={searchQuery}
@@ -145,25 +147,6 @@ export function Header() {
 
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           <div ref={quickCreateRef} className="relative">
-            {/* <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Plus className="h-3.5 w-3.5" />}
-              rightIcon={
-                <ChevronDown
-                  className={cn(
-                    "h-3.5 w-3.5 transition-transform",
-                    quickCreateOpen && "rotate-180",
-                  )}
-                />
-              }
-              onClick={() => setQuickCreateOpen((open) => !open)}
-              aria-expanded={quickCreateOpen}
-              aria-haspopup="menu"
-              className="hidden sm:inline-flex"
-            >
-              Create
-            </Button> */}
             <IconButton
               variant="outline"
               size="sm"
@@ -184,6 +167,7 @@ export function Header() {
                       key={item.label}
                       to={item.path}
                       role="menuitem"
+                      title={`Create ${item.label}`}
                       className="flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-muted"
                       onClick={() => setQuickCreateOpen(false)}
                     >
@@ -212,6 +196,8 @@ export function Header() {
               type="button"
               className="flex items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
               onClick={() => setProfileOpen((open) => !open)}
+              title={`${displayName} (${role})`}
+              aria-label={`${displayName} account menu`}
               aria-expanded={profileOpen}
               aria-haspopup="menu"
             >
@@ -219,10 +205,10 @@ export function Header() {
                 {displayName.charAt(0)}
               </span>
               <span className="hidden min-w-0 lg:block">
-                <span className="block truncate text-[13px] font-medium text-foreground">
+                <span className="block truncate text-[13px] font-medium text-foreground" title={displayName}>
                   {displayName}
                 </span>
-                <span className="block truncate text-[11px] text-muted-foreground">
+                <span className="block truncate text-[11px] text-muted-foreground" title={role}>
                   {role}
                 </span>
               </span>
@@ -243,23 +229,27 @@ export function Header() {
                   <p className="text-sm font-medium text-foreground">{displayName}</p>
                   <p className="text-xs text-muted-foreground">{role}</p>
                 </div>
-                {/* <button
-                  type="button"
-                  role="menuitem"
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-muted"
-                  onClick={() => {
-                    setProfileOpen(false);
-                    navigate(ROUTES.admin.users);
-                  }}
-                >
-                  <User className="h-4 w-4 text-muted-foreground" aria-hidden />
-                  Profile
-                </button> */}
+                {hasPermission("users:view") && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    title="Users & roles"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-muted"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      navigate(ROUTES.admin.users);
+                    }}
+                  >
+                    <UserCog className="h-4 w-4 text-muted-foreground" aria-hidden />
+                    Users & roles
+                  </button>
+                )}
                 <button
                   type="button"
                   role="menuitem"
+                  title="Log out"
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
-                 // onClick={handleLogout}
+                  onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4" aria-hidden />
                   Log out

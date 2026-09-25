@@ -13,6 +13,7 @@ import {
   X,
   ArrowRightLeft,
 } from "lucide-react";
+import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/feedback/PageHeader";
@@ -25,26 +26,20 @@ import { SearchBar } from "@/components/ui/SearchBar";
 import { Select } from "@/components/ui/Select";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { MappedStatusBadge } from "@/features/shared/components/MappedStatusBadge";
+import { DuplicateQuotationModal } from "@/features/sales/components/DuplicateQuotationModal";
 import { SendQuotationModal } from "@/features/sales/components/SendQuotationModal";
 import {
   useConvertQuotationToSalesOrder,
-  useCreateQuotation,
   useDeleteQuotation,
   useQuotations,
   useSendQuotation,
   useUpdateQuotation,
 } from "@/features/sales/hooks/useQuotations";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { Priority, QuotationStatus, type QuotationStatusValue } from "@/types/status";
-import type { PriorityValue } from "@/types/status";
+import { QuotationStatus, type QuotationStatusValue } from "@/types/status";
 import type { Quotation } from "@/types/quotation";
 
 const STATUS_OPTIONS = Object.entries(QuotationStatus).map(([value, def]) => ({
-  value,
-  label: def.label,
-}));
-
-const PRIORITY_OPTIONS = Object.entries(Priority).map(([value, def]) => ({
   value,
   label: def.label,
 }));
@@ -53,53 +48,31 @@ export function EstimateListPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<QuotationStatusValue | "">("");
-  const [priorityFilter, setPriorityFilter] = useState<PriorityValue | "">("");
   const [applied, setApplied] = useState({
     search: "",
     status: "" as QuotationStatusValue | "",
-    priority: "" as PriorityValue | "",
   });
   const [deleteTarget, setDeleteTarget] = useState<Quotation | null>(null);
   const [sendTarget, setSendTarget] = useState<Quotation | null>(null);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<Quotation | null>(null);
 
   const { data, isLoading, error, refetch } = useQuotations({
     page: 1,
     pageSize: 100,
     search: applied.search || undefined,
     status: applied.status || undefined,
-    priority: applied.priority || undefined,
   });
 
   const sendQuotation = useSendQuotation();
   const deleteQuotation = useDeleteQuotation();
   const updateQuotation = useUpdateQuotation();
   const convertToOrder = useConvertQuotationToSalesOrder();
-  const createQuotation = useCreateQuotation();
 
-  const handleDuplicate = useCallback(
-    async (quotation: Quotation) => {
-      await createQuotation.mutateAsync({
-        customerId: quotation.customerId,
-        lineItems: quotation.lineItems.map((item) => ({
-          productId: item.productId,
-          productSku: item.productSku,
-          productName: item.productName,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          discountPercent: item.discountPercent,
-          taxPercent: item.taxPercent,
-        })),
-        validUntil: quotation.validUntil,
-        priority: quotation.priority,
-        notes: quotation.notes,
-        termsAndConditions: quotation.termsAndConditions,
-        discountAmount: quotation.discountAmount,
-      });
-      void refetch();
-    },
-    [createQuotation, refetch],
-  );
+  const openDuplicateModal = useCallback((quotation: Quotation) => {
+    setDuplicateSource(quotation);
+    setDuplicateOpen(true);
+  }, []);
 
   const columns = useMemo<ColumnDef<Quotation>[]>(
     () => [
@@ -128,13 +101,6 @@ export function EstimateListPage() {
         header: "Status",
         cell: ({ row }) => (
           <MappedStatusBadge statusMap={QuotationStatus} value={row.original.status} dot />
-        ),
-      },
-      {
-        accessorKey: "priority",
-        header: "Priority",
-        cell: ({ row }) => (
-          <MappedStatusBadge statusMap={Priority} value={row.original.priority} />
         ),
       },
       {
@@ -172,7 +138,7 @@ export function EstimateListPage() {
               label: "Duplicate",
               icon: <Copy className="h-4 w-4" />,
               primary: true,
-              onClick: () => void handleDuplicate(q),
+              onClick: () => openDuplicateModal(q),
             },
           ];
 
@@ -237,7 +203,14 @@ export function EstimateListPage() {
               onClick: () =>
                 void convertToOrder
                   .mutateAsync(q.id)
-                  .then((so) => navigate(ROUTES.salesOrders.detail(so.id))),
+                  .then((so) => {
+                    toast.success(
+                      so.quotationNumber
+                        ? `Sales order created from ${so.quotationNumber}. BOM estimation sent for costing approval.`
+                        : "Sales order created. BOM estimation sent for costing approval.",
+                    );
+                    navigate(ROUTES.costing.forOrder(so.id));
+                  }),
             });
           }
 
@@ -255,7 +228,7 @@ export function EstimateListPage() {
         },
       },
     ],
-    [navigate, convertToOrder, updateQuotation, handleDuplicate],
+    [navigate, convertToOrder, updateQuotation, openDuplicateModal],
   );
 
   return (
@@ -277,16 +250,15 @@ export function EstimateListPage() {
         <FilterPanel
           variant="toolbar"
           onApply={() =>
-            setApplied({ search, status: statusFilter, priority: priorityFilter })
+            setApplied({ search, status: statusFilter })
           }
           onReset={() => {
             setSearch("");
             setStatusFilter("");
-            setPriorityFilter("");
-            setApplied({ search: "", status: "", priority: "" });
+            setApplied({ search: "", status: "" });
           }}
         >
-          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
             <SearchBar
               label="Search"
               value={search}
@@ -301,14 +273,6 @@ export function EstimateListPage() {
                 setStatusFilter(e.target.value as QuotationStatusValue | "")
               }
               options={[{ value: "", label: "All statuses" }, ...STATUS_OPTIONS]}
-            />
-            <Select
-              label="Priority"
-              value={priorityFilter}
-              onChange={(e) =>
-                setPriorityFilter(e.target.value as PriorityValue | "")
-              }
-              options={[{ value: "", label: "All priorities" }, ...PRIORITY_OPTIONS]}
             />
           </div>
         </FilterPanel>
@@ -365,6 +329,19 @@ export function EstimateListPage() {
           }}
         />
       )}
+
+      <DuplicateQuotationModal
+        open={duplicateOpen}
+        quotation={duplicateSource}
+        onClose={() => {
+          setDuplicateOpen(false);
+          setDuplicateSource(null);
+        }}
+        onCreated={(created) => {
+          void refetch();
+          navigate(ROUTES.quotations.detail(created.id));
+        }}
+      />
     </PageContainer>
   );
 }

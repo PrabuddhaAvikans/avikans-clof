@@ -4,72 +4,46 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ATSolution.Infrastructure.Persistence;
 
-
-public class UnitOfWork : IUnitOfWork, IDisposable
+public class UnitOfWork : IUnitOfWork
 {
     private readonly SqlDbContext _context;
-    private bool _disposed = false;
 
     public UnitOfWork(SqlDbContext context)
     {
         _context = context;
     }
-    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.SaveChangesAsync(cancellationToken);
+        return _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken cancellationToken = default)
+    public async Task<TResult> ExecuteInTransactionAsync<TResult>(
+        Func<CancellationToken, Task<TResult>> operation,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
 
-        var executionStrategy =
-            _context.Database.CreateExecutionStrategy();
+        var executionStrategy = _context.Database.CreateExecutionStrategy();
 
-        return await executionStrategy.ExecuteAsync(
-            async () =>
-            {
-                await using var transaction =
-                    await _context.Database.BeginTransactionAsync(
-                        cancellationToken);
-
-                try
-                {
-                    var result = await operation(cancellationToken);
-
-                    await _context.SaveChangesAsync(
-                        cancellationToken);
-
-                    await transaction.CommitAsync(
-                        cancellationToken);
-
-                    return result;
-                }
-                catch
-                {
-                    await transaction.RollbackAsync(
-                        cancellationToken);
-
-                    throw;
-                }
-            });
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!this._disposed)
+        return await executionStrategy.ExecuteAsync(async () =>
         {
-            if (disposing)
-            {
-                _context.Dispose();
-            }
-        }
-        this._disposed = true;
-    }
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+            try
+            {
+                var result = await operation(cancellationToken);
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return result;
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
     }
 }

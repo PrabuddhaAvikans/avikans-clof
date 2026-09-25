@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -12,6 +21,7 @@ import {
   isNavItemActive,
 } from "@/components/layout/nav-utils";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { APP_HEADER_HEIGHT } from "@/lib/layout";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +36,7 @@ export function Sidebar({ forceCollapsed = false, className }: SidebarProps) {
   );
   const { pathname } = useLocation();
   const { canAccess } = usePermissions();
+  const { appSubtitle } = useSystemSettings();
 
   const collapsed = forceCollapsed || sidebarCollapsed;
   const navigation = useMemo(
@@ -70,9 +81,11 @@ export function Sidebar({ forceCollapsed = false, className }: SidebarProps) {
         ) : (
           <div className="min-w-0">
             <BrandLogo className="h-7 max-w-full" />
-            <p className="truncate text-[10px] leading-tight text-sidebar-muted">
-              Custom Lighting Product Management
-            </p>
+            {appSubtitle ? (
+              <p className="truncate text-[10px] leading-tight text-sidebar-muted" title={appSubtitle}>
+                {appSubtitle}
+              </p>
+            ) : null}
           </div>
         )}
       </div>
@@ -119,15 +132,8 @@ function SidebarNavItem({
 
   if (hasChildren && item.children) {
     if (collapsed) {
-      const firstChild = item.children[0];
       return (
-        <li>
-          <NavLinkItem
-            item={firstChild}
-            collapsed={collapsed}
-            title={`${item.label} — ${firstChild.label}`}
-          />
-        </li>
+        <CollapsedNavGroup item={item} currentPath={currentPath} />
       );
     }
 
@@ -142,10 +148,11 @@ function SidebarNavItem({
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
               : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
           )}
+          title={item.label}
           aria-expanded={isExpanded}
         >
           <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
-          <span className="flex-1 truncate text-left">{item.label}</span>
+          <span className="flex-1 truncate text-left" title={item.label}>{item.label}</span>
           <ChevronDown
             className={cn(
               "h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform",
@@ -180,6 +187,170 @@ function SidebarNavItem({
   );
 }
 
+type CollapsedNavGroupProps = {
+  item: NavItem;
+  currentPath: string;
+};
+
+function CollapsedNavGroup({ item, currentPath }: CollapsedNavGroupProps) {
+  const Icon = getNavIcon(item.icon);
+  const children = item.children ?? [];
+  const [open, setOpen] = useState(false);
+  const [flyoutStyle, setFlyoutStyle] = useState<CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isGroupActive = children.some((child) =>
+    isNavItemActive(child.path, currentPath),
+  );
+  const siblingPaths = children.map((child) => child.path);
+
+  const updatePosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) {
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const gap = 8;
+    const flyoutHeight = flyoutRef.current?.offsetHeight ?? children.length * 36 + 40;
+    const maxTop = Math.max(8, window.innerHeight - flyoutHeight - 8);
+    const top = Math.min(Math.max(8, rect.top), maxTop);
+
+    setFlyoutStyle({
+      position: "fixed",
+      top,
+      left: rect.right + gap,
+      zIndex: 50,
+    });
+  }, [children.length]);
+
+  const openFlyout = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+    setOpen(true);
+  };
+
+  const scheduleClose = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  useLayoutEffect(() => {
+    if (open) {
+      updatePosition();
+    }
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleReposition = () => updatePosition();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        flyoutRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("resize", handleReposition);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("resize", handleReposition);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [currentPath]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <li onMouseEnter={openFlyout} onMouseLeave={scheduleClose}>
+      <button
+        ref={triggerRef}
+        type="button"
+        title={item.label}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label={item.label}
+        onClick={() => {
+          if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+          }
+          setOpen(true);
+        }}
+        className={cn(
+          "relative flex w-full items-center justify-center rounded-md px-2 py-1.5 text-[13px] font-medium transition-colors",
+          isGroupActive
+            ? "bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-blue-600"
+            : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+      </button>
+      {open &&
+        createPortal(
+          <div
+            ref={flyoutRef}
+            role="group"
+            aria-label={`${item.label} submenu`}
+            style={flyoutStyle}
+            onMouseEnter={openFlyout}
+            onMouseLeave={scheduleClose}
+            className="min-w-[208px] max-w-[260px] rounded-md border border-sidebar-border bg-sidebar py-1 shadow-md"
+          >
+            <p className="truncate px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-sidebar-muted" title={item.label}>
+              {item.label}
+            </p>
+            <ul className="max-h-[min(70vh,420px)] space-y-0.5 overflow-y-auto px-1.5 pb-1">
+              {children.map((child) => (
+                <li key={child.id}>
+                  <NavLinkItem
+                    item={child}
+                    collapsed={false}
+                    siblingPaths={siblingPaths}
+                    currentPath={currentPath}
+                    onNavigate={() => setOpen(false)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>,
+          document.body,
+        )}
+    </li>
+  );
+}
+
 type NavLinkItemProps = {
   item: NavItem;
   collapsed: boolean;
@@ -187,6 +358,7 @@ type NavLinkItemProps = {
   title?: string;
   siblingPaths?: string[];
   currentPath?: string;
+  onNavigate?: () => void;
 };
 
 function NavLinkItem({
@@ -196,6 +368,7 @@ function NavLinkItem({
   title,
   siblingPaths = [],
   currentPath,
+  onNavigate,
 }: NavLinkItemProps) {
   const Icon = getNavIcon(item.icon);
   const { pathname } = useLocation();
@@ -205,15 +378,16 @@ function NavLinkItem({
   return (
     <NavLink
       to={item.path}
-      title={title ?? (collapsed ? item.label : undefined)}
+      title={title ?? item.label}
       end={siblingPaths.length > 0}
       aria-current={active ? "page" : undefined}
+      onClick={onNavigate}
       className={cn(
         "relative flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors",
         indent && "ml-2 pl-2.5 text-[12.5px] font-normal",
         collapsed && "justify-center px-2",
         active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-blue-600"
+          ? "bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-orange-400"
           : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
       )}
     >
@@ -228,7 +402,7 @@ function NavLinkItem({
       ) : (
         <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
       )}
-      {!collapsed && <span className="truncate">{item.label}</span>}
+      {!collapsed && <span className="truncate" title={item.label}>{item.label}</span>}
     </NavLink>
   );
 }

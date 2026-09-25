@@ -1,16 +1,19 @@
 import { useEffect, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { cn } from '@/lib/utils';
 import { IconButton } from './IconButton';
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
 
 const sizeClasses: Record<ModalSize, string> = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
+  '2xl': 'max-w-6xl',
+  full: 'max-w-[min(96rem,calc(100vw-2rem))]',
 };
 
 export type ModalProps = {
@@ -22,6 +25,8 @@ export type ModalProps = {
   size?: ModalSize;
   className?: string;
   closeOnOverlayClick?: boolean;
+  zIndexClassName?: string;
+  closeOnEscape?: boolean;
 };
 
 export function Modal({
@@ -33,11 +38,15 @@ export function Modal({
   size = 'md',
   className,
   closeOnOverlayClick = true,
+  zIndexClassName = 'z-50',
+  closeOnEscape = true,
 }: ModalProps) {
   const titleId = useId();
 
+  useScrollLock(open);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open || !closeOnEscape) return;
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -46,18 +55,16 @@ export function Modal({
     };
 
     document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
     };
-  }, [open, onClose]);
+  }, [open, onClose, closeOnEscape]);
 
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className={cn('fixed inset-0 flex items-center justify-center p-4', zIndexClassName)}>
       <div
         className="absolute inset-0 bg-foreground/40 backdrop-blur-[1px]"
         aria-hidden
@@ -68,12 +75,12 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'relative z-10 flex w-full flex-col rounded-lg border border-border bg-card shadow-lg',
+          'relative z-10 flex max-h-[90vh] w-full flex-col rounded-lg border border-border bg-card shadow-lg',
           sizeClasses[size],
           className,
         )}
       >
-        <div className="flex items-start justify-between border-b border-border px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between border-b border-border px-5 py-4">
           {title ? (
             <h2 id={titleId} className="text-lg font-semibold text-foreground">
               {title}
@@ -92,9 +99,9 @@ export function Modal({
             className="ml-auto"
           />
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-5 py-4">
             {footer}
           </div>
         )}

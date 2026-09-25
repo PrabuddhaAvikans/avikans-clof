@@ -6,6 +6,16 @@
       "page": "DashboardPage",
       "permission": "dashboard:view"
     },
+    {
+      "path": "reports",
+      "page": "ReportsHubPage",
+      "permission": "reports:view"
+    },
+    {
+      "path": "reports/:reportId",
+      "page": "ReportViewerPage",
+      "permission": "reports:view"
+    },
 
     {
       "path": "sales",
@@ -65,6 +75,11 @@
       "page": "CostingApprovalWorkspacePage",
       "permission": "quotations:view"
     },
+    {
+      "path": "operations/estimation",
+      "page": "EstimationWorkspacePage",
+      "permission": "quotations:view"
+    },
 
     {
       "path": "sales-orders",
@@ -113,6 +128,40 @@
       "path": "sales/invoices",
       "page": "InvoicesPage",
       "permission": "sales_orders:view"
+    },
+    {
+      "path": "finance/invoices",
+      "page": "FinanceInvoicesPage",
+      "permission": "finance:view"
+    },
+    {
+      "path": "finance/credit-notes",
+      "page": "FinanceCreditNotesPage",
+      "permission": "finance:view"
+    },
+    {
+      "path": "period-close",
+      "redirect": "/period-close/day"
+    },
+    {
+      "path": "period-close/day",
+      "page": "DayCloseWorkspacePage",
+      "permission": "period_close:view"
+    },
+    {
+      "path": "period-close/day/:periodId",
+      "page": "DayCloseWorkspacePage",
+      "permission": "period_close:view"
+    },
+    {
+      "path": "period-close/month",
+      "page": "MonthlyCloseWorkspacePage",
+      "permission": "period_close:view"
+    },
+    {
+      "path": "period-close/month/:periodId",
+      "page": "MonthlyCloseWorkspacePage",
+      "permission": "period_close:view"
     },
 
     {
@@ -166,13 +215,11 @@
     },
     {
       "path": "products/categories",
-      "page": "CategoriesPage",
-      "permission": "categories:view"
+      "redirect": "/configuration/categories"
     },
     {
       "path": "products/brands",
-      "page": "BrandsPage",
-      "permission": "products:view"
+      "redirect": "/configuration/brands"
     },
     {
       "path": "products/attributes",
@@ -220,14 +267,27 @@
       "permission": "inventory:view"
     },
     {
+      "path": "inventory/reprocessing",
+      "page": "ReprocessingBatchesPage",
+      "permission": "manufacturing:view"
+    },
+    {
+      "path": "inventory/reprocessing/:id",
+      "page": "ReprocessingBatchDetailPage",
+      "permission": "manufacturing:view"
+    },
+    {
       "path": "inventory/low-stock",
       "page": "LowStockPage",
       "permission": "inventory:view"
     },
     {
       "path": "inventory/units",
-      "page": "UnitsOfMeasurePage",
-      "permission": "inventory:view"
+      "redirect": "/configuration/units"
+    },
+    {
+      "path": "inventory/warehouses",
+      "redirect": "/configuration/warehouses"
     },
     {
       "path": "inventory/:id/edit",
@@ -236,18 +296,17 @@
     },
     {
       "path": "inventory/:id",
-      "page": "InventoryFormPage",
+      "page": "InventoryDetailPage",
       "permission": "inventory:view"
     },
 
     {
       "path": "manufacturing",
-      "redirect": "/manufacturing/tracking"
+      "redirect": "/manufacturing/jobs"
     },
     {
       "path": "manufacturing/tracking",
-      "page": "ProductionTrackingPage",
-      "permission": "manufacturing:view"
+      "redirect": "/manufacturing/jobs"
     },
     {
       "path": "manufacturing/ready-to-ship",
@@ -276,8 +335,7 @@
     },
     {
       "path": "manufacturing/board",
-      "page": "ProductionBoardPage",
-      "permission": "manufacturing:view"
+      "redirect": "/manufacturing/jobs"
     },
     {
       "path": "manufacturing/material-requirements",
@@ -355,6 +413,41 @@
     },
 
     {
+      "path": "configuration",
+      "page": "ConfigurationHubPage"
+    },
+    {
+      "path": "configuration/units",
+      "page": "UnitsOfMeasurePage",
+      "permission": "inventory:view"
+    },
+    {
+      "path": "configuration/warehouses",
+      "page": "WarehousesPage",
+      "permission": "inventory:view"
+    },
+    {
+      "path": "configuration/categories",
+      "page": "CategoriesPage",
+      "permission": "categories:view"
+    },
+    {
+      "path": "configuration/brands",
+      "page": "BrandsPage",
+      "permission": "products:view"
+    },
+    {
+      "path": "configuration/workflows",
+      "page": "WorkflowsPage",
+      "permission": "settings:view"
+    },
+    {
+      "path": "configuration/settings",
+      "page": "SystemSettingsPage",
+      "permission": "settings:view"
+    },
+
+    {
       "path": "admin",
       "redirect": "/admin/users"
     },
@@ -390,13 +483,7 @@
     },
     {
       "path": "admin/settings",
-      "page": "SystemSettingsPage",
-      "permission": "settings:view"
-    },
-    {
-      "path": "admin/notifications",
-      "page": "NotificationSettingsPage",
-      "permission": "settings:view"
+      "redirect": "/configuration/settings"
     },
     {
       "path": "admin/audit-logs",

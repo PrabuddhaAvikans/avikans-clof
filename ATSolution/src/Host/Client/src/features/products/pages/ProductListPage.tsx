@@ -32,14 +32,18 @@ import {
 import { ROUTES } from "@/app/config/routes";
 import { useBrands } from "@/features/products/hooks/useBrands";
 import { useCategories } from "@/features/products/hooks/useCategories";
+import { DuplicateProductModal } from "@/features/products/components/DuplicateProductModal";
 import {
-  useCreateProduct,
   useDeleteProduct,
   useProducts,
   useUpdateProduct,
 } from "@/features/products/hooks/useProducts";
 import { formatCurrency, formatDate } from "@/lib/format";
-import type { Product } from "@/types/product";
+import { getProductScopeLabel, isDefaultCatalogProduct } from "@/lib/productOwner";
+import { getCurrentVersion } from "@/lib/productVersion";
+import { ProductVersionStatusBadge } from "@/features/products/components/ProductVersionStatusBadge";
+import type { Product, ProductTypeValue } from "@/types/product";
+import { ProductTypeLabels } from "@/types/product";
 import type { EntityStatus } from "@/types/common";
 import type { StockStatusValue } from "@/types/status";
 
@@ -85,6 +89,8 @@ export function ProductListPage() {
   const [draftFilters, setDraftFilters] = useState<ProductFilters>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState<ProductFilters>(defaultFilters);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<Product | null>(null);
 
   const apiFilters = {
     page: 1,
@@ -100,7 +106,6 @@ export function ProductListPage() {
   const { data: brandsData } = useBrands({ page: 1, pageSize: 200 });
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
-  const createProduct = useCreateProduct();
 
   const filteredProducts = useMemo(() => {
     let items = data?.items ?? [];
@@ -138,23 +143,9 @@ export function ProductListPage() {
     return items;
   }, [data?.items, appliedFilters]);
 
-  const handleDuplicate = async (product: Product) => {
-    await createProduct.mutateAsync({
-      sku: `${product.sku}-COPY`,
-      name: `${product.name} (Copy)`,
-      description: product.description,
-      categoryId: product.categoryId,
-      brandId: product.brandId,
-      basePrice: product.basePrice,
-      costPrice: product.costPrice,
-      status: "inactive",
-      attributes: product.attributes.map(({ name, value, unit }) => ({ name, value, unit })),
-      leadTimeDays: product.leadTimeDays,
-      minOrderQuantity: product.minOrderQuantity,
-      tags: [...product.tags],
-      weightKg: product.weightKg,
-      dimensions: product.dimensions,
-    });
+  const openDuplicateModal = (product: Product) => {
+    setDuplicateSource(product);
+    setDuplicateOpen(true);
   };
 
   const columns = useMemo<ColumnDef<Product, unknown>[]>(
@@ -175,7 +166,7 @@ export function ProductListPage() {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <span className="text-xs text-muted-foreground">—</span>
+                <span className="text-xs text-muted-foreground">-</span>
               )}
             </div>
           );
@@ -198,7 +189,36 @@ export function ProductListPage() {
       },
       { accessorKey: "sku", header: "SKU" },
       { accessorKey: "categoryName", header: "Category" },
-      { accessorKey: "brandName", header: "Brand" },
+      {
+        id: "scope",
+        header: "Customer",
+        cell: ({ row }) => (
+          <StatusBadge
+            variant={isDefaultCatalogProduct(row.original) ? "neutral" : "info"}
+            size="sm"
+          >
+            {getProductScopeLabel(row.original)}
+          </StatusBadge>
+        ),
+      },
+      {
+        id: "productType",
+        header: "Type",
+        cell: ({ row }) => ProductTypeLabels[row.original.productType],
+      },
+      {
+        id: "version",
+        header: "Version",
+        cell: ({ row }) => {
+          const version = getCurrentVersion(row.original);
+          return (
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium">{version.label}</span>
+              <ProductVersionStatusBadge status={version.status} dot />
+            </div>
+          );
+        },
+      },
       {
         accessorKey: "basePrice",
         header: "Base Price",
@@ -270,7 +290,7 @@ export function ProductListPage() {
               label: "Duplicate",
               icon: <Copy className="h-4 w-4" />,
               primary: true,
-              onClick: () => void handleDuplicate(product),
+              onClick: () => openDuplicateModal(product),
             },
             {
               id: "toggle-status",
@@ -295,7 +315,7 @@ export function ProductListPage() {
         },
       },
     ],
-    [navigate, updateProduct, createProduct],
+    [navigate, updateProduct],
   );
 
   const handleDelete = async () => {
@@ -329,9 +349,6 @@ export function ProductListPage() {
           <>
             <Button variant="outline" leftIcon={<Upload className="h-4 w-4" />}>
               Import
-            </Button>
-            <Button variant="outline" leftIcon={<Download className="h-4 w-4" />}>
-              Export
             </Button>
             <Link to={ROUTES.products.new}>
               <Button leftIcon={<Plus className="h-4 w-4" />}>Add Product</Button>
@@ -466,6 +483,19 @@ export function ProductListPage() {
         confirmLabel="Delete"
         variant="danger"
         loading={deleteProduct.isPending}
+      />
+
+      <DuplicateProductModal
+        open={duplicateOpen}
+        product={duplicateSource}
+        onClose={() => {
+          setDuplicateOpen(false);
+          setDuplicateSource(null);
+        }}
+        onCreated={(created) => {
+          void refetch();
+          navigate(ROUTES.products.edit(created.id));
+        }}
       />
     </PageContainer>
   );

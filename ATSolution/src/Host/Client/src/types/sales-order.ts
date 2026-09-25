@@ -1,4 +1,5 @@
 import type { Address } from "@/types/common";
+import type { QuotationProductCustomization } from "@/types/quotation";
 import type {
   PaymentStatusValue,
   PriorityValue,
@@ -11,6 +12,8 @@ export interface SalesOrderLineItem {
   productSku: string;
   productName: string;
   description?: string;
+  productVersionId?: string;
+  productVersionLabel?: string;
   quantity: number;
   unitPrice: number;
   discountPercent: number;
@@ -18,6 +21,9 @@ export interface SalesOrderLineItem {
   lineTotal: number;
   quantityDelivered: number;
   quantityInManufacturing: number;
+  isCustomized?: boolean;
+  customization?: QuotationProductCustomization;
+  requiresManufacturing?: boolean;
 }
 
 export interface SalesOrder {
@@ -28,6 +34,7 @@ export interface SalesOrder {
   customerEmail: string;
   quotationId?: string;
   quotationNumber?: string;
+  costingRequestId?: string;
   status: SalesOrderStatusValue;
   priority: PriorityValue;
   lineItems: SalesOrderLineItem[];

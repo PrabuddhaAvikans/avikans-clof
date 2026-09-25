@@ -25,8 +25,11 @@ export interface Customer {
   type: CustomerTypeValue;
   email: string;
   phone: string;
-  billingAddress: Address;
-  shippingAddress?: Address;
+  billingAddresses: Address[];
+  activeBillingAddressIndex: number;
+  deliverySameAsBilling: boolean;
+  shippingAddresses?: Address[];
+  activeShippingAddressIndex?: number;
   contactPersons: ContactPerson[];
   taxId?: string;
   creditLimit?: number;

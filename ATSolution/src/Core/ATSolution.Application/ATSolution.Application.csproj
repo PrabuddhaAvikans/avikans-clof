@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\SharedKernel\ATSolution.SharedKernel\ATSolution.SharedKernel.csproj" />
     <ProjectReference Include="..\ATSolution.Domain\ATSolution.Domain.csproj" />
   </ItemGroup>
 

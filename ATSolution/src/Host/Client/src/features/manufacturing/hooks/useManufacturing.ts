@@ -6,7 +6,8 @@ import type {
   ManufacturingJobFormData,
   ManufacturingListFilters,
 } from "@/services";
-import type { ManufacturingJob } from "@/types/manufacturing";
+import type { ManufacturingJob, ManufacturingTaskAction, ProductionCompletionInput } from "@/types/manufacturing";
+import type { ActiveSessionSwitch } from "@/types/employee-work";
 import type { PaginatedResponse } from "@/types/common";
 
 export function useManufacturingJobs(filters: ManufacturingListFilters) {
@@ -59,8 +60,54 @@ export function useStartManufacturingJob() {
 }
 
 export function useCompleteManufacturingJob() {
-  return useEpicMutation<string, ManufacturingJob>({
+  return useEpicMutation<
+    { id: string; completion?: ProductionCompletionInput },
+    ManufacturingJob
+  >({
     request: manufacturingActions.completeRequest,
     selectMutation: (state: RootState) => state.manufacturing.complete,
+  });
+}
+
+export function useHoldManufacturingJob() {
+  return useEpicMutation<{ id: string; reason?: string }, ManufacturingJob>({
+    request: manufacturingActions.holdRequest,
+    selectMutation: (state: RootState) => state.manufacturing.hold,
+  });
+}
+
+export function useManufacturingTaskAction() {
+  return useEpicMutation<
+    { id: string; action: ManufacturingTaskAction },
+    ManufacturingJob
+  >({
+    request: manufacturingActions.taskActionRequest,
+    selectMutation: (state: RootState) => state.manufacturing.taskAction,
+  });
+}
+
+export function useBulkCompleteManufacturingTasks() {
+  return useEpicMutation<
+    {
+      id: string;
+      tasks?: {
+        taskId: string;
+        completedQuantity?: number;
+        rejectedQuantity?: number;
+        wasteQuantity?: number;
+        contributors?: import("@/types/manufacturing").TaskContributorInput[];
+        actualHours?: number;
+        normalOvertimeHours?: number;
+        doubleOvertimeHours?: number;
+        notes?: string;
+      }[];
+      taskIds?: string[];
+      notes?: string;
+      activeSessionSwitch?: ActiveSessionSwitch;
+    },
+    ManufacturingJob
+  >({
+    request: manufacturingActions.bulkCompleteRequest,
+    selectMutation: (state: RootState) => state.manufacturing.bulkComplete,
   });
 }

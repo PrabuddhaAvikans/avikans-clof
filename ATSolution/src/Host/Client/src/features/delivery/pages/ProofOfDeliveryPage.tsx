@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, PenLine } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageHeader } from "@/components/feedback/PageHeader";
 import { PageContent } from "@/components/feedback/PageStates";
@@ -65,7 +65,7 @@ export function ProofOfDeliveryPage() {
     <PageContainer>
       <PageHeader
         title="Proof of Delivery"
-        description={delivery ? `${delivery.deliveryNumber} — ${delivery.customerName}` : undefined}
+        description={delivery ? `${delivery.deliveryNumber} - ${delivery.customerName}` : undefined}
         breadcrumbs={[
           { label: "Delivery", href: ROUTES.deliveries.list },
           { label: delivery?.deliveryNumber ?? "Proof" },

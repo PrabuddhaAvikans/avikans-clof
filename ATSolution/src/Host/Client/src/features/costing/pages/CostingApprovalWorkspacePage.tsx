@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Check,
   ChevronDown,
@@ -7,10 +7,9 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
-  Send,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/feedback/PageHeader";
@@ -40,6 +39,8 @@ const STATUS_OPTIONS = Object.entries(CostingRequestStatus).map(([value, def]) =
 
 export function CostingApprovalWorkspacePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const salesOrderIdParam = searchParams.get("salesOrderId");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -53,6 +54,7 @@ export function CostingApprovalWorkspacePage() {
     pageSize,
     search: search || undefined,
     status: appliedStatus || undefined,
+    salesOrderId: salesOrderIdParam || undefined,
   });
 
   const { data: selectedRequest, isLoading: isDetailLoading } = useCostingRequest(
@@ -82,6 +84,7 @@ export function CostingApprovalWorkspacePage() {
   const canDecide = useMemo(
     () =>
       activeRequest &&
+      activeRequest.coatingStatus !== "pending" &&
       (activeRequest.status === "pending" ||
         activeRequest.status === "in_review" ||
         activeRequest.status === "changes_requested"),
@@ -174,7 +177,7 @@ export function CostingApprovalWorkspacePage() {
     <PageContainer maxWidth="full" className="py-3">
       <PageHeader
         title="Costing & Approval Workspace"
-        description="Review costing estimates, validate margins, and manage multi-level approvals."
+        description="Sales order generates a BOM estimation automatically. Approve costing here before the order can be confirmed."
         className="mb-2"
         actions={
           <>
@@ -182,22 +185,9 @@ export function CostingApprovalWorkspacePage() {
               variant="primary"
               size="sm"
               leftIcon={<Plus className="h-4 w-4" />}
-              onClick={() => navigate(ROUTES.quotations.new)}
+              onClick={() => navigate(ROUTES.estimation.workspace)}
             >
-              Create Quotation
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<Send className="h-4 w-4" />}
-              disabled={!canDecide}
-              onClick={() => {
-                if (selectedId) {
-                  toast.info("Submitted for approval workflow");
-                }
-              }}
-            >
-              Submit for Approval
+              Product Estimation
             </Button>
             <Button
               variant="success"
@@ -255,6 +245,26 @@ export function CostingApprovalWorkspacePage() {
                     }}
                   >
                     View all quotations
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      navigate(ROUTES.estimation.workspace);
+                    }}
+                  >
+                    Product estimation
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      navigate(ROUTES.salesOrders.list);
+                    }}
+                  >
+                    Sales orders
                   </button>
                 </div>
               )}

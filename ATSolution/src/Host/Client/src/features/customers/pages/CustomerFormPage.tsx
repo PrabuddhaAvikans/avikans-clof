@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useFormikContext } from "formik";
+import { CustomerAddressManager } from "@/features/customers/components/CustomerAddressManager";
+import {
+  isAddressDraft,
+  resolveActiveSavedIndex,
+} from "@/features/customers/utils/customerAddressUtils";
 import { ArrowLeft, Save } from "lucide-react";
 import { ROUTES } from "@/app/config/routes";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -26,15 +31,12 @@ import {
   useUpdateCustomer,
 } from "@/features/customers/hooks/useCustomers";
 import { CUSTOMER_TYPE_OPTIONS } from "@/features/shared/components/CustomerSelectorModal";
-import { COUNTRY_OPTIONS, DEFAULT_COUNTRY } from "@/lib/countries";
+import { DEFAULT_COUNTRY } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import type { CustomerFormData } from "@/services";
 
 const TABS = [
   { id: "overview", label: "Overview" },
-  { id: "contact", label: "Contact Person" },
-  { id: "addresses", label: "Addresses" },
-  { id: "tax", label: "Tax & Credit" },
   { id: "notes", label: "Notes" },
 ] as const;
 
@@ -42,15 +44,6 @@ const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
 ];
-
-const EMPTY_ADDRESS = {
-  line1: "",
-  line2: "",
-  city: "",
-  state: "",
-  postalCode: "",
-  country: DEFAULT_COUNTRY,
-};
 
 const defaultValues: CustomerFormValues = {
   code: "",
@@ -66,9 +59,11 @@ const defaultValues: CustomerFormValues = {
     phone: "",
     isPrimary: true,
   },
-  billingAddress: { ...EMPTY_ADDRESS },
+  billingAddresses: [],
+  activeBillingAddressIndex: 0,
   deliverySameAsBilling: true,
-  shippingAddress: { ...EMPTY_ADDRESS },
+  shippingAddresses: [],
+  activeShippingAddressIndex: 0,
   taxId: "",
   creditLimit: 0,
   paymentTermsDays: 30,
@@ -106,9 +101,7 @@ function SectionCard({
 }
 
 function toFormData(values: CustomerFormValues): CustomerFormData {
-  const shippingAddress = values.deliverySameAsBilling
-    ? values.billingAddress
-    : values.shippingAddress ?? values.billingAddress;
+  const shippingAddresses = values.shippingAddresses;
 
   const contactPerson = values.contactSameAsName
     ? {
@@ -120,14 +113,28 @@ function toFormData(values: CustomerFormValues): CustomerFormData {
       }
     : values.contactPerson;
 
+  const savedBilling = values.billingAddresses.filter((a) => !isAddressDraft(a));
+  const billingActiveIndex = resolveActiveSavedIndex(
+    values.billingAddresses,
+    values.activeBillingAddressIndex ?? 0,
+  );
+  const savedShipping = (shippingAddresses ?? []).filter((a) => !isAddressDraft(a));
+  const shippingActiveIndex = resolveActiveSavedIndex(
+    shippingAddresses ?? [],
+    values.activeShippingAddressIndex ?? 0,
+  );
+
   return {
     code: values.code,
     name: values.name,
     type: values.type,
     email: values.email,
     phone: values.phone,
-    billingAddress: values.billingAddress,
-    shippingAddress,
+    billingAddresses: savedBilling,
+    activeBillingAddressIndex: billingActiveIndex,
+    deliverySameAsBilling: values.deliverySameAsBilling,
+    shippingAddresses: savedShipping.length > 0 ? savedShipping : undefined,
+    activeShippingAddressIndex: values.deliverySameAsBilling ? undefined : shippingActiveIndex,
     contactPersons: [contactPerson],
     taxId: values.taxId || undefined,
     creditLimit: values.creditLimit,
@@ -202,46 +209,6 @@ function ContactPersonSection() {
   );
 }
 
-function AddressFields({ prefix }: { prefix: "billingAddress" | "shippingAddress" }) {
-  return (
-    <div className="grid gap-2 sm:grid-cols-2">
-      <FormikInput name={`${prefix}.line1`} label="Address Line 1" required className="sm:col-span-2" />
-      <FormikInput name={`${prefix}.line2`} label="Address Line 2" className="sm:col-span-2" />
-      <FormikInput name={`${prefix}.city`} label="City" required />
-      <FormikInput name={`${prefix}.state`} label="State / Province" required />
-      <FormikInput name={`${prefix}.postalCode`} label="Postal Code" required />
-      <FormikSelect
-        name={`${prefix}.country`}
-        label="Country"
-        options={[...COUNTRY_OPTIONS]}
-        required
-      />
-    </div>
-  );
-}
-
-function AddressesSection() {
-  const { values } = useFormikContext<CustomerFormValues>();
-
-  return (
-    <div className="space-y-3">
-      <SectionCard title="Billing Address">
-        <AddressFields prefix="billingAddress" />
-      </SectionCard>
-      <SectionCard title="Delivery Address">
-        <div className="mb-2">
-          <FormikCheckbox name="deliverySameAsBilling" label="Same as billing address" />
-        </div>
-        {!values.deliverySameAsBilling && <AddressFields prefix="shippingAddress" />}
-        {values.deliverySameAsBilling && (
-          <p className="text-[12px] text-muted-foreground">
-            Delivery will use the billing address.
-          </p>
-        )}
-      </SectionCard>
-    </div>
-  );
-}
 
 function TaxCreditSection() {
   return (
@@ -286,6 +253,35 @@ export function CustomerFormPage() {
     if (!customer) return defaultValues;
     const primary =
       customer.contactPersons.find((c) => c.isPrimary) ?? customer.contactPersons[0];
+
+    const normalizedBillingAddresses =
+      customer.billingAddresses.length > 0
+        ? customer.billingAddresses.map((addr) => ({
+            ...addr,
+            country: addr.country || DEFAULT_COUNTRY,
+          }))
+        : [];
+
+    const activeBillingAddressIndex = Math.min(
+      Math.max(customer.activeBillingAddressIndex ?? 0, 0),
+      normalizedBillingAddresses.length - 1,
+    );
+
+    const normalizedShippingAddresses =
+      (customer.shippingAddresses?.length ?? 0) > 0
+        ? (customer.shippingAddresses ?? []).map((addr) => ({
+            ...addr,
+            country: addr.country || DEFAULT_COUNTRY,
+          }))
+        : [];
+
+    const activeShippingAddressIndex = Math.min(
+      Math.max(customer.activeShippingAddressIndex ?? 0, 0),
+      Math.max(normalizedShippingAddresses.length - 1, 0),
+    );
+
+    const deliverySameAsBilling = customer.deliverySameAsBilling;
+
     return {
       code: customer.code,
       name: customer.name,
@@ -300,19 +296,11 @@ export function CustomerFormPage() {
         phone: primary?.phone ?? customer.phone,
         isPrimary: true,
       },
-      billingAddress: {
-        ...customer.billingAddress,
-        country: customer.billingAddress.country || DEFAULT_COUNTRY,
-      },
-      deliverySameAsBilling:
-        !customer.shippingAddress ||
-        JSON.stringify(customer.shippingAddress) === JSON.stringify(customer.billingAddress),
-      shippingAddress: customer.shippingAddress
-        ? {
-            ...customer.shippingAddress,
-            country: customer.shippingAddress.country || DEFAULT_COUNTRY,
-          }
-        : { ...EMPTY_ADDRESS },
+      billingAddresses: normalizedBillingAddresses,
+      activeBillingAddressIndex,
+      deliverySameAsBilling,
+      shippingAddresses: normalizedShippingAddresses,
+      activeShippingAddressIndex,
       taxId: customer.taxId ?? "",
       creditLimit: customer.creditLimit ?? 0,
       paymentTermsDays: customer.paymentTermsDays,
@@ -372,9 +360,6 @@ export function CustomerFormPage() {
                 breadcrumbs={[
                   { label: "Customers", href: ROUTES.customers.list },
                   { label: "Customer List", href: ROUTES.customers.list },
-                  {
-                    label: isEdit ? "Edit / Configure Customer" : "Add / Configure Customer",
-                  },
                 ]}
                 actions={
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -439,15 +424,13 @@ export function CustomerFormPage() {
 
                 <TabPanel value="overview" className="pt-3">
                   <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:col-span-9">
-                      <div className="space-y-3">
+                    <div className="space-y-3 xl:col-span-9">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                         <CustomerInfoSection />
                         <ContactPersonSection />
                       </div>
-                      <div className="space-y-3">
-                        <AddressesSection />
-                        <TaxCreditSection />
-                      </div>
+                      <CustomerAddressManager />
+                      <TaxCreditSection />
                     </div>
                     <div className="xl:col-span-3 xl:sticky xl:top-[72px] xl:self-start">
                       <CustomerFormPreview />
@@ -467,7 +450,7 @@ export function CustomerFormPage() {
                 <TabPanel value="addresses" className="pt-3">
                   <div className="grid gap-3 lg:grid-cols-3">
                     <div className="lg:col-span-2">
-                      <AddressesSection />
+                      <CustomerAddressManager />
                     </div>
                     <CustomerFormPreview />
                   </div>

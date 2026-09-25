@@ -1,34 +1,14 @@
-export const PRODUCTION_STAGES = [
-  "order_confirmed",
-  "material_ready",
-  "fabrication",
-  "coating",
-  "assembly",
-  "testing",
-  "qc",
-  "packed",
-] as const;
-
-export type ProductionStage = (typeof PRODUCTION_STAGES)[number];
-
-export const PRODUCTION_STAGE_LABELS: Record<ProductionStage, string> = {
-  order_confirmed: "Order Confirmed",
-  material_ready: "Material Ready",
-  fabrication: "Fabrication",
-  coating: "Coating",
-  assembly: "Assembly",
-  testing: "Testing",
-  qc: "QC",
-  packed: "Packed",
-};
-
-export type ProductionStageTaskStatus = "pending" | "in_progress" | "completed";
+import type { ManufacturingJobStatusValue, PriorityValue } from "@/types/status";
 
 export interface ProductionStageTask {
-  stage: ProductionStage;
-  status: ProductionStageTaskStatus;
+  id: string;
+  name: string;
+  sequence: number;
+  status: string;
+  plannedQuantity: number;
+  completedQuantity: number;
+  progressPercent: number;
   completedAt?: string;
-  notes?: string;
 }
 
 export interface ProductionJob {
@@ -38,22 +18,33 @@ export interface ProductionJob {
   productName: string;
   productSku: string;
   productImageUrl?: string;
+  customerName: string;
   quantity: number;
+  priority: PriorityValue;
+  currentTaskName: string;
   line: string;
   supervisorId: string;
   supervisorName: string;
   startDate: string;
   dueDate: string;
   completionPercent: number;
-  status: ProductionStage | "on_hold";
+  status: ManufacturingJobStatusValue;
   statusLabel: string;
+  completedAt?: string;
   stages: ProductionStageTask[];
   materialIssued: number;
   materialConsumed: number;
   materialUnit: string;
+  materialsReady: boolean;
   blockers: string[];
   laborHours: number;
+  overtimeHours: number;
+  normalOvertimeHours: number;
+  doubleOvertimeHours: number;
   laborCost: number;
+  overtimeCost: number;
+  estimatedCost: number;
+  actualCost: number;
   qualityOpen: number;
   qualityClosed: number;
   elapsedHours: number;
@@ -68,14 +59,10 @@ export interface ProductionKpis {
   onHoldTrend: number;
   inQualityCheck: number;
   inQualityCheckTrend: number;
+  delayedJobs: number;
+  delayedJobsTrend: number;
   readyToShip: number;
   readyToShipTrend: number;
-}
-
-export interface PipelineStageCount {
-  stage: ProductionStage;
-  label: string;
-  count: number;
 }
 
 export interface TimelineBlock {
@@ -83,27 +70,15 @@ export interface TimelineBlock {
   jobId: string;
   jobNumber: string;
   line: string;
-  stage: ProductionStage;
   label: string;
   startHour: number;
   endHour: number;
 }
 
-export interface OverdueMilestone {
-  id: string;
-  jobId: string;
-  jobNumber: string;
-  stage: ProductionStage;
-  label: string;
-  overdueDays: number;
-}
-
 export interface ProductionTrackingSnapshot {
   kpis: ProductionKpis;
-  pipeline: PipelineStageCount[];
   jobs: ProductionJob[];
   timeline: TimelineBlock[];
-  overdue: OverdueMilestone[];
   lines: string[];
   supervisors: { id: string; name: string }[];
 }

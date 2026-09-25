@@ -1,5 +1,5 @@
 import { from, of } from "rxjs";
-import { catchError, filter, mergeMap, switchMap } from "rxjs/operators";
+import { catchError, filter, groupBy, mergeMap, switchMap } from "rxjs/operators";
 import type { ActionCreatorWithPayload, UnknownAction } from "@reduxjs/toolkit";
 import type { Epic } from "redux-observable";
 import { rejectDeferred, resolveDeferred } from "@/app/store/async/deferred";
@@ -32,9 +32,7 @@ type AsyncEpicOptions<TArg, TData> = {
   success: ActionCreatorWithPayload<SuccessPayload<TData>>;
   failure: ActionCreatorWithPayload<FailurePayload>;
   handler: (arg: TArg) => Promise<TData>;
-  /** Prefer switchMap for queries (cancel in-flight); mergeMap for mutations. */
   mode?: "switch" | "merge";
-  /** Extra actions to emit after a successful response. */
   onSuccess?: (data: TData, arg: TArg) => UnknownAction[];
 };
 
@@ -46,29 +44,34 @@ export function createAsyncEpic<TArg, TData>(
   return (action$) =>
     action$.pipe(
       filter(options.request.match),
-      flatten((action) => {
-        const { arg, key, requestId } = action.payload;
-        return from(options.handler(arg)).pipe(
-          mergeMap((data) => {
-            resolveDeferred(requestId, data);
-            const actions: UnknownAction[] = [
-              options.success({ data, key, requestId, arg }),
-              ...(options.onSuccess?.(data, arg) ?? []),
-            ];
-            return of(...actions);
-          }),
-          catchError((error: unknown) => {
-            rejectDeferred(requestId, error);
-            return of(
-              options.failure({
-                error: toErrorMessage(error),
-                key,
-                requestId,
-                arg,
+      groupBy((action) => action.payload.key ?? "__default__"),
+      mergeMap((group$) =>
+        group$.pipe(
+          flatten((action) => {
+            const { arg, key, requestId } = action.payload;
+            return from(options.handler(arg)).pipe(
+              mergeMap((data) => {
+                resolveDeferred(requestId, data);
+                const actions: UnknownAction[] = [
+                  options.success({ data, key, requestId, arg }),
+                  ...(options.onSuccess?.(data, arg) ?? []),
+                ];
+                return of(...actions);
+              }),
+              catchError((error: unknown) => {
+                rejectDeferred(requestId, error);
+                return of(
+                  options.failure({
+                    error: toErrorMessage(error),
+                    key,
+                    requestId,
+                    arg,
+                  }),
+                );
               }),
             );
           }),
-        );
-      }),
+        ),
+      ),
     );
 }

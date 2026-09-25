@@ -39,28 +39,18 @@ public sealed class IdentityController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<UserResponseDto>> CreateUser(CreateUserRequestDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UserResponseDto>> CreateUser(
+        CreateUserRequestDto request,
+        CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
+        var user = await _identityService.CreateUserAsync(
+            _mapper.Map<CreateUserCommand>(request),
+            cancellationToken);
 
-        try
-        {
-            var user = await _identityService.CreateUserAsync(
-                _mapper.Map<CreateUserCommand>(request),
-                cancellationToken);
-
-            return CreatedAtAction(
-                nameof(GetUserByEmail),
-                new { email = user.Email },
-                _mapper.Map<UserResponseDto>(user));
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Conflict(ApiResponse.Failed(exception.Message));
-        }
+        return CreatedAtAction(
+            nameof(GetUserByEmail),
+            new { email = user.Email },
+            _mapper.Map<UserResponseDto>(user));
     }
 
     [HttpPut(ApiRoutes.Identity.EmailRoute)]
@@ -69,24 +59,14 @@ public sealed class IdentityController : ControllerBase
         UpdateUserRequestDto request,
         CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
+        var command = _mapper.Map<UpdateUserCommand>(request) with
         {
-            return ValidationProblem(ModelState);
-        }
+            CurrentEmail = email
+        };
 
-        try
-        {
-            var user = await _identityService.UpdateUserAsync(
-                email,
-                _mapper.Map<UpdateUserCommand>(request),
-                cancellationToken);
+        var user = await _identityService.UpdateUserAsync(command, cancellationToken);
 
-            return user is null ? NotFound() : Ok(_mapper.Map<UserResponseDto>(user));
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Conflict(ApiResponse.Failed(exception.Message));
-        }
+        return Ok(_mapper.Map<UserResponseDto>(user));
     }
 
     [HttpPatch(ApiRoutes.Identity.EmailRoute)]
@@ -95,40 +75,20 @@ public sealed class IdentityController : ControllerBase
         PatchUserRequestDto request,
         CancellationToken cancellationToken)
     {
-        if (request.FirstName is null && request.LastName is null && request.Email is null)
+        var command = _mapper.Map<PatchUserCommand>(request) with
         {
-            return BadRequest(ApiResponse.Failed(IdentityMessages.PartialUpdateRequiresField));
-        }
+            CurrentEmail = email
+        };
 
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
+        var user = await _identityService.PatchUserAsync(command, cancellationToken);
 
-        try
-        {
-            var user = await _identityService.PatchUserAsync(
-                email,
-                _mapper.Map<PatchUserCommand>(request),
-                cancellationToken);
-
-            return user is null ? NotFound() : Ok(_mapper.Map<UserResponseDto>(user));
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Conflict(ApiResponse.Failed(exception.Message));
-        }
+        return Ok(_mapper.Map<UserResponseDto>(user));
     }
 
     [HttpDelete(ApiRoutes.Identity.EmailRoute)]
     public async Task<ActionResult<ApiResponse>> DeleteUser(string email, CancellationToken cancellationToken)
     {
-        var deleted = await _identityService.DeleteUserAsync(email, cancellationToken);
-
-        if (!deleted)
-        {
-            return NotFound(ApiResponse.Failed(string.Format(IdentityMessages.UserNotFoundByEmail, email)));
-        }
+        await _identityService.DeleteUserAsync(new DeleteUserCommand(email), cancellationToken);
 
         return Ok(ApiResponse.Succeeded(IdentityMessages.UserDeletedSuccessfully));
     }

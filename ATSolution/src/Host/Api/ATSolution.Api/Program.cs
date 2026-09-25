@@ -1,9 +1,14 @@
+using ATSolution.Api.Exceptions;
 using ATSolution.Api.Extensions;
 using ATSolution.Application;
 using ATSolution.Infrastructure;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddExceptionHandler<GlobalExceptionHandler>()
+    .AddProblemDetails();
 
 builder.Services
     .AddApplication()
@@ -13,6 +18,8 @@ builder.Services
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

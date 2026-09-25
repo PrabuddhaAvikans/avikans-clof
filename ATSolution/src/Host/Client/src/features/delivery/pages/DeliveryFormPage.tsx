@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useFormikContext } from "formik";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageHeader } from "@/components/feedback/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -45,6 +45,7 @@ function SalesOrderItemsSync() {
       void setFieldValue("items", []);
       return;
     }
+    void setFieldValue("priority", selectedOrder.priority);
     void setFieldValue(
       "items",
       selectedOrder.lineItems.map((item) => ({
@@ -134,7 +135,7 @@ export function DeliveryFormPage() {
       createDeliveryFormSections({
         salesOrderOptions: (salesOrders?.items ?? []).map((o) => ({
           value: o.id,
-          label: `${o.orderNumber} — ${o.customerName}`,
+          label: `${o.orderNumber} - ${o.customerName}`,
         })),
         driverOptions: (users?.items ?? []).map((u) => ({
           value: u.id,

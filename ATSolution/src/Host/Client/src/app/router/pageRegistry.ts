@@ -1,7 +1,6 @@
 import type { ComponentType } from "react";
 import {
   AuditLogsPage,
-  NotificationSettingsPage,
   PermissionsPage,
   RoleGroupsPage,
   RolesPage,
@@ -16,7 +15,10 @@ import {
   CustomerGroupsPage,
   CustomerListPage,
 } from "@/features/customers/pages/CustomerPages";
+import { ConfigurationHubPage } from "@/features/configuration/pages/ConfigurationHubPage";
+import { WorkflowsPage } from "@/features/configuration/pages/WorkflowsPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
+import { ReportsHubPage, ReportViewerPage } from "@/features/reports/pages/ReportsPages";
 import {
   DeliveryCalendarPage,
   DeliveryDetailPage,
@@ -26,20 +28,24 @@ import {
   ProofOfDeliveryPage,
 } from "@/features/delivery/pages/DeliveryPages";
 import {
+  InventoryDetailPage,
   InventoryFormPage,
   InventoryListPage,
   LowStockPage,
   StockMovementsPage,
   StockOverviewPage,
   UnitsOfMeasurePage,
+  WarehousesPage,
 } from "@/features/inventory/pages/InventoryPages";
+import {
+  ReprocessingBatchDetailPage,
+  ReprocessingBatchesPage,
+} from "@/features/reprocessing/pages/ReprocessingPages";
 import {
   ManufacturingJobDetailPage,
   ManufacturingJobFormPage,
   ManufacturingJobsPage,
   MaterialRequirementsPage,
-  ProductionBoardPage,
-  ProductionTrackingPage,
   QualityInspectionPage,
   ReadyToShipPage,
   WorkOrdersPage,
@@ -64,21 +70,36 @@ import {
   InvoicesPage,
   PaymentsPage,
 } from "@/features/sales/pages/SalesPages";
+import { FinanceInvoicesPage, FinanceCreditNotesPage } from "@/features/finance/pages/FinancePages";
+import {
+  DayCloseWorkspacePage,
+  MonthlyCloseWorkspacePage,
+} from "@/features/period-close/pages/PeriodClosePages";
 import { CostingApprovalWorkspacePage } from "@/features/costing/pages/CostingApprovalWorkspacePage";
+import { EstimationWorkspacePage } from "@/features/costing/pages/EstimationWorkspacePage";
 import { NotFoundPage } from "@/features/shared/pages/NotFoundPage";
 
 export const PAGE_REGISTRY = {
   DashboardPage,
+  ConfigurationHubPage,
+  WorkflowsPage,
+  ReportsHubPage,
+  ReportViewerPage,
   QuotationWorkspacePage,
   EstimateFormPage,
   QuotationPreviewPage,
   CostingApprovalWorkspacePage,
+  EstimationWorkspacePage,
   SalesOrderWorkspacePage,
   SalesOrderFormPage,
   SalesOrderReviewPage,
   SalesOrderDetailPage,
   PaymentsPage,
   InvoicesPage,
+  FinanceInvoicesPage,
+  FinanceCreditNotesPage,
+  DayCloseWorkspacePage,
+  MonthlyCloseWorkspacePage,
   CustomerListPage,
   CustomerFormPage,
   CustomerGroupsPage,
@@ -92,18 +113,20 @@ export const PAGE_REGISTRY = {
   PriceListsPage,
   ProductDetailPage,
   InventoryListPage,
+  InventoryDetailPage,
   InventoryFormPage,
   StockOverviewPage,
   StockMovementsPage,
   LowStockPage,
   UnitsOfMeasurePage,
-  ProductionTrackingPage,
+  WarehousesPage,
+  ReprocessingBatchesPage,
+  ReprocessingBatchDetailPage,
   ReadyToShipPage,
   ManufacturingJobFormPage,
   ManufacturingJobDetailPage,
   ManufacturingJobsPage,
   WorkOrdersPage,
-  ProductionBoardPage,
   MaterialRequirementsPage,
   QualityInspectionPage,
   DeliveryListPage,
@@ -118,7 +141,6 @@ export const PAGE_REGISTRY = {
   RoleGroupsPage,
   PermissionsPage,
   SystemSettingsPage,
-  NotificationSettingsPage,
   AuditLogsPage,
   NotFoundPage,
 } as const satisfies Record<string, ComponentType>;

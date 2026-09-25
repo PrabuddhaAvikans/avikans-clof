@@ -12,6 +12,7 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown, Columns3 } from 'lucide-react';
+import { getNodeText } from '@/lib/hoverTitle';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Pagination } from '@/components/ui/Pagination';
@@ -26,12 +27,13 @@ export type DataTableProps<TData> = {
   enableColumnVisibility?: boolean;
   bulkActions?: (selectedRows: TData[]) => ReactNode;
   renderMobileCard?: (row: Row<TData>) => ReactNode;
-  /** Always show the table with horizontal scroll (skip mobile card stacking). */
   forceTable?: boolean;
   density?: 'comfortable' | 'compact';
   className?: string;
   emptyMessage?: string;
   getRowId?: (row: TData) => string;
+  onRowClick?: (row: TData) => void;
+  getRowClassName?: (row: TData) => string | undefined;
 };
 
 export function DataTable<TData>({
@@ -48,6 +50,8 @@ export function DataTable<TData>({
   className,
   emptyMessage = 'No results found',
   getRowId,
+  onRowClick,
+  getRowClassName,
 }: DataTableProps<TData>) {
   const useMobileCards = Boolean(renderMobileCard) && !forceTable;
   const isCompact = density === 'compact';
@@ -166,7 +170,6 @@ export function DataTable<TData>({
         </div>
       )}
 
-      {/* Table — horizontal scroll on narrow viewports instead of stacked cards when forceTable */}
       <div
         className={cn(
           'overflow-hidden rounded-md border border-border bg-card',
@@ -182,6 +185,9 @@ export function DataTable<TData>({
                     const canSort = enableSorting && header.column.getCanSort();
                     const sorted = header.column.getIsSorted();
 
+                    const headerContent = flexRender(header.column.columnDef.header, header.getContext());
+                    const headerLabel = getNodeText(headerContent) ?? header.id;
+
                     return (
                       <th
                         key={header.id}
@@ -189,14 +195,22 @@ export function DataTable<TData>({
                           headerPad,
                           'whitespace-nowrap text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground',
                         )}
+                        title={headerLabel}
                       >
                         {header.isPlaceholder ? null : canSort ? (
                           <button
                             type="button"
                             className="inline-flex items-center gap-1 hover:text-foreground"
+                            title={
+                              sorted === 'asc'
+                                ? `Sort ${headerLabel} descending`
+                                : sorted === 'desc'
+                                  ? `Clear sort on ${headerLabel}`
+                                  : `Sort by ${headerLabel}`
+                            }
                             onClick={header.column.getToggleSortingHandler()}
                           >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {headerContent}
                             {sorted === 'asc' ? (
                               <ArrowUp className="h-3.5 w-3.5" />
                             ) : sorted === 'desc' ? (
@@ -206,7 +220,7 @@ export function DataTable<TData>({
                             )}
                           </button>
                         ) : (
-                          flexRender(header.column.columnDef.header, header.getContext())
+                          headerContent
                         )}
                       </th>
                     );
@@ -228,16 +242,26 @@ export function DataTable<TData>({
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
+                    onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                     className={cn(
                       'border-b border-border last:border-0 hover:bg-muted/40',
+                      onRowClick && 'cursor-pointer',
                       row.getIsSelected() && 'bg-muted',
+                      getRowClassName?.(row.original),
                     )}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className={cn(cellPad, 'whitespace-nowrap text-foreground')}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const cellContent = flexRender(cell.column.columnDef.cell, cell.getContext());
+                      return (
+                        <td
+                          key={cell.id}
+                          className={cn(cellPad, 'whitespace-nowrap text-foreground')}
+                          title={getNodeText(cellContent)}
+                        >
+                          {cellContent}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))
               )}
@@ -246,7 +270,6 @@ export function DataTable<TData>({
         </div>
       </div>
 
-      {/* Optional mobile card view */}
       {useMobileCards && renderMobileCard && (
         <div className="space-y-2 md:hidden">
           {table.getRowModel().rows.length === 0 ? (
@@ -255,9 +278,12 @@ export function DataTable<TData>({
             table.getRowModel().rows.map((row) => (
               <div
                 key={row.id}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 className={cn(
                   'rounded-md border border-border bg-card p-3',
+                  onRowClick && 'cursor-pointer',
                   row.getIsSelected() && 'ring-1 ring-foreground/20',
+                  getRowClassName?.(row.original),
                 )}
               >
                 {enableRowSelection && (

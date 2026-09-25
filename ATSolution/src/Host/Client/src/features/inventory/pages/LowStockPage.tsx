@@ -23,7 +23,7 @@ export function LowStockPage() {
     () => [
       { accessorKey: "sku", header: "SKU" },
       { accessorKey: "name", header: "Item" },
-      { accessorKey: "location", header: "Location" },
+      { accessorKey: "warehouse", header: "Warehouse" },
       {
         accessorKey: "quantityAvailable",
         header: "Available",
@@ -108,10 +108,3 @@ export function StockOverviewPage() {
   return <LowStockPage />;
 }
 
-export function UnitsOfMeasurePage() {
-  return (
-    <PageContainer>
-      <PageHeader title="Units of Measure" description="Configure measurement units." />
-    </PageContainer>
-  );
-}

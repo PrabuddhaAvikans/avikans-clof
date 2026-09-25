@@ -1,3 +1,4 @@
+using ATSolution.Api.Exceptions;
 using ATSolution.SharedKernel.Modularity;
 using Identity.Api;
 
@@ -13,7 +14,9 @@ internal static class HostModuleExtensions
             configuration,
             typeof(IdentityModule).Assembly);
 
-        services.AddControllers()
+        services.AddSingleton<ApplicationExceptionFilter>();
+        services.AddControllers(options =>
+                options.Filters.Add<ApplicationExceptionFilter>())
             .AddApplicationPart(typeof(IdentityModule).Assembly);
 
         return services;

@@ -1,70 +1,451 @@
-import type { ManufacturingJob } from "@/types/manufacturing";
+import type {
+  ManufacturingJob,
+  ManufacturingTask,
+  ManufacturingTaskHistoryEntry,
+  ManufacturingTaskStatus,
+  TaskContributor,
+} from "@/types/manufacturing";
+import {
+  createHistoryEntry,
+  isQcOperation,
+  isTestingOperation,
+  refreshJobDerivedFields,
+} from "@/lib/manufacturingTasks";
+import { applyUnitsToTask, ensureTaskUnits } from "@/lib/taskUnits";
 
-export const initialManufacturingJobs: ManufacturingJob[] = [
+const ACTOR = { userId: "usr-004", userName: "Nuwan Wickramasinghe" };
+
+type TaskSeed = {
+  id: string;
+  name: string;
+  sequence: number;
+  description?: string;
+  workstation?: string;
+  machineName?: string;
+  estimatedHours: number;
+  actualHours?: number;
+  overtimeHours?: number;
+  normalOvertimeHours?: number;
+  doubleOvertimeHours?: number;
+  labourCostRate?: number;
+  machineCost?: number;
+  status: ManufacturingTaskStatus;
+  assignedTo?: string;
+  assignedToName?: string;
+  operatorId?: string;
+  operatorName?: string;
+  contributors?: TaskContributor[];
+  startedAt?: string;
+  completedAt?: string;
+  plannedQuantity: number;
+  completedQuantity?: number;
+  rejectedQuantity?: number;
+  reworkQuantity?: number;
+  isRequired?: boolean;
+  productOperationId?: string;
+  prerequisiteTaskIds?: string[];
+  notes?: string;
+};
+
+function toTask(jobId: string, seed: TaskSeed, index: number): ManufacturingTask {
+  const completedQuantity =
+    seed.completedQuantity ??
+    (seed.status === "completed" ? seed.plannedQuantity : 0);
+  const base: ManufacturingTask = {
+    id: seed.id,
+    taskNumber: `TASK-${String(index + 1).padStart(3, "0")}`,
+    productionJobId: jobId,
+    productOperationId: seed.productOperationId,
+    sequence: seed.sequence,
+    name: seed.name,
+    description: seed.description,
+    isRequired: seed.isRequired ?? true,
+    isEnabled: true,
+    isQcTask: isQcOperation(seed),
+    isTestingTask: isTestingOperation(seed),
+    isRework: false,
+    estimatedHours: seed.estimatedHours,
+    actualHours: seed.actualHours,
+    overtimeHours: seed.overtimeHours,
+    normalOvertimeHours: seed.normalOvertimeHours,
+    doubleOvertimeHours: seed.doubleOvertimeHours,
+    labourCostRate: seed.labourCostRate,
+    machineName: seed.machineName,
+    machineCost: seed.machineCost,
+    assignedTo: seed.assignedTo,
+    assignedToName: seed.assignedToName,
+    operatorId: seed.operatorId ?? seed.assignedTo,
+    operatorName: seed.operatorName ?? seed.assignedToName,
+    contributors: contributorsFromSeed(seed),
+    plannedQuantity: seed.plannedQuantity,
+    completedQuantity,
+    partiallyCompletedQuantity: 0,
+    rejectedQuantity: seed.rejectedQuantity ?? 0,
+    reworkQuantity: seed.reworkQuantity ?? 0,
+    wasteQuantity: 0,
+    startedQuantity: seed.status === "in_progress" || seed.status === "completed" ? seed.plannedQuantity : 0,
+    overallProgress: 0,
+    units: [],
+    status: seed.status,
+    startedAt: seed.startedAt,
+    completedAt: seed.completedAt,
+    notes: seed.notes,
+    prerequisiteTaskIds: seed.prerequisiteTaskIds ?? [],
+    history: defaultHistory(seed),
+    materialsUsed: [],
+    workstation: seed.workstation,
+  };
+  return applyUnitsToTask(base, ensureTaskUnits(base));
+}
+
+function contributorsFromSeed(seed: TaskSeed): TaskContributor[] {
+  const work = {
+    quantity: seed.status === "completed" ? (seed.completedQuantity ?? seed.plannedQuantity) : 0,
+    rejectedQuantity: 0,
+    wasteQuantity: 0,
+    actualHours: seed.actualHours ?? 0,
+    overtimeHours: seed.overtimeHours ?? 0,
+    normalOvertimeHours: seed.normalOvertimeHours ?? seed.overtimeHours ?? 0,
+    doubleOvertimeHours: seed.doubleOvertimeHours ?? 0,
+    laborCost: 0,
+  };
+  if (seed.contributors?.length) {
+    return seed.contributors.map((person) => ({
+      ...work,
+      ...person,
+      contributionPercent: person.contributionPercent ?? (work.quantity > 0 ? 100 : 0),
+    }));
+  }
+  if (!seed.assignedTo) return [];
+  const status =
+    seed.status === "completed"
+      ? "completed"
+      : seed.status === "in_progress"
+        ? "in_progress"
+        : seed.status === "on_hold"
+          ? "on_hold"
+          : "assigned";
+  return [
+    {
+      userId: seed.assignedTo,
+      userName: seed.assignedToName ?? seed.assignedTo,
+      contributionPercent: seed.status === "completed" ? 100 : 0,
+      ...work,
+      status,
+      startedAt: seed.startedAt,
+      completedAt: seed.completedAt,
+    },
+  ];
+}
+
+function defaultHistory(seed: TaskSeed): ManufacturingTaskHistoryEntry[] {
+  const createdAt = seed.startedAt ?? seed.completedAt ?? "2025-07-16T10:00:00Z";
+  const entries = [
+    createHistoryEntry(seed.id, ACTOR, "created", undefined, "pending", "Generated from product version", createdAt),
+  ];
+  if (seed.status === "ready") {
+    entries.push(createHistoryEntry(seed.id, ACTOR, "ready", "pending", "ready", undefined, createdAt));
+  }
+  if (seed.status === "in_progress" || seed.status === "completed") {
+    entries.push(createHistoryEntry(seed.id, ACTOR, "ready", "pending", "ready", undefined, seed.startedAt ?? createdAt));
+    entries.push(
+      createHistoryEntry(
+        seed.id,
+        { userId: seed.assignedTo ?? ACTOR.userId, userName: seed.assignedToName ?? ACTOR.userName },
+        "started",
+        "ready",
+        "in_progress",
+        undefined,
+        seed.startedAt ?? createdAt,
+      ),
+    );
+  }
+  if (seed.status === "completed" && seed.completedAt) {
+    entries.push(
+      createHistoryEntry(
+        seed.id,
+        { userId: seed.assignedTo ?? ACTOR.userId, userName: seed.assignedToName ?? ACTOR.userName },
+        "completed",
+        "in_progress",
+        "completed",
+        undefined,
+        seed.completedAt,
+      ),
+    );
+  }
+  return entries;
+}
+
+function sequentialPrereqs(tasks: ManufacturingTask[]): ManufacturingTask[] {
+  return tasks.map((task, index) => {
+    if (task.prerequisiteTaskIds.length > 0 || index === 0) return task;
+    return { ...task, prerequisiteTaskIds: [tasks[index - 1].id] };
+  });
+}
+
+type JobSeed = Omit<
+  ManufacturingJob,
+  | "tasks"
+  | "reworks"
+  | "progressPercent"
+  | "estimatedCost"
+  | "actualCost"
+  | "productVersionId"
+  | "productVersionLabel"
+> & {
+  productVersionId?: string;
+  productVersionLabel?: string;
+  taskSeeds: TaskSeed[];
+};
+
+function hydrateJob(seed: JobSeed): ManufacturingJob {
+  const tasks = sequentialPrereqs(
+    seed.taskSeeds.map((task, index) => toTask(seed.id, task, index)),
+  );
+  return refreshJobDerivedFields({
+    ...seed,
+    productVersionId: seed.productVersionId ?? `${seed.productId}-ver-1`,
+    productVersionLabel: seed.productVersionLabel ?? "V1",
+    tasks,
+    reworks: [],
+    progressPercent: 0,
+    estimatedCost: 0,
+    actualCost: 0,
+  });
+}
+
+const auroraTasks = (qty: number): TaskSeed[] => [
   {
-    id: "mj-001",
-    jobNumber: "JC-2025-1187",
-    salesOrderId: "so-001",
-    salesOrderNumber: "SO-2025-0089",
-    customerId: "cus-002",
-    customerName: "GreenLeaf Architects",
-    productId: "prd-001",
-    productSku: "AVK-PND-001",
-    productName: "Aurora LED Pendant",
-    quantity: 8,
+    id: "tsk-pj1001-01",
+    name: "Cutting",
+    sequence: 10,
+    description: "Cut aluminium tubes and sheet to size",
+    workstation: "Fab Bay 1",
+    machineName: "CNC Laser Cutter",
+    estimatedHours: 0.5 * qty,
+    actualHours: 0.47 * qty,
+    labourCostRate: 500,
+    machineCost: 200 * qty,
+    status: "completed",
+    assignedTo: "usr-005",
+    assignedToName: "Chaminda Jayasuriya",
+    startedAt: "2025-07-20T08:00:00Z",
+    completedAt: "2025-07-20T11:30:00Z",
+    plannedQuantity: qty,
+    completedQuantity: qty,
+    productOperationId: "prd-001-op-10",
+    prerequisiteTaskIds: [],
+  },
+  {
+    id: "tsk-pj1001-02",
+    name: "Bending",
+    sequence: 20,
+    description: "Form pendant body curvature",
+    workstation: "Fab Bay 1",
+    machineName: "Press Brake",
+    estimatedHours: 0.33 * qty,
+    actualHours: 0.42 * qty,
+    overtimeHours: 0.09 * qty,
+    normalOvertimeHours: 0.09 * qty,
+    labourCostRate: 500,
+    machineCost: 150 * qty,
+    status: "completed",
+    assignedTo: "usr-005",
+    assignedToName: "Chaminda Jayasuriya",
+    startedAt: "2025-07-20T12:00:00Z",
+    completedAt: "2025-07-20T16:00:00Z",
+    plannedQuantity: qty,
+    completedQuantity: qty,
+    productOperationId: "prd-001-op-20",
+    prerequisiteTaskIds: ["tsk-pj1001-01"],
+  },
+  {
+    id: "tsk-pj1001-03",
+    name: "Welding",
+    sequence: 30,
+    description: "TIG weld body joints",
+    workstation: "Welding Bay",
+    machineName: "TIG Welder",
+    estimatedHours: 0.75 * qty,
+    labourCostRate: 650,
+    machineCost: 100 * qty,
     status: "in_progress",
-    priority: "medium",
-    operations: [
+    assignedTo: "usr-005",
+    assignedToName: "Chaminda Jayasuriya",
+    startedAt: "2025-07-21T08:00:00Z",
+    plannedQuantity: qty,
+    completedQuantity: 6,
+    productOperationId: "prd-001-op-30",
+    prerequisiteTaskIds: ["tsk-pj1001-02"],
+    contributors: [
       {
-        id: "op-001",
-        name: "Metal Fabrication",
-        sequence: 1,
-        workstation: "Fab Bay 1",
-        estimatedHours: 4,
-        actualHours: 3.5,
-        status: "completed",
-        assignedTo: "usr-005",
-        assignedToName: "Carlos Rivera",
-        startedAt: "2025-07-20T08:00:00Z",
-        completedAt: "2025-07-20T11:30:00Z",
-      },
-      {
-        id: "op-002",
-        name: "Powder Coating",
-        sequence: 2,
-        workstation: "Coating Line A",
-        estimatedHours: 2,
+        userId: "usr-005",
+        userName: "Chaminda Jayasuriya",
+        contributionPercent: 0,
+        quantity: 0,
+        rejectedQuantity: 0,
+        wasteQuantity: 0,
+        actualHours: 0,
+        overtimeHours: 0,
+        normalOvertimeHours: 0,
+        doubleOvertimeHours: 0,
+        laborCost: 0,
         status: "in_progress",
-        assignedTo: "usr-005",
-        assignedToName: "Carlos Rivera",
         startedAt: "2025-07-21T08:00:00Z",
       },
       {
-        id: "op-003",
-        name: "Assembly & Wiring",
-        sequence: 3,
-        workstation: "Assembly Line 2",
-        estimatedHours: 3,
-        status: "pending",
-      },
-      {
-        id: "op-004",
-        name: "Quality Inspection",
-        sequence: 4,
-        workstation: "QC Station 1",
-        estimatedHours: 1,
-        status: "pending",
+        userId: "usr-004",
+        userName: "Nuwan Wickramasinghe",
+        contributionPercent: 0,
+        quantity: 0,
+        rejectedQuantity: 0,
+        wasteQuantity: 0,
+        actualHours: 0,
+        overtimeHours: 0,
+        normalOvertimeHours: 0,
+        doubleOvertimeHours: 0,
+        laborCost: 0,
+        status: "in_progress",
+        startedAt: "2025-07-21T10:00:00Z",
       },
     ],
+  },
+  {
+    id: "tsk-pj1001-04",
+    name: "Grinding",
+    sequence: 40,
+    description: "Smooth weld seams and surface prep",
+    workstation: "Finishing Bay",
+    estimatedHours: 0.33 * qty,
+    labourCostRate: 450,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-40",
+    prerequisiteTaskIds: ["tsk-pj1001-03"],
+  },
+  {
+    id: "tsk-pj1001-05",
+    name: "Powder Coating",
+    sequence: 50,
+    description: "Apply RAL 9005 jet black powder coat",
+    workstation: "Coating Line A",
+    machineName: "Powder Booth",
+    estimatedHours: 2 * qty,
+    labourCostRate: 400,
+    machineCost: 300 * qty,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-50",
+    prerequisiteTaskIds: ["tsk-pj1001-04"],
+  },
+  {
+    id: "tsk-pj1001-06",
+    name: "Wiring",
+    sequence: 60,
+    description: "Install LED module, driver and wiring harness",
+    workstation: "Assembly Line 2",
+    estimatedHours: 0.5 * qty,
+    labourCostRate: 550,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-60",
+    prerequisiteTaskIds: ["tsk-pj1001-05"],
+  },
+  {
+    id: "tsk-pj1001-07",
+    name: "Glass Installation",
+    sequence: 70,
+    description: "Mount opal glass diffuser with silicone gasket",
+    workstation: "Assembly Line 2",
+    estimatedHours: 0.33 * qty,
+    labourCostRate: 500,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-70",
+    prerequisiteTaskIds: ["tsk-pj1001-05"],
+  },
+  {
+    id: "tsk-pj1001-08",
+    name: "Mounting Bracket Installation",
+    sequence: 80,
+    description: "Attach ceiling canopy and suspension hardware",
+    workstation: "Assembly Line 2",
+    estimatedHours: 0.25 * qty,
+    labourCostRate: 450,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-80",
+    prerequisiteTaskIds: ["tsk-pj1001-05"],
+  },
+  {
+    id: "tsk-pj1001-09",
+    name: "Final Assembly",
+    sequence: 90,
+    description: "Complete assembly, cable management, label",
+    workstation: "Assembly Line 2",
+    estimatedHours: 0.5 * qty,
+    labourCostRate: 500,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-90",
+    prerequisiteTaskIds: ["tsk-pj1001-06", "tsk-pj1001-07", "tsk-pj1001-08"],
+  },
+  {
+    id: "tsk-pj1001-10",
+    name: "Testing",
+    sequence: 100,
+    description: "Electrical safety test, burn-in, lumen verification",
+    workstation: "Test Lab",
+    machineName: "Integrating Sphere",
+    estimatedHours: 0.25 * qty,
+    labourCostRate: 600,
+    machineCost: 50 * qty,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-100",
+    prerequisiteTaskIds: ["tsk-pj1001-09"],
+  },
+  {
+    id: "tsk-pj1001-11",
+    name: "QC",
+    sequence: 110,
+    description: "Final visual and functional quality check",
+    workstation: "QC Station 1",
+    estimatedHours: 0.33 * qty,
+    labourCostRate: 500,
+    status: "pending",
+    plannedQuantity: qty,
+    productOperationId: "prd-001-op-110",
+    prerequisiteTaskIds: ["tsk-pj1001-10"],
+  },
+];
+
+const rawJobs: JobSeed[] = [
+  {
+    id: "mj-001",
+    jobNumber: "PJ-1001",
+    salesOrderId: "so-001",
+    salesOrderNumber: "SO-2025-0089",
+    customerId: "cus-002",
+    customerName: "Haritha Architects",
+    productId: "prd-001",
+    productSku: "AVK-PND-001",
+    productName: "Aurora LED Pendant",
+    productVersionId: "prd-001-ver-1",
+    productVersionLabel: "V1",
+    quantity: 10,
+    status: "in_progress",
+    priority: "medium",
+    taskSeeds: auroraTasks(10),
     materialRequirements: [
       {
         id: "mr-001",
         inventoryItemId: "inv-007",
         inventoryItemSku: "RAW-GLS-SHADE-180",
         inventoryItemName: "Blown Glass Shade 180mm",
-        requiredQuantity: 8,
-        reservedQuantity: 8,
-        issuedQuantity: 8,
+        requiredQuantity: 10,
+        reservedQuantity: 10,
+        issuedQuantity: 10,
         unit: "pcs",
         status: "issued",
       },
@@ -73,8 +454,8 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
         inventoryItemId: "inv-002",
         inventoryItemSku: "RAW-DRV-24V-60W",
         inventoryItemName: "LED Driver 24V 60W Dimmable",
-        requiredQuantity: 8,
-        reservedQuantity: 8,
+        requiredQuantity: 10,
+        reservedQuantity: 10,
         issuedQuantity: 0,
         unit: "pcs",
         status: "reserved",
@@ -84,66 +465,34 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     plannedEndDate: "2025-07-28T17:00:00Z",
     actualStartDate: "2025-07-20T08:00:00Z",
     assignedTo: "usr-004",
-    assignedToName: "Mike Thompson",
+    assignedToName: "Nuwan Wickramasinghe",
     createdBy: "usr-004",
-    createdByName: "Mike Thompson",
+    createdByName: "Nuwan Wickramasinghe",
     createdAt: "2025-07-16T10:00:00Z",
     updatedAt: "2025-07-21T14:00:00Z",
   },
   {
     id: "mj-002",
-    jobNumber: "JC-2025-1156",
+    jobNumber: "PJ-1002",
     salesOrderId: "so-002",
     salesOrderNumber: "SO-2025-0075",
     customerId: "cus-006",
-    customerName: "Coastal Resort & Spa",
+    customerName: "Mirissa Coastal Resort",
     productId: "prd-005",
     productSku: "CGO-OUT-005",
     productName: "Coastal Glow Outdoor Lantern",
     quantity: 12,
     status: "completed",
     priority: "medium",
-    operations: [
-      {
-        id: "op-005",
-        name: "Metal Fabrication",
-        sequence: 1,
-        workstation: "Fab Bay 2",
-        estimatedHours: 6,
-        actualHours: 5.5,
-        status: "completed",
-        completedAt: "2025-06-20T17:00:00Z",
-      },
-      {
-        id: "op-006",
-        name: "Powder Coating",
-        sequence: 2,
-        workstation: "Coating Line A",
-        estimatedHours: 3,
-        actualHours: 3,
-        status: "completed",
-        completedAt: "2025-06-22T12:00:00Z",
-      },
-      {
-        id: "op-007",
-        name: "Assembly & Wiring",
-        sequence: 3,
-        workstation: "Assembly Line 1",
-        estimatedHours: 4,
-        actualHours: 4,
-        status: "completed",
-        completedAt: "2025-06-25T16:00:00Z",
-      },
-      {
-        id: "op-008",
-        name: "Quality Inspection",
-        sequence: 4,
-        workstation: "QC Station 1",
-        estimatedHours: 1,
-        actualHours: 1,
-        status: "completed",
-        completedAt: "2025-06-26T10:00:00Z",
-      },
+    taskSeeds: [
+      { id: "op-005", name: "Metal Fabrication", sequence: 10, workstation: "Fab Bay 2", estimatedHours: 6, actualHours: 5.5, status: "completed", completedAt: "2025-06-20T17:00:00Z", plannedQuantity: 12 },
+      { id: "op-006", name: "Powder Coating", sequence: 20, workstation: "Coating Line A", estimatedHours: 3, actualHours: 3, status: "completed", completedAt: "2025-06-22T12:00:00Z", plannedQuantity: 12 },
+      { id: "op-007", name: "Assembly & Wiring", sequence: 30, workstation: "Assembly Line 1", estimatedHours: 4, actualHours: 5.5, overtimeHours: 1.5, normalOvertimeHours: 1, doubleOvertimeHours: 0.5, labourCostRate: 550, status: "completed", completedAt: "2025-06-25T16:00:00Z", plannedQuantity: 12, assignedTo: "usr-005", assignedToName: "Chaminda Jayasuriya", contributors: [
+        { userId: "usr-005", userName: "Chaminda Jayasuriya", contributionPercent: 30, quantity: 4, rejectedQuantity: 0, wasteQuantity: 0, actualHours: 1.65, overtimeHours: 0.45, normalOvertimeHours: 0.3, doubleOvertimeHours: 0.15, laborCost: 0, status: "completed", completedAt: "2025-06-25T16:00:00Z" },
+        { userId: "usr-004", userName: "Nuwan Wickramasinghe", contributionPercent: 50, quantity: 6, rejectedQuantity: 0, wasteQuantity: 0, actualHours: 2.75, overtimeHours: 0.75, normalOvertimeHours: 0.5, doubleOvertimeHours: 0.25, laborCost: 0, status: "completed", completedAt: "2025-06-25T16:00:00Z" },
+        { userId: "usr-006", userName: "Sanduni Rathnayake", contributionPercent: 20, quantity: 2, rejectedQuantity: 0, wasteQuantity: 0, actualHours: 1.1, overtimeHours: 0.3, normalOvertimeHours: 0.2, doubleOvertimeHours: 0.1, laborCost: 0, status: "completed", completedAt: "2025-06-25T16:00:00Z" },
+      ] },
+      { id: "op-008", name: "QC", sequence: 40, workstation: "QC Station 1", estimatedHours: 1, actualHours: 1, status: "completed", completedAt: "2025-06-26T10:00:00Z", plannedQuantity: 12 },
     ],
     materialRequirements: [
       {
@@ -162,7 +511,7 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
       id: "qi-001",
       inspectionNumber: "QI-2025-0342",
       inspectorId: "usr-006",
-      inspectorName: "Lisa Chen",
+      inspectorName: "Sanduni Rathnayake",
       status: "passed",
       checklistItems: [
         { id: "ci-001", name: "Visual inspection", passed: true },
@@ -176,34 +525,28 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     actualStartDate: "2025-06-15T08:00:00Z",
     actualEndDate: "2025-06-26T10:00:00Z",
     assignedTo: "usr-004",
-    assignedToName: "Mike Thompson",
+    assignedToName: "Nuwan Wickramasinghe",
     createdBy: "usr-004",
-    createdByName: "Mike Thompson",
+    createdByName: "Nuwan Wickramasinghe",
     createdAt: "2025-06-12T09:00:00Z",
     updatedAt: "2025-06-26T10:00:00Z",
   },
   {
     id: "mj-003",
-    jobNumber: "JC-2025-1178",
+    jobNumber: "PJ-1003",
     salesOrderId: "so-002",
     salesOrderNumber: "SO-2025-0075",
     customerId: "cus-006",
-    customerName: "Coastal Resort & Spa",
+    customerName: "Mirissa Coastal Resort",
     productId: "prd-005",
     productSku: "CGO-OUT-005",
     productName: "Coastal Glow Outdoor Lantern",
     quantity: 8,
-    status: "materials_pending",
+    status: "completed",
     priority: "medium",
-    operations: [
-      {
-        id: "op-009",
-        name: "Metal Fabrication",
-        sequence: 1,
-        workstation: "Fab Bay 2",
-        estimatedHours: 4,
-        status: "pending",
-      },
+    taskSeeds: [
+      { id: "op-009", name: "Metal Fabrication", sequence: 10, workstation: "Fab Bay 2", estimatedHours: 4, actualHours: 3.5, status: "completed", completedAt: "2025-07-28T16:00:00Z", plannedQuantity: 8 },
+      { id: "op-009b", name: "QC", sequence: 20, workstation: "QC Station 1", estimatedHours: 1, actualHours: 1, status: "completed", completedAt: "2025-07-30T11:00:00Z", plannedQuantity: 8 },
     ],
     materialRequirements: [
       {
@@ -212,24 +555,38 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
         inventoryItemSku: "RAW-PC-RAL9005",
         inventoryItemName: "Powder Coat RAL 9005 (Jet Black)",
         requiredQuantity: 4,
-        reservedQuantity: 0,
-        issuedQuantity: 0,
+        reservedQuantity: 4,
+        issuedQuantity: 4,
         unit: "kg",
-        status: "pending",
+        status: "issued",
       },
     ],
+    qualityInspection: {
+      id: "qi-003",
+      inspectionNumber: "QI-2025-0410",
+      inspectorId: "usr-006",
+      inspectorName: "Sanduni Rathnayake",
+      status: "passed",
+      checklistItems: [
+        { id: "ci-010", name: "Visual inspection", passed: true },
+        { id: "ci-011", name: "IP rating test", passed: true },
+      ],
+      inspectedAt: "2025-07-30T11:00:00Z",
+    },
     plannedStartDate: "2025-07-25T08:00:00Z",
     plannedEndDate: "2025-08-05T17:00:00Z",
+    actualStartDate: "2025-07-25T08:00:00Z",
+    actualEndDate: "2025-07-30T11:00:00Z",
     assignedTo: "usr-004",
-    assignedToName: "Mike Thompson",
+    assignedToName: "Nuwan Wickramasinghe",
     createdBy: "usr-004",
-    createdByName: "Mike Thompson",
+    createdByName: "Nuwan Wickramasinghe",
     createdAt: "2025-07-01T09:00:00Z",
-    updatedAt: "2025-07-20T11:00:00Z",
+    updatedAt: "2025-07-30T11:00:00Z",
   },
   {
     id: "mj-004",
-    jobNumber: "JC-2025-1098",
+    jobNumber: "PJ-1004",
     salesOrderId: "so-003",
     salesOrderNumber: "SO-2025-0062",
     customerId: "cus-008",
@@ -240,35 +597,24 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     quantity: 1,
     status: "in_progress",
     priority: "high",
-    operations: [
+    taskSeeds: [
       {
         id: "op-010",
         name: "Brass Forging",
-        sequence: 1,
+        sequence: 10,
         workstation: "Artisan Workshop",
         estimatedHours: 40,
         actualHours: 28,
         status: "in_progress",
         assignedTo: "usr-005",
-        assignedToName: "Carlos Rivera",
+        assignedToName: "Chaminda Jayasuriya",
         startedAt: "2025-05-15T08:00:00Z",
+        plannedQuantity: 1,
+        completedQuantity: 0,
       },
-      {
-        id: "op-011",
-        name: "Crystal Mounting",
-        sequence: 2,
-        workstation: "Artisan Workshop",
-        estimatedHours: 16,
-        status: "pending",
-      },
-      {
-        id: "op-012",
-        name: "Final Assembly",
-        sequence: 3,
-        workstation: "Assembly Line 3",
-        estimatedHours: 8,
-        status: "pending",
-      },
+      { id: "op-011", name: "Crystal Mounting", sequence: 20, workstation: "Artisan Workshop", estimatedHours: 16, status: "pending", plannedQuantity: 1 },
+      { id: "op-012", name: "Final Assembly", sequence: 30, workstation: "Assembly Line 3", estimatedHours: 8, status: "pending", plannedQuantity: 1 },
+      { id: "op-012b", name: "QC", sequence: 40, workstation: "QC Station 1", estimatedHours: 2, status: "pending", plannedQuantity: 1 },
     ],
     materialRequirements: [
       {
@@ -287,16 +633,16 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     plannedEndDate: "2025-08-30T17:00:00Z",
     actualStartDate: "2025-05-15T08:00:00Z",
     assignedTo: "usr-004",
-    assignedToName: "Mike Thompson",
-    notes: "Custom crystal drops sourced from Italy — ETA Aug 1.",
+    assignedToName: "Nuwan Wickramasinghe",
+    notes: "Custom crystal drops sourced from Italy - ETA Aug 1.",
     createdBy: "usr-001",
-    createdByName: "John Doe",
+    createdByName: "Prabuddha Jayawardhana",
     createdAt: "2025-05-06T10:00:00Z",
     updatedAt: "2025-07-25T09:00:00Z",
   },
   {
     id: "mj-005",
-    jobNumber: "JC-2025-1024",
+    jobNumber: "PJ-1005",
     salesOrderId: "so-005",
     salesOrderNumber: "SO-2025-0050",
     customerId: "cus-001",
@@ -307,27 +653,9 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     quantity: 24,
     status: "completed",
     priority: "high",
-    operations: [
-      {
-        id: "op-013",
-        name: "Panel Assembly",
-        sequence: 1,
-        workstation: "Assembly Line 1",
-        estimatedHours: 12,
-        actualHours: 11,
-        status: "completed",
-        completedAt: "2025-04-20T17:00:00Z",
-      },
-      {
-        id: "op-014",
-        name: "Quality Inspection",
-        sequence: 2,
-        workstation: "QC Station 2",
-        estimatedHours: 2,
-        actualHours: 2,
-        status: "completed",
-        completedAt: "2025-04-22T12:00:00Z",
-      },
+    taskSeeds: [
+      { id: "op-013", name: "Panel Assembly", sequence: 10, workstation: "Assembly Line 1", estimatedHours: 12, actualHours: 11, status: "completed", completedAt: "2025-04-20T17:00:00Z", plannedQuantity: 24 },
+      { id: "op-014", name: "QC", sequence: 20, workstation: "QC Station 2", estimatedHours: 2, actualHours: 2, status: "completed", completedAt: "2025-04-22T12:00:00Z", plannedQuantity: 24 },
     ],
     materialRequirements: [
       {
@@ -346,7 +674,7 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
       id: "qi-002",
       inspectionNumber: "QI-2025-0289",
       inspectorId: "usr-006",
-      inspectorName: "Lisa Chen",
+      inspectorName: "Sanduni Rathnayake",
       status: "passed",
       checklistItems: [
         { id: "ci-004", name: "Lumen output test", passed: true },
@@ -359,34 +687,28 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     actualStartDate: "2025-04-05T08:00:00Z",
     actualEndDate: "2025-04-22T12:00:00Z",
     assignedTo: "usr-004",
-    assignedToName: "Mike Thompson",
+    assignedToName: "Nuwan Wickramasinghe",
     createdBy: "usr-004",
-    createdByName: "Mike Thompson",
+    createdByName: "Nuwan Wickramasinghe",
     createdAt: "2025-04-02T09:00:00Z",
     updatedAt: "2025-04-22T12:00:00Z",
   },
   {
     id: "mj-006",
-    jobNumber: "JC-2025-1195",
+    jobNumber: "PJ-1006",
     salesOrderId: "so-001",
     salesOrderNumber: "SO-2025-0089",
     customerId: "cus-002",
-    customerName: "GreenLeaf Architects",
+    customerName: "Haritha Architects",
     productId: "prd-002",
     productSku: "AVK-WSC-002",
     productName: "Horizon Wall Sconce",
     quantity: 4,
     status: "planned",
     priority: "low",
-    operations: [
-      {
-        id: "op-015",
-        name: "Metal Fabrication",
-        sequence: 1,
-        workstation: "Fab Bay 1",
-        estimatedHours: 2,
-        status: "pending",
-      },
+    taskSeeds: [
+      { id: "op-015", name: "Metal Fabrication", sequence: 10, workstation: "Fab Bay 1", estimatedHours: 2, status: "pending", plannedQuantity: 4 },
+      { id: "op-015b", name: "QC", sequence: 20, workstation: "QC Station 1", estimatedHours: 0.5, status: "pending", plannedQuantity: 4 },
     ],
     materialRequirements: [
       {
@@ -404,34 +726,28 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     plannedStartDate: "2025-08-01T08:00:00Z",
     plannedEndDate: "2025-08-05T17:00:00Z",
     assignedTo: "usr-005",
-    assignedToName: "Carlos Rivera",
+    assignedToName: "Chaminda Jayasuriya",
     createdBy: "usr-004",
-    createdByName: "Mike Thompson",
+    createdByName: "Nuwan Wickramasinghe",
     createdAt: "2025-07-22T10:00:00Z",
     updatedAt: "2025-07-22T10:00:00Z",
   },
   {
     id: "mj-007",
-    jobNumber: "JC-2025-1201",
+    jobNumber: "PJ-1007",
     salesOrderId: "so-004",
     salesOrderNumber: "SO-2025-0095",
     customerId: "cus-003",
-    customerName: "Luxe Interiors Pvt Ltd",
+    customerName: "Ranmini Interiors Pvt Ltd",
     productId: "prd-004",
     productSku: "AVK-TRK-004",
     productName: "FlexTrack Spot Light",
     quantity: 16,
     status: "ready_to_start",
     priority: "medium",
-    operations: [
-      {
-        id: "op-016",
-        name: "Assembly",
-        sequence: 1,
-        workstation: "Assembly Line 2",
-        estimatedHours: 4,
-        status: "pending",
-      },
+    taskSeeds: [
+      { id: "op-016", name: "Assembly", sequence: 10, workstation: "Assembly Line 2", estimatedHours: 4, status: "ready", plannedQuantity: 16 },
+      { id: "op-016b", name: "QC", sequence: 20, workstation: "QC Station 1", estimatedHours: 1, status: "pending", plannedQuantity: 16 },
     ],
     materialRequirements: [
       {
@@ -449,10 +765,159 @@ export const initialManufacturingJobs: ManufacturingJob[] = [
     plannedStartDate: "2025-08-01T08:00:00Z",
     plannedEndDate: "2025-08-04T17:00:00Z",
     assignedTo: "usr-005",
-    assignedToName: "Carlos Rivera",
+    assignedToName: "Chaminda Jayasuriya",
     createdBy: "usr-004",
-    createdByName: "Mike Thompson",
+    createdByName: "Nuwan Wickramasinghe",
     createdAt: "2025-07-29T09:00:00Z",
     updatedAt: "2025-07-29T09:00:00Z",
   },
+  {
+    id: "mj-008",
+    jobNumber: "PJ-1008",
+    salesOrderId: "so-004",
+    salesOrderNumber: "SO-2025-0095",
+    customerId: "cus-003",
+    customerName: "Ranmini Interiors Pvt Ltd",
+    productId: "prd-007",
+    productSku: "AVK-DSK-007",
+    productName: "Studio Desk Lamp",
+    quantity: 10,
+    status: "completed",
+    priority: "medium",
+    taskSeeds: [
+      {
+        id: "op-017",
+        name: "Assembly",
+        sequence: 10,
+        workstation: "Assembly Line 2",
+        estimatedHours: 5,
+        actualHours: 4.5,
+        status: "completed",
+        completedAt: "2025-08-18T15:00:00Z",
+        plannedQuantity: 10,
+      },
+      {
+        id: "op-017b",
+        name: "QC",
+        sequence: 20,
+        workstation: "QC Station 1",
+        estimatedHours: 1,
+        actualHours: 1,
+        status: "completed",
+        completedAt: "2025-08-19T10:00:00Z",
+        plannedQuantity: 10,
+      },
+    ],
+    materialRequirements: [
+      {
+        id: "mr-009",
+        inventoryItemId: "inv-002",
+        inventoryItemSku: "RAW-DRV-24V-60W",
+        inventoryItemName: "LED Driver 24V 60W Dimmable",
+        requiredQuantity: 10,
+        reservedQuantity: 10,
+        issuedQuantity: 10,
+        unit: "pcs",
+        status: "issued",
+      },
+    ],
+    qualityInspection: {
+      id: "qi-004",
+      inspectionNumber: "QI-2025-0422",
+      inspectorId: "usr-006",
+      inspectorName: "Sanduni Rathnayake",
+      status: "passed",
+      checklistItems: [
+        { id: "ci-012", name: "Visual inspection", passed: true },
+        { id: "ci-013", name: "Electrical safety", passed: true },
+      ],
+      inspectedAt: "2025-08-19T10:00:00Z",
+    },
+    plannedStartDate: "2025-08-12T08:00:00Z",
+    plannedEndDate: "2025-08-20T17:00:00Z",
+    actualStartDate: "2025-08-12T08:00:00Z",
+    actualEndDate: "2025-08-19T10:00:00Z",
+    assignedTo: "usr-005",
+    assignedToName: "Chaminda Jayasuriya",
+    createdBy: "usr-004",
+    createdByName: "Nuwan Wickramasinghe",
+    createdAt: "2025-08-10T09:00:00Z",
+    updatedAt: "2025-08-19T10:00:00Z",
+  },
+  {
+    id: "mj-009",
+    jobNumber: "PJ-1009",
+    salesOrderId: "so-006",
+    salesOrderNumber: "SO-2025-0098",
+    customerId: "cus-005",
+    customerName: "LankaTech Solutions",
+    productId: "prd-008",
+    productSku: "AVK-LNP-008",
+    productName: "Linear Pendant 1200mm",
+    quantity: 6,
+    status: "completed",
+    priority: "urgent",
+    taskSeeds: [
+      {
+        id: "op-018",
+        name: "Extrusion Cut",
+        sequence: 10,
+        workstation: "Fab Bay 1",
+        estimatedHours: 3,
+        actualHours: 3,
+        status: "completed",
+        completedAt: "2025-08-21T14:00:00Z",
+        plannedQuantity: 6,
+      },
+      {
+        id: "op-018b",
+        name: "QC",
+        sequence: 20,
+        workstation: "QC Station 2",
+        estimatedHours: 1,
+        actualHours: 1,
+        status: "completed",
+        completedAt: "2025-08-22T09:30:00Z",
+        plannedQuantity: 6,
+      },
+    ],
+    materialRequirements: [
+      {
+        id: "mr-010",
+        inventoryItemId: "inv-003",
+        inventoryItemSku: "RAW-ALU-EXTR-40",
+        inventoryItemName: "Aluminum Extrusion Profile 40mm",
+        requiredQuantity: 12,
+        reservedQuantity: 12,
+        issuedQuantity: 4,
+        unit: "pcs",
+        status: "reserved",
+      },
+    ],
+    qualityInspection: {
+      id: "qi-005",
+      inspectionNumber: "QI-2025-0428",
+      inspectorId: "usr-006",
+      inspectorName: "Sanduni Rathnayake",
+      status: "passed",
+      checklistItems: [
+        { id: "ci-014", name: "Length tolerance", passed: true },
+        { id: "ci-015", name: "Finish check", passed: true },
+      ],
+      inspectedAt: "2025-08-22T09:30:00Z",
+    },
+    plannedStartDate: "2025-08-18T08:00:00Z",
+    plannedEndDate: "2025-08-25T17:00:00Z",
+    actualStartDate: "2025-08-18T08:00:00Z",
+    actualEndDate: "2025-08-22T09:30:00Z",
+    assignedTo: "usr-004",
+    assignedToName: "Nuwan Wickramasinghe",
+    notes: "Demo: finished job still short on issued materials.",
+    createdBy: "usr-004",
+    createdByName: "Nuwan Wickramasinghe",
+    createdAt: "2025-08-16T09:00:00Z",
+    updatedAt: "2025-08-22T09:30:00Z",
+  },
 ];
+
+export const initialManufacturingJobs: ManufacturingJob[] = rawJobs.map(hydrateJob);

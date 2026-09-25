@@ -8,6 +8,8 @@ import { PageContent } from "@/components/feedback/PageStates";
 import { Button } from "@/components/ui/Button";
 import { MappedStatusBadge } from "@/features/shared/components/MappedStatusBadge";
 import { useConfirmSalesOrder, useSalesOrder } from "@/features/sales/hooks/useSalesOrders";
+import { useCostingBySalesOrder } from "@/features/costing/hooks/useCosting";
+import { getConfirmBlockReason } from "@/features/sales/lib/salesOrderFlow";
 import { useInventoryItems } from "@/features/inventory/hooks/useInventory";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { SalesOrderStatus } from "@/types/status";
@@ -23,6 +25,7 @@ export function SalesOrderReviewPage() {
   const navigate = useNavigate();
 
   const { data: order, isLoading, error } = useSalesOrder(id);
+  const { data: costing } = useCostingBySalesOrder(id);
   const { data: inventory } = useInventoryItems({ page: 1, pageSize: 500 });
   const confirmOrder = useConfirmSalesOrder();
 
@@ -43,6 +46,11 @@ export function SalesOrderReviewPage() {
       list.push({ id: "items", severity: "error", message: "No line items on this order." });
     }
 
+    const costingBlock = getConfirmBlockReason(order, costing);
+    if (costingBlock) {
+      list.push({ id: "costing", severity: "error", message: costingBlock });
+    }
+
     for (const item of order.lineItems) {
       const stock = inventory?.items.find(
         (inv) => inv.sku === item.productSku || inv.name === item.productName,
@@ -57,7 +65,7 @@ export function SalesOrderReviewPage() {
     }
 
     return list;
-  }, [order, inventory]);
+  }, [order, inventory, costing]);
 
   const hasErrors = issues.some((i) => i.severity === "error");
 
@@ -115,7 +123,7 @@ export function SalesOrderReviewPage() {
                 <dl className="space-y-2 text-sm">
                   <div className="flex justify-between"><dt>Customer</dt><dd>{order.customerName}</dd></div>
                   <div className="flex justify-between"><dt>Priority</dt><dd className="capitalize">{order.priority}</dd></div>
-                  <div className="flex justify-between"><dt>Delivery Date</dt><dd>{order.requestedDeliveryDate ? formatDate(order.requestedDeliveryDate) : "—"}</dd></div>
+                  <div className="flex justify-between"><dt>Delivery Date</dt><dd>{order.requestedDeliveryDate ? formatDate(order.requestedDeliveryDate) : "-"}</dd></div>
                   <div className="flex justify-between border-t border-border pt-2 font-semibold"><dt>Total</dt><dd>{formatCurrency(order.totalAmount, order.currency)}</dd></div>
                 </dl>
               </section>
@@ -133,7 +141,17 @@ export function SalesOrderReviewPage() {
               </section>
             </div>
 
-            <div className="mt-8 flex gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
+              {costing && costing.coatingStatus !== "pending" && costing.status !== "approved" && (
+                <Button onClick={() => navigate(ROUTES.costing.forOrder(order.id))}>
+                  Go to costing approval
+                </Button>
+              )}
+              {costing?.coatingStatus === "pending" && (
+                <Button onClick={() => navigate(ROUTES.estimation.forOrder(order.id))}>
+                  Open product estimation
+                </Button>
+              )}
               <Button
                 onClick={() => void handleConfirm()}
                 loading={confirmOrder.isPending}

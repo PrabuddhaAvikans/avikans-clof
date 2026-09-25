@@ -56,6 +56,21 @@ export const ManufacturingJobStatus = {
 
 export type ManufacturingJobStatusValue = keyof typeof ManufacturingJobStatus;
 
+export const ManufacturingTaskStatus = {
+  pending: { label: "Pending", variant: "secondary" },
+  ready: { label: "Ready", variant: "info" },
+  in_progress: { label: "In Progress", variant: "default" },
+  paused: { label: "Paused", variant: "warning" },
+  completed: { label: "Completed", variant: "success" },
+  on_hold: { label: "On Hold", variant: "warning" },
+  blocked: { label: "Blocked", variant: "destructive" },
+  skipped: { label: "Skipped", variant: "outline" },
+  rework_required: { label: "Rework Required", variant: "warning" },
+  cancelled: { label: "Cancelled", variant: "destructive" },
+} as const satisfies Record<string, StatusDefinition>;
+
+export type ManufacturingTaskStatusValue = keyof typeof ManufacturingTaskStatus;
+
 export const DeliveryStatus = {
   planned: { label: "Planned", variant: "secondary" },
   ready_for_dispatch: { label: "Ready for Dispatch", variant: "info" },
@@ -97,6 +112,38 @@ export const PaymentStatus = {
 
 export type PaymentStatusValue = keyof typeof PaymentStatus;
 
+export const InvoiceStatus = {
+  draft: { label: "Draft", variant: "secondary" },
+  issued: { label: "Issued", variant: "info" },
+  partial: { label: "Partially Paid", variant: "warning" },
+  paid: { label: "Paid", variant: "success" },
+  overdue: { label: "Overdue", variant: "destructive" },
+  void: { label: "Void", variant: "destructive" },
+} as const satisfies Record<string, StatusDefinition>;
+
+export type InvoiceStatusValue = keyof typeof InvoiceStatus;
+
+export const CreditNoteStatus = {
+  draft: { label: "Draft", variant: "secondary" },
+  issued: { label: "Issued", variant: "info" },
+  partially_applied: { label: "Partially Applied", variant: "warning" },
+  applied: { label: "Fully Applied", variant: "success" },
+  void: { label: "Void", variant: "destructive" },
+} as const satisfies Record<string, StatusDefinition>;
+
+export type CreditNoteStatusValue = keyof typeof CreditNoteStatus;
+
+export const CreditNoteReason = {
+  return: { label: "Return", variant: "warning" },
+  price_adjustment: { label: "Price Adjustment", variant: "info" },
+  overbilling: { label: "Overbilling", variant: "outline" },
+  damaged_goods: { label: "Damaged Goods", variant: "destructive" },
+  goodwill: { label: "Goodwill", variant: "teal" },
+  other: { label: "Other", variant: "secondary" },
+} as const satisfies Record<string, StatusDefinition>;
+
+export type CreditNoteReasonValue = keyof typeof CreditNoteReason;
+
 export const CostingRequestStatus = {
   pending: { label: "Pending", variant: "secondary" },
   in_review: { label: "In Review", variant: "info" },
@@ -115,18 +162,61 @@ export const CostingRiskFlag = {
 
 export type CostingRiskFlagValue = keyof typeof CostingRiskFlag;
 
+export const CoatingStatus = {
+  pending: { label: "Awaiting Estimation", variant: "warning" },
+  submitted: { label: "Estimation Submitted", variant: "info" },
+  skipped: { label: "Not Required", variant: "secondary" },
+} as const satisfies Record<string, StatusDefinition>;
+
+export type CoatingStatusValue = keyof typeof CoatingStatus;
+
+export const ProductVersionStatus = {
+  draft: { label: "Draft", variant: "secondary" },
+  specification_defined: { label: "Specification Defined", variant: "info" },
+  bom_defined: { label: "BOM Defined", variant: "info" },
+  costing_in_progress: { label: "Costing In Progress", variant: "warning" },
+  costed: { label: "Costed", variant: "info" },
+  pending_approval: { label: "Pending Approval", variant: "warning" },
+  approved: { label: "Approved", variant: "success" },
+  released: { label: "Released", variant: "success" },
+  revision_required: { label: "Revision Required", variant: "warning" },
+  rejected: { label: "Rejected", variant: "destructive" },
+  cancelled: { label: "Cancelled", variant: "destructive" },
+  obsolete: { label: "Obsolete", variant: "outline" },
+} as const satisfies Record<string, StatusDefinition>;
+
+export type ProductVersionStatusValue = keyof typeof ProductVersionStatus;
+
+export const QuotationCustomizationStatus = {
+  draft: { label: "Draft", variant: "secondary" },
+  estimated: { label: "Estimated", variant: "info" },
+  pending_approval: { label: "Pending Approval", variant: "warning" },
+  approved: { label: "Approved", variant: "success" },
+  rejected: { label: "Rejected", variant: "destructive" },
+} as const satisfies Record<string, StatusDefinition>;
+
+export type QuotationCustomizationStatusValue =
+  keyof typeof QuotationCustomizationStatus;
+
 export type StatusMap = Record<string, StatusDefinition>;
 
 const STATUS_MAPS: readonly StatusMap[] = [
   QuotationStatus,
   SalesOrderStatus,
   ManufacturingJobStatus,
+  ManufacturingTaskStatus,
   DeliveryStatus,
   StockStatus,
   Priority,
   PaymentStatus,
+  InvoiceStatus,
+  CreditNoteStatus,
+  CreditNoteReason,
   CostingRequestStatus,
   CostingRiskFlag,
+  CoatingStatus,
+  ProductVersionStatus,
+  QuotationCustomizationStatus,
 ];
 
 export function getStatusLabel(

@@ -13,7 +13,6 @@ export type FilterPanelProps = {
   resetLabel?: string;
   className?: string;
   showActions?: boolean;
-  /** Compact bar layout matching list pages (no collapse header) */
   variant?: 'default' | 'toolbar';
 };
 
@@ -72,6 +71,7 @@ export function FilterPanel({
     <div className={cn('rounded-lg border border-border bg-card shadow-xs', className)}>
       <button
         type="button"
+        title={open ? `Hide ${title}` : `Show ${title}`}
         onClick={() => setOpen((prev) => !prev)}
         className="flex w-full items-center justify-between px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
