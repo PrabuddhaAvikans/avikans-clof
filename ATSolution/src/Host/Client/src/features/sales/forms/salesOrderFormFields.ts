@@ -1,4 +1,5 @@
 import type { DynamicFieldConfig, DynamicFormSection, FieldOption } from '@/components/forms/types';
+import { COUNTRY_OPTIONS } from '@/lib/countries';
 
 export type SalesOrderFormFieldsOptions = {
   priorityOptions?: FieldOption[];
@@ -74,7 +75,8 @@ export function createSalesOrderDetailSections(
         {
           name: 'deliveryAddress.country',
           label: 'Country',
-          type: 'text',
+          type: 'select',
+          options: [...COUNTRY_OPTIONS],
         },
       ],
     },

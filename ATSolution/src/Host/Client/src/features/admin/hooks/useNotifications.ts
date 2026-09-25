@@ -1,51 +1,39 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  notificationService,
-  type NotificationListFilters,
-} from "@/services";
-
-export const notificationKeys = {
-  all: ["notifications"] as const,
-  lists: () => [...notificationKeys.all, "list"] as const,
-  list: (filters: NotificationListFilters) =>
-    [...notificationKeys.lists(), filters] as const,
-  unreadCount: (recipientId: string) =>
-    [...notificationKeys.all, "unread-count", recipientId] as const,
-  details: () => [...notificationKeys.all, "detail"] as const,
-  detail: (id: string) => [...notificationKeys.details(), id] as const,
-};
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { notificationsActions } from "@/features/admin/store/notificationsSlice";
+import type { NotificationListFilters } from "@/services";
+import type { AppNotification } from "@/types/notification";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useNotifications(filters: NotificationListFilters) {
-  return useQuery({
-    queryKey: notificationKeys.list(filters),
-    queryFn: () => notificationService.list(filters),
+  return useEpicQuery<NotificationListFilters, PaginatedResponse<AppNotification>>({
+    arg: filters,
+    request: notificationsActions.fetchListRequest,
+    selectEntry: (state, key) => state.notifications.lists[key],
   });
 }
 
 export function useUnreadNotificationCount(recipientId: string) {
-  return useQuery({
-    queryKey: notificationKeys.unreadCount(recipientId),
-    queryFn: () => notificationService.getUnreadCount(recipientId),
+  return useEpicQuery<string, number>({
+    arg: recipientId,
     enabled: Boolean(recipientId),
+    getKey: (id) => `unread:${id}`,
+    request: notificationsActions.fetchUnreadCountRequest,
+    selectEntry: (state, key) => state.notifications.unreadCounts[key],
   });
 }
 
 export function useMarkNotificationAsRead() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => notificationService.markAsRead(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-    },
+  return useEpicMutation<string, AppNotification>({
+    request: notificationsActions.markAsReadRequest,
+    selectMutation: (state: RootState) => state.notifications.markAsRead,
   });
 }
 
 export function useMarkAllNotificationsAsRead() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (recipientId: string) => notificationService.markAllAsRead(recipientId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-    },
+  return useEpicMutation<string, void>({
+    request: notificationsActions.markAllAsReadRequest,
+    selectMutation: (state: RootState) => state.notifications.markAllAsRead,
   });
 }

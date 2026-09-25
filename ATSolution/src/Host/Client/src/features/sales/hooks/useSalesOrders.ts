@@ -1,96 +1,73 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  salesOrderService,
-  type SalesOrderFormData,
-  type SalesOrderListFilters,
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { salesOrdersActions } from "@/features/sales/store/salesOrdersSlice";
+import type {
+  SalesOrderFormData,
+  SalesOrderListFilters,
 } from "@/services";
-
-export const salesOrderKeys = {
-  all: ["salesOrders"] as const,
-  lists: () => [...salesOrderKeys.all, "list"] as const,
-  list: (filters: SalesOrderListFilters) => [...salesOrderKeys.lists(), filters] as const,
-  details: () => [...salesOrderKeys.all, "detail"] as const,
-  detail: (id: string) => [...salesOrderKeys.details(), id] as const,
-};
+import type { SalesOrder } from "@/types/sales-order";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useSalesOrders(filters: SalesOrderListFilters) {
-  return useQuery({
-    queryKey: salesOrderKeys.list(filters),
-    queryFn: () => salesOrderService.list(filters),
+  return useEpicQuery<SalesOrderListFilters, PaginatedResponse<SalesOrder>>({
+    arg: filters,
+    request: salesOrdersActions.fetchListRequest,
+    selectEntry: (state, key) => state.salesOrders.lists[key],
   });
 }
 
 export function useSalesOrder(id: string) {
-  return useQuery({
-    queryKey: salesOrderKeys.detail(id),
-    queryFn: () => salesOrderService.getById(id),
+  return useEpicQuery<string, SalesOrder>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: salesOrdersActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.salesOrders.details[key],
   });
 }
 
 export function useCreateSalesOrder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: SalesOrderFormData) => salesOrderService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.all });
-    },
+  return useEpicMutation<SalesOrderFormData, SalesOrder>({
+    request: salesOrdersActions.createRequest,
+    selectMutation: (state: RootState) => state.salesOrders.create,
   });
 }
 
 export function useUpdateSalesOrder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<SalesOrderFormData> }) =>
-      salesOrderService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.lists() });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<SalesOrderFormData> },
+    SalesOrder
+  >({
+    request: salesOrdersActions.updateRequest,
+    selectMutation: (state: RootState) => state.salesOrders.update,
   });
 }
 
 export function useConfirmSalesOrder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => salesOrderService.confirm(id),
-    onSuccess: (_, id) => {
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.lists() });
-    },
+  return useEpicMutation<string, SalesOrder>({
+    request: salesOrdersActions.confirmRequest,
+    selectMutation: (state: RootState) => state.salesOrders.confirm,
   });
 }
 
 export function useCancelSalesOrder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      salesOrderService.cancel(id, reason),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.lists() });
-    },
+  return useEpicMutation<{ id: string; reason?: string }, SalesOrder>({
+    request: salesOrdersActions.cancelRequest,
+    selectMutation: (state: RootState) => state.salesOrders.cancel,
   });
 }
 
 export function useDeleteSalesOrder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => salesOrderService.delete(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.all });
-    },
+  return useEpicMutation<string, string>({
+    request: salesOrdersActions.deleteRequest,
+    selectMutation: (state: RootState) => state.salesOrders.remove,
   });
 }
 
 export function useAssignSalesOrder() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
-      salesOrderService.assign(id, userId),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: salesOrderKeys.lists() });
-    },
+  return useEpicMutation<{ id: string; userId: string }, SalesOrder>({
+    request: salesOrdersActions.assignRequest,
+    selectMutation: (state: RootState) => state.salesOrders.assign,
   });
 }

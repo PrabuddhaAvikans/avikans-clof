@@ -1,86 +1,66 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  manufacturingService,
-  type ManufacturingJobFormData,
-  type ManufacturingListFilters,
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { manufacturingActions } from "@/features/manufacturing/store/manufacturingSlice";
+import type {
+  ManufacturingJobFormData,
+  ManufacturingListFilters,
 } from "@/services";
-
-export const manufacturingKeys = {
-  all: ["manufacturing"] as const,
-  lists: () => [...manufacturingKeys.all, "list"] as const,
-  list: (filters: ManufacturingListFilters) =>
-    [...manufacturingKeys.lists(), filters] as const,
-  details: () => [...manufacturingKeys.all, "detail"] as const,
-  detail: (id: string) => [...manufacturingKeys.details(), id] as const,
-};
+import type { ManufacturingJob } from "@/types/manufacturing";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useManufacturingJobs(filters: ManufacturingListFilters) {
-  return useQuery({
-    queryKey: manufacturingKeys.list(filters),
-    queryFn: () => manufacturingService.list(filters),
+  return useEpicQuery<ManufacturingListFilters, PaginatedResponse<ManufacturingJob>>({
+    arg: filters,
+    request: manufacturingActions.fetchListRequest,
+    selectEntry: (state, key) => state.manufacturing.lists[key],
   });
 }
 
 export function useManufacturingJob(id: string) {
-  return useQuery({
-    queryKey: manufacturingKeys.detail(id),
-    queryFn: () => manufacturingService.getById(id),
+  return useEpicQuery<string, ManufacturingJob>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: manufacturingActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.manufacturing.details[key],
   });
 }
 
 export function useCreateManufacturingJob() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: ManufacturingJobFormData) => manufacturingService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.all });
-    },
+  return useEpicMutation<ManufacturingJobFormData, ManufacturingJob>({
+    request: manufacturingActions.createRequest,
+    selectMutation: (state: RootState) => state.manufacturing.create,
   });
 }
 
 export function useUpdateManufacturingJob() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ManufacturingJobFormData> }) =>
-      manufacturingService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.lists() });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<ManufacturingJobFormData> },
+    ManufacturingJob
+  >({
+    request: manufacturingActions.updateRequest,
+    selectMutation: (state: RootState) => state.manufacturing.update,
   });
 }
 
 export function useReserveMaterials() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => manufacturingService.reserveMaterials(id),
-    onSuccess: (_, id) => {
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.lists() });
-      void queryClient.invalidateQueries({ queryKey: ["inventory"] });
-    },
+  return useEpicMutation<string, ManufacturingJob>({
+    request: manufacturingActions.reserveMaterialsRequest,
+    selectMutation: (state: RootState) => state.manufacturing.reserveMaterials,
   });
 }
 
 export function useStartManufacturingJob() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => manufacturingService.startJob(id),
-    onSuccess: (_, id) => {
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.lists() });
-    },
+  return useEpicMutation<string, ManufacturingJob>({
+    request: manufacturingActions.startRequest,
+    selectMutation: (state: RootState) => state.manufacturing.start,
   });
 }
 
 export function useCompleteManufacturingJob() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => manufacturingService.completeJob(id),
-    onSuccess: (_, id) => {
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: manufacturingKeys.lists() });
-    },
+  return useEpicMutation<string, ManufacturingJob>({
+    request: manufacturingActions.completeRequest,
+    selectMutation: (state: RootState) => state.manufacturing.complete,
   });
 }

@@ -1,14 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { dashboardService } from "@/services";
-
-export const dashboardKeys = {
-  all: ["dashboard"] as const,
-  summary: () => [...dashboardKeys.all, "summary"] as const,
-};
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import { dashboardActions } from "@/features/dashboard/store/dashboardSlice";
+import type { DashboardSummary } from "@/types/dashboard";
 
 export function useDashboardSummary() {
-  return useQuery({
-    queryKey: dashboardKeys.summary(),
-    queryFn: () => dashboardService.getSummary(),
+  return useEpicQuery<null, DashboardSummary>({
+    arg: null,
+    getKey: () => "summary",
+    request: dashboardActions.fetchSummaryRequest,
+    selectEntry: (state) => state.dashboard.summary,
   });
 }

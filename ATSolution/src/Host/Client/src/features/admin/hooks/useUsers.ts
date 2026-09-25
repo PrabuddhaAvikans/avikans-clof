@@ -1,154 +1,127 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  roleService,
-  userService,
-  type RoleFormData,
-  type RoleGroupFormData,
-  type RoleListFilters,
-  type UserFormData,
-  type UserListFilters,
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { usersActions } from "@/features/admin/store/usersSlice";
+import type {
+  RoleFormData,
+  RoleGroupFormData,
+  RoleListFilters,
+  UserFormData,
+  UserListFilters,
 } from "@/services";
-
-export const userKeys = {
-  all: ["users"] as const,
-  lists: () => [...userKeys.all, "list"] as const,
-  list: (filters: UserListFilters) => [...userKeys.lists(), filters] as const,
-  details: () => [...userKeys.all, "detail"] as const,
-  detail: (id: string) => [...userKeys.details(), id] as const,
-  permissions: (id: string) => [...userKeys.all, "permissions", id] as const,
-};
-
-export const roleKeys = {
-  all: ["roles"] as const,
-  lists: () => [...roleKeys.all, "list"] as const,
-  list: (filters: RoleListFilters) => [...roleKeys.lists(), filters] as const,
-  details: () => [...roleKeys.all, "detail"] as const,
-  detail: (id: string) => [...roleKeys.details(), id] as const,
-};
-
-export const roleGroupKeys = {
-  all: ["roleGroups"] as const,
-  lists: () => [...roleGroupKeys.all, "list"] as const,
-  list: (filters: RoleListFilters) => [...roleGroupKeys.lists(), filters] as const,
-  details: () => [...roleGroupKeys.all, "detail"] as const,
-  detail: (id: string) => [...roleGroupKeys.details(), id] as const,
-};
+import type { PaginatedResponse } from "@/types/common";
+import type {
+  PermissionAssignment,
+  Role,
+  RoleGroup,
+  User,
+} from "@/types/user";
 
 export function useUsers(filters: UserListFilters) {
-  return useQuery({
-    queryKey: userKeys.list(filters),
-    queryFn: () => userService.list(filters),
+  return useEpicQuery<UserListFilters, PaginatedResponse<User>>({
+    arg: filters,
+    request: usersActions.fetchUsersRequest,
+    selectEntry: (state, key) => state.users.users.lists[key],
   });
 }
 
 export function useUser(id: string) {
-  return useQuery({
-    queryKey: userKeys.detail(id),
-    queryFn: () => userService.getById(id),
+  return useEpicQuery<string, User>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: usersActions.fetchUserRequest,
+    selectEntry: (state, key) => state.users.users.details[key],
   });
 }
 
 export function useUserPermissions(userId: string) {
-  return useQuery({
-    queryKey: userKeys.permissions(userId),
-    queryFn: () => userService.getPermissionAssignment(userId),
+  return useEpicQuery<string, PermissionAssignment>({
+    arg: userId,
     enabled: Boolean(userId),
+    getKey: (value) => value,
+    request: usersActions.fetchUserPermissionsRequest,
+    selectEntry: (state, key) => state.users.users.permissions[key],
   });
 }
 
 export function useCreateUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: UserFormData) => userService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: userKeys.all });
-    },
+  return useEpicMutation<UserFormData, User>({
+    request: usersActions.createUserRequest,
+    selectMutation: (state: RootState) => state.users.users.create,
   });
 }
 
 export function useUpdateUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<UserFormData> }) =>
-      userService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-    },
+  return useEpicMutation<{ id: string; data: Partial<UserFormData> }, User>({
+    request: usersActions.updateUserRequest,
+    selectMutation: (state: RootState) => state.users.users.update,
   });
 }
 
 export function useRoles(filters: RoleListFilters) {
-  return useQuery({
-    queryKey: roleKeys.list(filters),
-    queryFn: () => roleService.listRoles(filters),
+  return useEpicQuery<RoleListFilters, PaginatedResponse<Role>>({
+    arg: filters,
+    request: usersActions.fetchRolesRequest,
+    selectEntry: (state, key) => state.users.roles.lists[key],
   });
 }
 
 export function useRole(id: string) {
-  return useQuery({
-    queryKey: roleKeys.detail(id),
-    queryFn: () => roleService.getRoleById(id),
+  return useEpicQuery<string, Role>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: usersActions.fetchRoleRequest,
+    selectEntry: (state, key) => state.users.roles.details[key],
   });
 }
 
 export function useCreateRole() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: RoleFormData) => roleService.createRole(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: roleKeys.all });
-    },
+  return useEpicMutation<RoleFormData, Role>({
+    request: usersActions.createRoleRequest,
+    selectMutation: (state: RootState) => state.users.roles.create,
   });
 }
 
 export function useUpdateRole() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<RoleFormData> }) =>
-      roleService.updateRole(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: roleKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
-    },
+  return useEpicMutation<{ id: string; data: Partial<RoleFormData> }, Role>({
+    request: usersActions.updateRoleRequest,
+    selectMutation: (state: RootState) => state.users.roles.update,
   });
 }
 
 export function useRoleGroups(filters: RoleListFilters) {
-  return useQuery({
-    queryKey: roleGroupKeys.list(filters),
-    queryFn: () => roleService.listRoleGroups(filters),
+  return useEpicQuery<RoleListFilters, PaginatedResponse<RoleGroup>>({
+    arg: filters,
+    request: usersActions.fetchRoleGroupsRequest,
+    selectEntry: (state, key) => state.users.roleGroups.lists[key],
   });
 }
 
 export function useRoleGroup(id: string) {
-  return useQuery({
-    queryKey: roleGroupKeys.detail(id),
-    queryFn: () => roleService.getRoleGroupById(id),
+  return useEpicQuery<string, RoleGroup>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: usersActions.fetchRoleGroupRequest,
+    selectEntry: (state, key) => state.users.roleGroups.details[key],
   });
 }
 
 export function useCreateRoleGroup() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: RoleGroupFormData) => roleService.createRoleGroup(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: roleGroupKeys.all });
-    },
+  return useEpicMutation<RoleGroupFormData, RoleGroup>({
+    request: usersActions.createRoleGroupRequest,
+    selectMutation: (state: RootState) => state.users.roleGroups.create,
   });
 }
 
 export function useUpdateRoleGroup() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<RoleGroupFormData> }) =>
-      roleService.updateRoleGroup(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: roleGroupKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: roleGroupKeys.lists() });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<RoleGroupFormData> },
+    RoleGroup
+  >({
+    request: usersActions.updateRoleGroupRequest,
+    selectMutation: (state: RootState) => state.users.roleGroups.update,
   });
 }

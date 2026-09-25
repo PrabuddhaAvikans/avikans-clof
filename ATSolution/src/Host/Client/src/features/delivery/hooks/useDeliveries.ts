@@ -1,75 +1,59 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  deliveryService,
-  type DeliveryFormData,
-  type DeliveryListFilters,
-} from "@/services";
-import type { ProofOfDelivery } from "@/types/delivery";
-
-export const deliveryKeys = {
-  all: ["deliveries"] as const,
-  lists: () => [...deliveryKeys.all, "list"] as const,
-  list: (filters: DeliveryListFilters) => [...deliveryKeys.lists(), filters] as const,
-  details: () => [...deliveryKeys.all, "detail"] as const,
-  detail: (id: string) => [...deliveryKeys.details(), id] as const,
-};
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { deliveriesActions } from "@/features/delivery/store/deliveriesSlice";
+import type { DeliveryFormData, DeliveryListFilters } from "@/services";
+import type { Delivery, ProofOfDelivery } from "@/types/delivery";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useDeliveries(filters: DeliveryListFilters) {
-  return useQuery({
-    queryKey: deliveryKeys.list(filters),
-    queryFn: () => deliveryService.list(filters),
+  return useEpicQuery<DeliveryListFilters, PaginatedResponse<Delivery>>({
+    arg: filters,
+    request: deliveriesActions.fetchListRequest,
+    selectEntry: (state, key) => state.deliveries.lists[key],
   });
 }
 
 export function useDelivery(id: string) {
-  return useQuery({
-    queryKey: deliveryKeys.detail(id),
-    queryFn: () => deliveryService.getById(id),
+  return useEpicQuery<string, Delivery>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: deliveriesActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.deliveries.details[key],
   });
 }
 
 export function useCreateDelivery() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: DeliveryFormData) => deliveryService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: deliveryKeys.all });
-    },
+  return useEpicMutation<DeliveryFormData, Delivery>({
+    request: deliveriesActions.createRequest,
+    selectMutation: (state: RootState) => state.deliveries.create,
   });
 }
 
 export function useUpdateDelivery() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<DeliveryFormData> }) =>
-      deliveryService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: deliveryKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: deliveryKeys.lists() });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<DeliveryFormData> },
+    Delivery
+  >({
+    request: deliveriesActions.updateRequest,
+    selectMutation: (state: RootState) => state.deliveries.update,
   });
 }
 
 export function useDispatchDelivery() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => deliveryService.dispatchDelivery(id),
-    onSuccess: (_, id) => {
-      void queryClient.invalidateQueries({ queryKey: deliveryKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: deliveryKeys.lists() });
-    },
+  return useEpicMutation<string, Delivery>({
+    request: deliveriesActions.dispatchRequest,
+    selectMutation: (state: RootState) => state.deliveries.dispatch,
   });
 }
 
 export function useRecordProofOfDelivery() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, proof }: { id: string; proof: Omit<ProofOfDelivery, "id"> }) =>
-      deliveryService.recordProofOfDelivery(id, proof),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: deliveryKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: deliveryKeys.lists() });
-    },
+  return useEpicMutation<
+    { id: string; proof: Omit<ProofOfDelivery, "id"> },
+    Delivery
+  >({
+    request: deliveriesActions.recordProofRequest,
+    selectMutation: (state: RootState) => state.deliveries.recordProof,
   });
 }

@@ -145,7 +145,7 @@ export function Header() {
 
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           <div ref={quickCreateRef} className="relative">
-            <Button
+            {/* <Button
               variant="primary"
               size="sm"
               leftIcon={<Plus className="h-3.5 w-3.5" />}
@@ -163,7 +163,7 @@ export function Header() {
               className="hidden sm:inline-flex"
             >
               Create
-            </Button>
+            </Button> */}
             <IconButton
               variant="outline"
               size="sm"
@@ -243,7 +243,7 @@ export function Header() {
                   <p className="text-sm font-medium text-foreground">{displayName}</p>
                   <p className="text-xs text-muted-foreground">{role}</p>
                 </div>
-                <button
+                {/* <button
                   type="button"
                   role="menuitem"
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-muted"
@@ -254,12 +254,12 @@ export function Header() {
                 >
                   <User className="h-4 w-4 text-muted-foreground" aria-hidden />
                   Profile
-                </button>
+                </button> */}
                 <button
                   type="button"
                   role="menuitem"
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
-                  onClick={handleLogout}
+                 // onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4" aria-hidden />
                   Log out

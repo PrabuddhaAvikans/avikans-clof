@@ -1,69 +1,60 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  categoryService,
-  type CategoryFormData,
-  type CategoryListFilters,
-} from "@/services";
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { categoriesActions } from "@/features/products/store/categoriesSlice";
+import type { CategoryFormData, CategoryListFilters } from "@/services";
+import type { Category } from "@/types/category";
+import type { PaginatedResponse } from "@/types/common";
 
-export const categoryKeys = {
-  all: ["categories"] as const,
-  lists: () => [...categoryKeys.all, "list"] as const,
-  list: (filters: CategoryListFilters) => [...categoryKeys.lists(), filters] as const,
-  tree: () => [...categoryKeys.all, "tree"] as const,
-  details: () => [...categoryKeys.all, "detail"] as const,
-  detail: (id: string) => [...categoryKeys.details(), id] as const,
-};
+type TreeArg = null | Record<string, never>;
 
 export function useCategories(filters: CategoryListFilters) {
-  return useQuery({
-    queryKey: categoryKeys.list(filters),
-    queryFn: () => categoryService.list(filters),
+  return useEpicQuery<CategoryListFilters, PaginatedResponse<Category>>({
+    arg: filters,
+    request: categoriesActions.fetchListRequest,
+    selectEntry: (state, key) => state.categories.lists[key],
   });
 }
 
-export function useCategoryTree() {
-  return useQuery({
-    queryKey: categoryKeys.tree(),
-    queryFn: () => categoryService.getTree(),
+export function useCategoryTree(arg: TreeArg = null) {
+  return useEpicQuery<TreeArg, Category[]>({
+    arg,
+    getKey: () => "tree",
+    request: categoriesActions.fetchTreeRequest,
+    selectEntry: (state) => state.categories.tree,
   });
 }
 
 export function useCategory(id: string) {
-  return useQuery({
-    queryKey: categoryKeys.detail(id),
-    queryFn: () => categoryService.getById(id),
+  return useEpicQuery<string, Category>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: categoriesActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.categories.details[key],
   });
 }
 
 export function useCreateCategory() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CategoryFormData) => categoryService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
-    },
+  return useEpicMutation<CategoryFormData, Category>({
+    request: categoriesActions.createRequest,
+    selectMutation: (state: RootState) => state.categories.create,
   });
 }
 
 export function useUpdateCategory() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CategoryFormData> }) =>
-      categoryService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: categoryKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<CategoryFormData> },
+    Category
+  >({
+    request: categoriesActions.updateRequest,
+    selectMutation: (state: RootState) => state.categories.update,
   });
 }
 
 export function useDeleteCategory() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => categoryService.delete(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
-    },
+  return useEpicMutation<string, string>({
+    request: categoriesActions.deleteRequest,
+    selectMutation: (state: RootState) => state.categories.remove,
   });
 }

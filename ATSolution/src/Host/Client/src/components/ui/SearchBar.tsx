@@ -46,7 +46,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
     }, [showShortcutHint, id]);
 
     const input = (
-      <div className={cn('relative', !label && containerClassName)}>
+      <div className={cn('relative h-9', !label && containerClassName)}>
         <Search
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden
@@ -60,7 +60,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
           disabled={disabled}
           placeholder={placeholder}
           className={cn(
-            'flex h-9 w-full rounded-md border border-input bg-card py-1 pl-9 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+            'flex h-9 w-full appearance-none items-center rounded-md border border-input bg-card py-0 pl-9 text-sm leading-none text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none',
             showShortcutHint ? 'pr-20' : hasValue ? 'pr-9' : 'pr-3',
             className,
           )}

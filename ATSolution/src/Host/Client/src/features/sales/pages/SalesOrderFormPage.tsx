@@ -38,6 +38,7 @@ import {
 } from "@/features/sales/hooks/useSalesOrders";
 import { useQuotation } from "@/features/sales/hooks/useQuotations";
 import { formatCurrency } from "@/lib/format";
+import { COUNTRY_OPTIONS, DEFAULT_COUNTRY } from "@/lib/countries";
 import { Priority } from "@/types/status";
 import type { Customer } from "@/types/customer";
 import type { Product } from "@/types/product";
@@ -60,7 +61,7 @@ const EMPTY_ADDRESS = {
   city: "",
   state: "",
   postalCode: "",
-  country: "Sri Lanka",
+  country: DEFAULT_COUNTRY,
 };
 
 function CustomerPicker({ onOpen }: { onOpen: () => void }) {
@@ -185,12 +186,11 @@ function DeliverySection() {
         <FormikInput name="deliveryAddress.city" label="City" required />
         <FormikInput name="deliveryAddress.state" label="State / Province" required />
         <FormikInput name="deliveryAddress.postalCode" label="Postal Code" required />
-        <FormikInput
+        <FormikSelect
           name="deliveryAddress.country"
           label="Country"
+          options={[...COUNTRY_OPTIONS]}
           required
-          disabled
-          hint="Sri Lanka only"
         />
       </div>
     </SalesFormSection>
@@ -237,7 +237,8 @@ export function SalesOrderFormPage() {
         requiresManufacturing: order.manufacturingJobIds.length > 0,
         deliveryAddress: {
           ...(order.shippingAddress ?? order.billingAddress),
-          country: "Sri Lanka",
+          country:
+            (order.shippingAddress ?? order.billingAddress)?.country || DEFAULT_COUNTRY,
         },
       };
     }
@@ -262,7 +263,9 @@ export function SalesOrderFormPage() {
         requiresManufacturing: true,
         deliveryAddress: {
           ...(fromQuotation.shippingAddress ?? fromQuotation.billingAddress),
-          country: "Sri Lanka",
+          country:
+            (fromQuotation.shippingAddress ?? fromQuotation.billingAddress)?.country ||
+            DEFAULT_COUNTRY,
         },
       };
     }
@@ -430,10 +433,10 @@ export function SalesOrderFormPage() {
                   void formik.setFieldValue("customerId", customer.id);
                   void formik.setFieldValue("customerName", customer.name);
                   const address = customer.shippingAddress ?? customer.billingAddress;
-                  void formik.setFieldValue(
-                    "deliveryAddress",
-                    { ...address, country: "Sri Lanka" },
-                  );
+                  void formik.setFieldValue("deliveryAddress", {
+                    ...address,
+                    country: address.country || DEFAULT_COUNTRY,
+                  });
                   setCustomerModalOpen(false);
                 }}
               />

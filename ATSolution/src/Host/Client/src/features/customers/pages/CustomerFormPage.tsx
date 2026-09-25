@@ -26,6 +26,7 @@ import {
   useUpdateCustomer,
 } from "@/features/customers/hooks/useCustomers";
 import { CUSTOMER_TYPE_OPTIONS } from "@/features/shared/components/CustomerSelectorModal";
+import { COUNTRY_OPTIONS, DEFAULT_COUNTRY } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import type { CustomerFormData } from "@/services";
 
@@ -48,7 +49,7 @@ const EMPTY_ADDRESS = {
   city: "",
   state: "",
   postalCode: "",
-  country: "Sri Lanka",
+  country: DEFAULT_COUNTRY,
 };
 
 const defaultValues: CustomerFormValues = {
@@ -125,9 +126,8 @@ function toFormData(values: CustomerFormValues): CustomerFormData {
     type: values.type,
     email: values.email,
     phone: values.phone,
-    // Always enforce Sri Lanka in this app (shipping/billing are Sri Lanka only).
-    billingAddress: { ...values.billingAddress, country: "Sri Lanka" },
-    shippingAddress: { ...shippingAddress, country: "Sri Lanka" },
+    billingAddress: values.billingAddress,
+    shippingAddress,
     contactPersons: [contactPerson],
     taxId: values.taxId || undefined,
     creditLimit: values.creditLimit,
@@ -210,12 +210,11 @@ function AddressFields({ prefix }: { prefix: "billingAddress" | "shippingAddress
       <FormikInput name={`${prefix}.city`} label="City" required />
       <FormikInput name={`${prefix}.state`} label="State / Province" required />
       <FormikInput name={`${prefix}.postalCode`} label="Postal Code" required />
-      <FormikInput
+      <FormikSelect
         name={`${prefix}.country`}
         label="Country"
+        options={[...COUNTRY_OPTIONS]}
         required
-        disabled
-        hint="Sri Lanka only"
       />
     </div>
   );
@@ -301,12 +300,18 @@ export function CustomerFormPage() {
         phone: primary?.phone ?? customer.phone,
         isPrimary: true,
       },
-      billingAddress: { ...customer.billingAddress, country: "Sri Lanka" },
+      billingAddress: {
+        ...customer.billingAddress,
+        country: customer.billingAddress.country || DEFAULT_COUNTRY,
+      },
       deliverySameAsBilling:
         !customer.shippingAddress ||
         JSON.stringify(customer.shippingAddress) === JSON.stringify(customer.billingAddress),
       shippingAddress: customer.shippingAddress
-        ? { ...customer.shippingAddress, country: "Sri Lanka" }
+        ? {
+            ...customer.shippingAddress,
+            country: customer.shippingAddress.country || DEFAULT_COUNTRY,
+          }
         : { ...EMPTY_ADDRESS },
       taxId: customer.taxId ?? "",
       creditLimit: customer.creditLimit ?? 0,

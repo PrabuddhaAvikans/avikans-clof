@@ -1,61 +1,49 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  customerService,
-  type CustomerFormData,
-  type CustomerListFilters,
-} from "@/services";
-
-export const customerKeys = {
-  all: ["customers"] as const,
-  lists: () => [...customerKeys.all, "list"] as const,
-  list: (filters: CustomerListFilters) => [...customerKeys.lists(), filters] as const,
-  details: () => [...customerKeys.all, "detail"] as const,
-  detail: (id: string) => [...customerKeys.details(), id] as const,
-};
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { customersActions } from "@/features/customers/store/customersSlice";
+import type { CustomerFormData, CustomerListFilters } from "@/services";
+import type { Customer } from "@/types/customer";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useCustomers(filters: CustomerListFilters) {
-  return useQuery({
-    queryKey: customerKeys.list(filters),
-    queryFn: () => customerService.list(filters),
+  return useEpicQuery<CustomerListFilters, PaginatedResponse<Customer>>({
+    arg: filters,
+    request: customersActions.fetchListRequest,
+    selectEntry: (state, key) => state.customers.lists[key],
   });
 }
 
 export function useCustomer(id: string) {
-  return useQuery({
-    queryKey: customerKeys.detail(id),
-    queryFn: () => customerService.getById(id),
+  return useEpicQuery<string, Customer>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: customersActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.customers.details[key],
   });
 }
 
 export function useCreateCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CustomerFormData) => customerService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    },
+  return useEpicMutation<CustomerFormData, Customer>({
+    request: customersActions.createRequest,
+    selectMutation: (state: RootState) => state.customers.create,
   });
 }
 
 export function useUpdateCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CustomerFormData> }) =>
-      customerService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: customerKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<CustomerFormData> },
+    Customer
+  >({
+    request: customersActions.updateRequest,
+    selectMutation: (state: RootState) => state.customers.update,
   });
 }
 
 export function useDeleteCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => customerService.delete(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    },
+  return useEpicMutation<string, string>({
+    request: customersActions.deleteRequest,
+    selectMutation: (state: RootState) => state.customers.remove,
   });
 }

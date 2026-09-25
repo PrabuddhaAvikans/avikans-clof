@@ -1,61 +1,49 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  productService,
-  type ProductListFilters,
-} from "@/services";
-import type { ProductFormData } from "@/types/product";
-
-export const productKeys = {
-  all: ["products"] as const,
-  lists: () => [...productKeys.all, "list"] as const,
-  list: (filters: ProductListFilters) => [...productKeys.lists(), filters] as const,
-  details: () => [...productKeys.all, "detail"] as const,
-  detail: (id: string) => [...productKeys.details(), id] as const,
-};
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { productsActions } from "@/features/products/store/productsSlice";
+import type { ProductListFilters } from "@/services";
+import type { Product, ProductFormData } from "@/types/product";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useProducts(filters: ProductListFilters) {
-  return useQuery({
-    queryKey: productKeys.list(filters),
-    queryFn: () => productService.list(filters),
+  return useEpicQuery<ProductListFilters, PaginatedResponse<Product>>({
+    arg: filters,
+    request: productsActions.fetchListRequest,
+    selectEntry: (state, key) => state.products.lists[key],
   });
 }
 
 export function useProduct(id: string) {
-  return useQuery({
-    queryKey: productKeys.detail(id),
-    queryFn: () => productService.getById(id),
+  return useEpicQuery<string, Product>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: productsActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.products.details[key],
   });
 }
 
 export function useCreateProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: ProductFormData) => productService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: productKeys.all });
-    },
+  return useEpicMutation<ProductFormData, Product>({
+    request: productsActions.createRequest,
+    selectMutation: (state: RootState) => state.products.create,
   });
 }
 
 export function useUpdateProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ProductFormData> }) =>
-      productService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: productKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: productKeys.lists() });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<ProductFormData> },
+    Product
+  >({
+    request: productsActions.updateRequest,
+    selectMutation: (state: RootState) => state.products.update,
   });
 }
 
 export function useDeleteProduct() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => productService.delete(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: productKeys.all });
-    },
+  return useEpicMutation<string, string>({
+    request: productsActions.deleteRequest,
+    selectMutation: (state: RootState) => state.products.remove,
   });
 }

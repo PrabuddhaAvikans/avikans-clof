@@ -1,86 +1,60 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  costingService,
-  type CostingListFilters,
-} from "@/services";
-
-export const costingKeys = {
-  all: ["costing"] as const,
-  lists: () => [...costingKeys.all, "list"] as const,
-  list: (filters: CostingListFilters) => [...costingKeys.lists(), filters] as const,
-  details: () => [...costingKeys.all, "detail"] as const,
-  detail: (id: string) => [...costingKeys.details(), id] as const,
-};
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { costingActions } from "@/features/costing/store/costingSlice";
+import type { CostingListFilters } from "@/services";
+import type { CostingRequest } from "@/types/costing";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useCostingRequests(filters: CostingListFilters) {
-  return useQuery({
-    queryKey: costingKeys.list(filters),
-    queryFn: () => costingService.list(filters),
+  return useEpicQuery<CostingListFilters, PaginatedResponse<CostingRequest>>({
+    arg: filters,
+    request: costingActions.fetchListRequest,
+    selectEntry: (state, key) => state.costing.lists[key],
   });
 }
 
 export function useCostingRequest(id: string) {
-  return useQuery({
-    queryKey: costingKeys.detail(id),
-    queryFn: () => costingService.getById(id),
+  return useEpicQuery<string, CostingRequest>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: costingActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.costing.details[key],
   });
 }
 
 export function useApproveCostingRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
-      costingService.approve(id, comment),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: costingKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: costingKeys.lists() });
-    },
+  return useEpicMutation<{ id: string; comment?: string }, CostingRequest>({
+    request: costingActions.approveRequest,
+    selectMutation: (state: RootState) => state.costing.approve,
   });
 }
 
 export function useRejectCostingRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment: string }) =>
-      costingService.reject(id, comment),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: costingKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: costingKeys.lists() });
-    },
+  return useEpicMutation<{ id: string; comment: string }, CostingRequest>({
+    request: costingActions.rejectRequest,
+    selectMutation: (state: RootState) => state.costing.reject,
   });
 }
 
 export function useRequestCostingChanges() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment: string }) =>
-      costingService.requestChanges(id, comment),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: costingKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: costingKeys.lists() });
-    },
+  return useEpicMutation<{ id: string; comment: string }, CostingRequest>({
+    request: costingActions.requestChangesRequest,
+    selectMutation: (state: RootState) => state.costing.requestChanges,
   });
 }
 
 export function useUpdateCostingNotes() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
-      costingService.updateNotes(id, notes),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: costingKeys.detail(id) });
-    },
+  return useEpicMutation<{ id: string; notes: string }, CostingRequest>({
+    request: costingActions.updateNotesRequest,
+    selectMutation: (state: RootState) => state.costing.updateNotes,
   });
 }
 
 export function useAddCostingComment() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment: string }) =>
-      costingService.addComment(id, comment),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: costingKeys.detail(id) });
-    },
+  return useEpicMutation<{ id: string; comment: string }, CostingRequest>({
+    request: costingActions.addCommentRequest,
+    selectMutation: (state: RootState) => state.costing.addComment,
   });
 }

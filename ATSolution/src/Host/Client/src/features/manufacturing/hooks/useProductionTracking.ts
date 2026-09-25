@@ -1,75 +1,65 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  productionTrackingService,
-  type ProductionTrackingFilters,
-} from "@/services";
-
-export const productionTrackingKeys = {
-  all: ["production-tracking"] as const,
-  snapshot: () => [...productionTrackingKeys.all, "snapshot"] as const,
-  lists: () => [...productionTrackingKeys.all, "list"] as const,
-  list: (filters: ProductionTrackingFilters) =>
-    [...productionTrackingKeys.lists(), filters] as const,
-  details: () => [...productionTrackingKeys.all, "detail"] as const,
-  detail: (id: string) => [...productionTrackingKeys.details(), id] as const,
-};
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { productionTrackingActions } from "@/features/manufacturing/store/productionTrackingSlice";
+import type { ProductionTrackingFilters } from "@/services";
+import type {
+  ProductionJob,
+  ProductionTrackingSnapshot,
+} from "@/types/production-tracking";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useProductionSnapshot() {
-  return useQuery({
-    queryKey: productionTrackingKeys.snapshot(),
-    queryFn: () => productionTrackingService.getSnapshot(),
+  return useEpicQuery<null, ProductionTrackingSnapshot>({
+    arg: null,
+    getKey: () => "snapshot",
+    request: productionTrackingActions.fetchSnapshotRequest,
+    selectEntry: (state, key) => state.productionTracking.snapshot[key],
   });
 }
 
 export function useProductionJobs(filters: ProductionTrackingFilters) {
-  return useQuery({
-    queryKey: productionTrackingKeys.list(filters),
-    queryFn: () => productionTrackingService.listJobs(filters),
+  return useEpicQuery<ProductionTrackingFilters, PaginatedResponse<ProductionJob>>({
+    arg: filters,
+    request: productionTrackingActions.fetchListRequest,
+    selectEntry: (state, key) => state.productionTracking.lists[key],
   });
 }
 
 export function useProductionJob(id: string) {
-  return useQuery({
-    queryKey: productionTrackingKeys.detail(id),
-    queryFn: () => productionTrackingService.getJobById(id),
+  return useEpicQuery<string, ProductionJob>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: productionTrackingActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.productionTracking.details[key],
   });
 }
 
-function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: productionTrackingKeys.all });
-}
-
 export function useStartProduction() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (ids: string[]) => productionTrackingService.startProduction(ids),
-    onSuccess: () => invalidateAll(queryClient),
+  return useEpicMutation<string[], void>({
+    request: productionTrackingActions.startRequest,
+    selectMutation: (state: RootState) => state.productionTracking.start,
   });
 }
 
 export function useUpdateProductionStage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, comment }: { id: string; comment?: string }) =>
-      productionTrackingService.updateStage(id, comment),
-    onSuccess: () => invalidateAll(queryClient),
+  return useEpicMutation<{ id: string; comment?: string }, ProductionJob>({
+    request: productionTrackingActions.updateStageRequest,
+    selectMutation: (state: RootState) => state.productionTracking.updateStage,
   });
 }
 
 export function useHoldProductionJob() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      productionTrackingService.holdJob(id, reason),
-    onSuccess: () => invalidateAll(queryClient),
+  return useEpicMutation<{ id: string; reason?: string }, ProductionJob>({
+    request: productionTrackingActions.holdRequest,
+    selectMutation: (state: RootState) => state.productionTracking.hold,
   });
 }
 
 export function useReleaseToQc() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => productionTrackingService.releaseToQc(id),
-    onSuccess: () => invalidateAll(queryClient),
+  return useEpicMutation<string, ProductionJob>({
+    request: productionTrackingActions.releaseToQcRequest,
+    selectMutation: (state: RootState) => state.productionTracking.releaseToQc,
   });
 }

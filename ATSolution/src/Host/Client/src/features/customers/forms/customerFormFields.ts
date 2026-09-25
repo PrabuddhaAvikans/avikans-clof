@@ -1,5 +1,12 @@
 import type { DynamicFormSection } from '@/components/forms/types';
-import { CUSTOMER_TYPE_OPTIONS } from '@/features/shared/components/CustomerSelectorModal';
+import { COUNTRY_OPTIONS } from '@/lib/countries';
+import { CustomerType } from '@/types/customer';
+
+const CUSTOMER_TYPE_OPTIONS = [
+  { value: CustomerType.individual, label: 'Individual' },
+  { value: CustomerType.retail, label: 'Retail' },
+  { value: CustomerType.corporate, label: 'Corporate' },
+];
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -126,7 +133,8 @@ export const customerFormSections: DynamicFormSection[] = [
       {
         name: 'billingAddress.country',
         label: 'Country',
-        type: 'text',
+        type: 'select',
+        options: [...COUNTRY_OPTIONS],
         required: true,
       },
     ],
@@ -175,7 +183,8 @@ export const customerFormSections: DynamicFormSection[] = [
       {
         name: 'shippingAddress.country',
         label: 'Country',
-        type: 'text',
+        type: 'select',
+        options: [...COUNTRY_OPTIONS],
         hidden: (values) => Boolean(values.deliverySameAsBilling),
       },
     ],

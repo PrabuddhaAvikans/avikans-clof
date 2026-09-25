@@ -1,90 +1,82 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  inventoryService,
-  type InventoryFormData,
-  type InventoryListFilters,
-  type StockMovementFilters,
+import { useEpicMutation } from "@/app/store/async/useEpicMutation";
+import { useEpicQuery } from "@/app/store/async/useEpicQuery";
+import type { RootState } from "@/app/store";
+import { inventoryActions } from "@/features/inventory/store/inventorySlice";
+import type {
+  InventoryFormData,
+  InventoryListFilters,
+  StockMovementFilters,
 } from "@/services";
-import type { StockMovementTypeValue } from "@/types/inventory";
-
-export const inventoryKeys = {
-  all: ["inventory"] as const,
-  lists: () => [...inventoryKeys.all, "list"] as const,
-  list: (filters: InventoryListFilters) => [...inventoryKeys.lists(), filters] as const,
-  lowStock: () => [...inventoryKeys.all, "low-stock"] as const,
-  movements: (filters: StockMovementFilters) =>
-    [...inventoryKeys.all, "movements", filters] as const,
-  details: () => [...inventoryKeys.all, "detail"] as const,
-  detail: (id: string) => [...inventoryKeys.details(), id] as const,
-};
+import type {
+  InventoryItem,
+  StockMovement,
+  StockMovementTypeValue,
+} from "@/types/inventory";
+import type { PaginatedResponse } from "@/types/common";
 
 export function useInventoryItems(filters: InventoryListFilters) {
-  return useQuery({
-    queryKey: inventoryKeys.list(filters),
-    queryFn: () => inventoryService.list(filters),
+  return useEpicQuery<InventoryListFilters, PaginatedResponse<InventoryItem>>({
+    arg: filters,
+    request: inventoryActions.fetchListRequest,
+    selectEntry: (state, key) => state.inventory.lists[key],
   });
 }
 
 export function useInventoryItem(id: string) {
-  return useQuery({
-    queryKey: inventoryKeys.detail(id),
-    queryFn: () => inventoryService.getById(id),
+  return useEpicQuery<string, InventoryItem>({
+    arg: id,
     enabled: Boolean(id),
+    getKey: (value) => value,
+    request: inventoryActions.fetchDetailRequest,
+    selectEntry: (state, key) => state.inventory.details[key],
   });
 }
 
 export function useLowStockItems() {
-  return useQuery({
-    queryKey: inventoryKeys.lowStock(),
-    queryFn: () => inventoryService.getLowStock(),
+  return useEpicQuery<null, InventoryItem[]>({
+    arg: null,
+    getKey: () => "low-stock",
+    request: inventoryActions.fetchLowStockRequest,
+    selectEntry: (state, key) => state.inventory.lowStock[key],
   });
 }
 
 export function useStockMovements(filters: StockMovementFilters) {
-  return useQuery({
-    queryKey: inventoryKeys.movements(filters),
-    queryFn: () => inventoryService.listMovements(filters),
+  return useEpicQuery<StockMovementFilters, PaginatedResponse<StockMovement>>({
+    arg: filters,
+    request: inventoryActions.fetchMovementsRequest,
+    selectEntry: (state, key) => state.inventory.movements[key],
   });
 }
 
 export function useCreateInventoryItem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: InventoryFormData) => inventoryService.create(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-    },
+  return useEpicMutation<InventoryFormData, InventoryItem>({
+    request: inventoryActions.createRequest,
+    selectMutation: (state: RootState) => state.inventory.create,
   });
 }
 
 export function useUpdateInventoryItem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<InventoryFormData> }) =>
-      inventoryService.update(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: inventoryKeys.detail(id) });
-      void queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-    },
+  return useEpicMutation<
+    { id: string; data: Partial<InventoryFormData> },
+    InventoryItem
+  >({
+    request: inventoryActions.updateRequest,
+    selectMutation: (state: RootState) => state.inventory.update,
   });
 }
 
 export function useRecordStockMovement() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      inventoryItemId,
-      type,
-      quantity,
-      reference,
-    }: {
+  return useEpicMutation<
+    {
       inventoryItemId: string;
       type: StockMovementTypeValue;
       quantity: number;
       reference?: { referenceType: string; referenceId: string; notes?: string };
-    }) => inventoryService.recordMovement(inventoryItemId, type, quantity, reference),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
     },
+    StockMovement
+  >({
+    request: inventoryActions.recordMovementRequest,
+    selectMutation: (state: RootState) => state.inventory.recordMovement,
   });
 }

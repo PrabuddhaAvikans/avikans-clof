@@ -200,7 +200,7 @@ export function DashboardPage() {
         description="Overview of sales, manufacturing, and delivery operations."
         actions={
           <>
-            <Link to={ROUTES.quotations.list}>
+            {/* <Link to={ROUTES.quotations.list}>
               <Button variant="outline" size="sm" leftIcon={<FileText className="h-4 w-4" />}>
                 Quotations
               </Button>
@@ -209,7 +209,7 @@ export function DashboardPage() {
               <Button variant="outline" size="sm" leftIcon={<ShoppingCart className="h-4 w-4" />}>
                 New Order
               </Button>
-            </Link>
+            </Link> */}
             <Link to={ROUTES.products.new}>
               <Button size="sm" leftIcon={<Plus className="h-4 w-4" />}>
                 Add Product
@@ -289,7 +289,7 @@ export function DashboardPage() {
             </div>
 
             {/* Quick actions */}
-            <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-muted/30 p-4">
+            {/* <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-muted/30 p-4">
               <span className="mr-2 self-center text-sm font-medium text-muted-foreground">
                 Quick actions:
               </span>
@@ -308,10 +308,10 @@ export function DashboardPage() {
               <Link to={ROUTES.deliveries.new}>
                 <Button variant="outline" size="sm">Schedule Delivery</Button>
               </Link>
-            </div>
+            </div> */}
 
             {/* Charts row 1 */}
-            <div className="grid gap-2 lg:grid-cols-2">
+            {/* <div className="grid gap-2 lg:grid-cols-2">
               <ChartCard title="Monthly Quotation Value">
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={data.monthlyQuotationValue}>
@@ -327,10 +327,10 @@ export function DashboardPage() {
               <ChartCard title="Quotation Conversion">
                 <DonutChart data={data.quotationConversion} />
               </ChartCard>
-            </div>
+            </div> */}
 
             {/* Charts row 2 */}
-            <div className="grid gap-2 lg:grid-cols-3">
+            {/* <div className="grid gap-2 lg:grid-cols-3">
               <ChartCard title="Orders by Status">
                 <DonutChart data={data.ordersByStatus} />
               </ChartCard>
@@ -340,10 +340,10 @@ export function DashboardPage() {
               <ChartCard title="Deliveries by Status">
                 <DonutChart data={data.deliveriesByStatus} />
               </ChartCard>
-            </div>
+            </div> */}
 
             {/* Charts row 3 */}
-            <div className="grid gap-2 lg:grid-cols-2">
+            {/* <div className="grid gap-2 lg:grid-cols-2">
               <ChartCard title="Revenue Trend">
                 <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={data.revenueByMonth}>
@@ -375,10 +375,10 @@ export function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
-            </div>
+            </div> */}
 
             {/* Tables row */}
-            <div className="grid gap-2 xl:grid-cols-2">
+            {/* <div className="grid gap-2 xl:grid-cols-2">
               <DashboardTable
                 title="Recent Quotations"
                 rows={data.recentQuotations}
@@ -391,9 +391,9 @@ export function DashboardPage() {
                 statusMap={SalesOrderStatus}
                 viewAllHref={ROUTES.salesOrders.list}
               />
-            </div>
+            </div> */}
 
-            <div className="grid gap-2 xl:grid-cols-2">
+            {/* <div className="grid gap-2 xl:grid-cols-2">
               <DashboardTable
                 title="Jobs Requiring Attention"
                 rows={data.jobsRequiringAttention}
@@ -408,10 +408,10 @@ export function DashboardPage() {
                 showAmount={false}
                 viewAllHref={ROUTES.deliveries.list}
               />
-            </div>
+            </div> */}
 
             {/* Activity & notifications */}
-            <div className="grid gap-2 lg:grid-cols-2">
+            {/* <div className="grid gap-2 lg:grid-cols-2">
               <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-foreground">Recent Activity</h3>
@@ -462,7 +462,7 @@ export function DashboardPage() {
                   ))}
                 </ul>
               </div>
-            </div>
+            </div> */}
           </div>
         )}
       </PageContent>
