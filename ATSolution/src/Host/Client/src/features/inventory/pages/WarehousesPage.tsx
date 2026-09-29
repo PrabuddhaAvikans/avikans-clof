@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/feedback/PageHeader";
@@ -11,15 +12,17 @@ import { WarehouseFormModal } from "@/features/inventory/components/WarehouseFor
 import { useWarehouses } from "@/hooks/useWarehouses";
 import {
   formatWarehouseLabel,
-  removeWarehouse,
+  WAREHOUSES_UPDATED_EVENT,
   type Warehouse,
 } from "@/lib/warehouses";
+import { httpWarehouseService } from "@/services/http/httpWarehouseService";
 
 export function WarehousesPage() {
   const warehouses = useWarehouses();
   const [createOpen, setCreateOpen] = useState(false);
   const [editWarehouse, setEditWarehouse] = useState<Warehouse | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const columns = useMemo<ColumnDef<Warehouse, unknown>[]>(
     () => [
@@ -71,6 +74,21 @@ export function WarehousesPage() {
     [warehouses.length],
   );
 
+  const handleDelete = async () => {
+    if (!deleteTarget?.id) return;
+    setIsDeleting(true);
+    try {
+      await httpWarehouseService.delete(deleteTarget.id);
+      window.dispatchEvent(new Event(WAREHOUSES_UPDATED_EVENT));
+      setDeleteTarget(null);
+      toast.success(`Deleted ${deleteTarget.name}.`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Could not delete warehouse.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <PageContainer maxWidth="wide">
       <PageHeader
@@ -102,7 +120,7 @@ export function WarehousesPage() {
           data={warehouses}
           columns={columns}
           pageSize={15}
-          getRowId={(row) => row.code}
+          getRowId={(row) => row.id || row.code}
           forceTable
           density="compact"
         />
@@ -124,9 +142,7 @@ export function WarehousesPage() {
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {
-          if (!deleteTarget) return;
-          removeWarehouse(deleteTarget.code);
-          setDeleteTarget(null);
+          void handleDelete();
         }}
         title="Delete Warehouse"
         description={
@@ -136,6 +152,7 @@ export function WarehousesPage() {
         }
         confirmLabel="Delete"
         variant="danger"
+        loading={isDeleting}
       />
     </PageContainer>
   );

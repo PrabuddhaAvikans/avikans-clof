@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -11,20 +11,44 @@ import { workspaceGrid, workspaceGridCol, workspacePanelFill } from "@/lib/panel
 import type { CreditNote } from "@/types/credit-note";
 import type { Invoice } from "@/types/invoice";
 import { type CreditNoteStatusValue } from "@/types/status";
-import { initialCreditNotes } from "@/features/finance/mock/mockCreditNotes";
-import { initialInvoices } from "@/features/finance/mock/mockInvoices";
+import { httpCreditNoteService } from "@/services/http/httpCreditNoteService";
+import { httpInvoiceService } from "@/services/http/httpInvoiceService";
 
 export function FinanceCreditNotesPage() {
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>(initialCreditNotes);
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [selectedId, setSelectedId] = useState<string | null>(
-    initialCreditNotes[0]?.id ?? null,
-  );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<CreditNoteStatusValue | "">("");
 
   const [applyOpen, setApplyOpen] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [creditPage, invoicePage] = await Promise.all([
+        httpCreditNoteService.list({ page: 1, pageSize: 200 }),
+        httpInvoiceService.list({ page: 1, pageSize: 200 }),
+      ]);
+      setCreditNotes(creditPage.items);
+      setInvoices(invoicePage.items);
+      setSelectedId((current) => current ?? creditPage.items[0]?.id ?? null);
+      setError(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load credit notes.");
+      setCreditNotes([]);
+      setInvoices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const selectedCreditNote = useMemo(() => {
     return creditNotes.find((cn) => cn.id === selectedId) ?? null;
@@ -44,63 +68,21 @@ export function FinanceCreditNotesPage() {
     const applyAmount = Math.max(0, Math.min(args.amount, maxAmount));
     if (applyAmount <= 0) return;
 
-    setCreditNotes((prev) =>
-      prev.map((c) => {
-        if (c.id !== args.creditNoteId) return c;
-
-        const newAppliedAmount = c.appliedAmount + applyAmount;
-        const newRemainingAmount = Math.max(0, c.totalAmount - newAppliedAmount);
-        const newStatus: CreditNoteStatusValue =
-          newRemainingAmount === 0
-            ? "applied"
-            : newAppliedAmount > 0
-              ? "partially_applied"
-              : c.status;
-
-        return {
-          ...c,
-          appliedAmount: newAppliedAmount,
-          remainingAmount: newRemainingAmount,
-          status: newStatus,
-          invoiceId: c.invoiceId ?? invoice.id,
-          invoiceNumber: c.invoiceNumber ?? invoice.invoiceNumber,
-          applications: [
-            ...c.applications,
-            {
-              id: `cna-${Date.now()}`,
-              invoiceId: invoice.id,
-              invoiceNumber: invoice.invoiceNumber,
-              amount: applyAmount,
-              note: args.note,
-              appliedAt: new Date().toISOString(),
-              appliedBy: c.createdBy,
-              appliedByName: c.createdByName,
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        };
-      }),
-    );
-
-    setInvoices((prev) =>
-      prev.map((inv) => {
-        if (inv.id !== args.invoiceId) return inv;
-
-        const newCredited = inv.amountCredited + applyAmount;
-        const newOutstanding = Math.max(0, inv.outstandingAmount - applyAmount);
-        const newStatus = newOutstanding === 0 ? "paid" : newCredited > 0 ? "partial" : "issued";
-
-        return {
-          ...inv,
-          amountCredited: newCredited,
-          outstandingAmount: newOutstanding,
-          status: newStatus,
-          updatedAt: new Date().toISOString(),
-        };
-      }),
-    );
-
-    toast.success(`Applied ${applyAmount.toFixed(2)} to invoice ${invoice.invoiceNumber}.`);
+    try {
+      const updated = await httpCreditNoteService.apply(args.creditNoteId, {
+        invoiceId: args.invoiceId,
+        amount: applyAmount,
+        note: args.note,
+      });
+      setCreditNotes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      const refreshedInvoice = await httpInvoiceService.getById(args.invoiceId);
+      setInvoices((prev) =>
+        prev.map((inv) => (inv.id === refreshedInvoice.id ? refreshedInvoice : inv)),
+      );
+      toast.success(`Applied ${applyAmount.toFixed(2)} to invoice ${invoice.invoiceNumber}.`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to apply credit note.");
+    }
   };
 
   return (
@@ -111,7 +93,7 @@ export function FinanceCreditNotesPage() {
         breadcrumbs={[{ label: "Finance", href: ROUTES.finance.invoices }]}
       />
 
-      <PageContent>
+      <PageContent isLoading={isLoading} error={error}>
         <div className={workspaceGrid}>
           <div className={workspaceGridCol + " min-h-[18rem] lg:col-span-3"}>
             <CreditNoteListPanel
@@ -149,4 +131,3 @@ export function FinanceCreditNotesPage() {
     </PageContainer>
   );
 }
-

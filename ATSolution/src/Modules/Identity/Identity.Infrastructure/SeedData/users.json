@@ -1,0 +1,155 @@
+[
+  {
+    "id": "usr-001",
+    "email": "prabuddha@avikans.com",
+    "firstName": "Prabuddha",
+    "lastName": "Jayawardhana",
+    "displayName": "Prabuddha Jayawardhana",
+    "phone": "+94 77 100 0001",
+    "roleId": "rol-001",
+    "roleName": "Administrator",
+    "roleGroupIds": [
+      "rg-001"
+    ],
+    "roleGroupNames": [
+      "Executive Team"
+    ],
+    "department": "Management",
+    "jobTitle": "General Manager",
+    "status": "active",
+    "lastLoginAt": "2025-07-31T08:30:00Z",
+    "createdAt": "2024-01-01T08:00:00Z",
+    "updatedAt": "2025-07-31T08:30:00Z"
+  },
+  {
+    "id": "usr-002",
+    "email": "chamari.perera@avikans.com",
+    "firstName": "Chamari",
+    "lastName": "Perera",
+    "displayName": "Chamari Perera",
+    "phone": "+94 77 100 0002",
+    "roleId": "rol-002",
+    "roleName": "Sales Manager",
+    "roleGroupIds": [
+      "rg-002"
+    ],
+    "roleGroupNames": [
+      "Sales Department"
+    ],
+    "department": "Sales",
+    "jobTitle": "Sales Manager",
+    "status": "active",
+    "lastLoginAt": "2025-07-31T07:45:00Z",
+    "createdAt": "2024-01-15T08:00:00Z",
+    "updatedAt": "2025-07-31T07:45:00Z"
+  },
+  {
+    "id": "usr-003",
+    "email": "kasun.silva@avikans.com",
+    "firstName": "Kasun",
+    "lastName": "Silva",
+    "displayName": "Kasun Silva",
+    "phone": "+94 77 100 0003",
+    "roleId": "rol-002",
+    "roleName": "Sales Manager",
+    "roleGroupIds": [
+      "rg-002"
+    ],
+    "roleGroupNames": [
+      "Sales Department"
+    ],
+    "department": "Sales",
+    "jobTitle": "Sales Representative",
+    "status": "active",
+    "lastLoginAt": "2025-07-30T16:20:00Z",
+    "createdAt": "2024-02-01T08:00:00Z",
+    "updatedAt": "2025-07-30T16:20:00Z"
+  },
+  {
+    "id": "usr-004",
+    "email": "nuwan.wickramasinghe@avikans.com",
+    "firstName": "Nuwan",
+    "lastName": "Wickramasinghe",
+    "displayName": "Nuwan Wickramasinghe",
+    "phone": "+94 77 100 0004",
+    "roleId": "rol-003",
+    "roleName": "Production Manager",
+    "roleGroupIds": [
+      "rg-003"
+    ],
+    "roleGroupNames": [
+      "Production Floor"
+    ],
+    "department": "Manufacturing",
+    "jobTitle": "Production Manager",
+    "status": "active",
+    "lastLoginAt": "2025-07-31T06:00:00Z",
+    "createdAt": "2024-02-15T08:00:00Z",
+    "updatedAt": "2025-07-31T06:00:00Z"
+  },
+  {
+    "id": "usr-005",
+    "email": "chaminda.jayasuriya@avikans.com",
+    "firstName": "Chaminda",
+    "lastName": "Jayasuriya",
+    "displayName": "Chaminda Jayasuriya",
+    "phone": "+94 77 100 0005",
+    "roleId": "rol-004",
+    "roleName": "Warehouse Operator",
+    "roleGroupIds": [
+      "rg-004"
+    ],
+    "roleGroupNames": [
+      "Logistics"
+    ],
+    "department": "Warehouse",
+    "jobTitle": "Warehouse Lead",
+    "status": "active",
+    "lastLoginAt": "2025-07-30T14:00:00Z",
+    "createdAt": "2024-03-01T08:00:00Z",
+    "updatedAt": "2025-07-30T14:00:00Z"
+  },
+  {
+    "id": "usr-006",
+    "email": "sanduni.rathnayake@avikans.com",
+    "firstName": "Sanduni",
+    "lastName": "Rathnayake",
+    "displayName": "Sanduni Rathnayake",
+    "phone": "+94 77 100 0006",
+    "roleId": "rol-005",
+    "roleName": "Quality Inspector",
+    "roleGroupIds": [
+      "rg-003"
+    ],
+    "roleGroupNames": [
+      "Production Floor"
+    ],
+    "department": "Quality Control",
+    "jobTitle": "QC Inspector",
+    "status": "active",
+    "lastLoginAt": "2025-07-29T11:30:00Z",
+    "createdAt": "2024-04-01T08:00:00Z",
+    "updatedAt": "2025-07-29T11:30:00Z"
+  },
+  {
+    "id": "usr-007",
+    "email": "thilini.gunasekara@avikans.com",
+    "firstName": "Thilini",
+    "lastName": "Gunasekara",
+    "displayName": "Thilini Gunasekara",
+    "roleId": "rol-004",
+    "roleName": "Warehouse Operator",
+    "roleGroupIds": [
+      "rg-004"
+    ],
+    "roleGroupNames": [
+      "Logistics"
+    ],
+    "department": "Warehouse",
+    "jobTitle": "Dispatch Coordinator",
+    "status": "active",
+    "lastLoginAt": "2025-07-28T09:00:00Z",
+    "createdAt": "2024-05-01T08:00:00Z",
+    "updatedAt": "2025-07-28T09:00:00Z"
+  }
+]

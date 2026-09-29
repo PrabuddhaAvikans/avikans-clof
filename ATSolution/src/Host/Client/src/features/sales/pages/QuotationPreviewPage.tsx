@@ -110,15 +110,15 @@ export function QuotationPreviewPage() {
 
               <table className="mb-8 w-full text-sm">
                 <thead>
-                  <tr className="border-b-2 border-border bg-muted/40">
-                    <th className="px-3 py-2 text-left">#</th>
-                    <th className="px-3 py-2 text-left">Description</th>
-                    <th className="px-3 py-2 text-right">Qty</th>
-                    <th className="px-3 py-2 text-right">Unit Price</th>
-                    <th className="px-3 py-2 text-right">Discount %</th>
-                    <th className="px-3 py-2 text-right">Excl. {taxName}</th>
-                    <th className="px-3 py-2 text-right">{taxName}</th>
-                    <th className="px-3 py-2 text-right">Line Total</th>
+                  <tr className="border-b-2 border-border bg-muted/50">
+                    <th className="px-3 py-1 text-left">#</th>
+                    <th className="px-3 py-1 text-left">Description</th>
+                    <th className="px-3 py-1 text-right">Qty</th>
+                    <th className="px-3 py-1 text-right">Unit Price</th>
+                    <th className="px-4 py-1 text-right">Discount %</th>
+                    <th className="px-2 py-1 text-right">Excl. {taxName}</th>
+                    <th className="px-3 py-1 text-right">{taxName}</th>
+                    <th className="px-3 py-1 text-right">Line Total</th>
                   </tr>
                 </thead>
                 <tbody>

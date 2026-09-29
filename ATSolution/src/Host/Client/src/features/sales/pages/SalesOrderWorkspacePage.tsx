@@ -9,8 +9,6 @@ import { PageContent } from "@/components/feedback/PageStates";
 import { Button } from "@/components/ui/Button";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { ApplyCreditNoteModal } from "@/features/finance/components/ApplyCreditNoteModal";
-import { initialCreditNotes } from "@/features/finance/mock/mockCreditNotes";
-import { initialInvoices } from "@/features/finance/mock/mockInvoices";
 import { SalesOrderCostingPanel } from "@/features/sales/components/SalesOrderCostingPanel";
 import { SalesOrderDetailPanel } from "@/features/sales/components/SalesOrderDetailPanel";
 import { SalesOrderListPanel } from "@/features/sales/components/SalesOrderListPanel";
@@ -28,7 +26,7 @@ import {
 import { canConfirmSalesOrder, getConfirmBlockReason } from "@/features/sales/lib/salesOrderFlow";
 import type { CreditNote } from "@/types/credit-note";
 import type { Invoice } from "@/types/invoice";
-import type { CreditNoteStatusValue, SalesOrderStatusValue } from "@/types/status";
+import type { SalesOrderStatusValue } from "@/types/status";
 import { cn } from "@/lib/utils";
 import {
   workspaceGrid,
@@ -37,6 +35,8 @@ import {
   workspacePanelGrow,
   workspacePanelHug,
 } from "@/lib/panelLayout";
+import { httpCreditNoteService } from "@/services/http/httpCreditNoteService";
+import { httpInvoiceService } from "@/services/http/httpInvoiceService";
 
 export function SalesOrderWorkspacePage() {
   const navigate = useNavigate();
@@ -48,8 +48,8 @@ export function SalesOrderWorkspacePage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [applyCreditOpen, setApplyCreditOpen] = useState(false);
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>(initialCreditNotes);
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   const { data, isLoading, error, refetch } = useSalesOrders({
     page,
@@ -65,6 +65,27 @@ export function SalesOrderWorkspacePage() {
   const cancelOrder = useCancelSalesOrder();
   const { data: orderCosting } = useCostingBySalesOrder(selectedId ?? "");
   const createCosting = useCreateCostingFromSalesOrder();
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([
+      httpCreditNoteService.list({ page: 1, pageSize: 200 }),
+      httpInvoiceService.list({ page: 1, pageSize: 200 }),
+    ])
+      .then(([creditPage, invoicePage]) => {
+        if (cancelled) return;
+        setCreditNotes(creditPage.items);
+        setInvoices(invoicePage.items);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCreditNotes([]);
+        setInvoices([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedId && data?.items.length) {
@@ -179,66 +200,23 @@ export function SalesOrderWorkspacePage() {
       const applyAmount = Math.max(0, Math.min(args.amount, maxAmount));
       if (applyAmount <= 0) return;
 
-      setCreditNotes((prev) =>
-        prev.map((c) => {
-          if (c.id !== args.creditNoteId) return c;
-
-          const newAppliedAmount = c.appliedAmount + applyAmount;
-          const newRemainingAmount = Math.max(0, c.totalAmount - newAppliedAmount);
-          const newStatus: CreditNoteStatusValue =
-            newRemainingAmount === 0
-              ? "applied"
-              : newAppliedAmount > 0
-                ? "partially_applied"
-                : c.status;
-
-          return {
-            ...c,
-            appliedAmount: newAppliedAmount,
-            remainingAmount: newRemainingAmount,
-            status: newStatus,
-            invoiceId: c.invoiceId ?? invoice.id,
-            invoiceNumber: c.invoiceNumber ?? invoice.invoiceNumber,
-            applications: [
-              ...c.applications,
-              {
-                id: `cna-${Date.now()}`,
-                invoiceId: invoice.id,
-                invoiceNumber: invoice.invoiceNumber,
-                amount: applyAmount,
-                note: args.note,
-                appliedAt: new Date().toISOString(),
-                appliedBy: c.createdBy,
-                appliedByName: c.createdByName,
-              },
-            ],
-            updatedAt: new Date().toISOString(),
-          };
-        }),
-      );
-
-      setInvoices((prev) =>
-        prev.map((inv) => {
-          if (inv.id !== args.invoiceId) return inv;
-
-          const newCredited = inv.amountCredited + applyAmount;
-          const newOutstanding = Math.max(0, inv.outstandingAmount - applyAmount);
-          const newStatus =
-            newOutstanding === 0 ? "paid" : newCredited > 0 ? "partial" : "issued";
-
-          return {
-            ...inv,
-            amountCredited: newCredited,
-            outstandingAmount: newOutstanding,
-            status: newStatus,
-            updatedAt: new Date().toISOString(),
-          };
-        }),
-      );
-
-      toast.success(
-        `Applied ${applyAmount.toFixed(2)} from ${credit.creditNoteNumber} to ${invoice.invoiceNumber}.`,
-      );
+      try {
+        const updated = await httpCreditNoteService.apply(args.creditNoteId, {
+          invoiceId: args.invoiceId,
+          amount: applyAmount,
+          note: args.note,
+        });
+        setCreditNotes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        const refreshedInvoice = await httpInvoiceService.getById(args.invoiceId);
+        setInvoices((prev) =>
+          prev.map((inv) => (inv.id === refreshedInvoice.id ? refreshedInvoice : inv)),
+        );
+        toast.success(
+          `Applied ${applyAmount.toFixed(2)} from ${credit.creditNoteNumber} to ${invoice.invoiceNumber}.`,
+        );
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Failed to apply credit note.");
+      }
     },
     [creditNotes, invoices],
   );

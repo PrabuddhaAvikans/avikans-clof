@@ -6,7 +6,8 @@ import {
   unitOfMeasureFormSchema,
   type UnitOfMeasureFormValues,
 } from "@/features/inventory/schemas/inventorySchema";
-import { addUnitOfMeasure, findUnitOfMeasure } from "@/lib/unitsOfMeasure";
+import { UNITS_OF_MEASURE_UPDATED_EVENT } from "@/lib/unitsOfMeasure";
+import { httpUnitOfMeasureService } from "@/services/http/httpUnitOfMeasureService";
 
 export type AddUnitOfMeasureModalProps = {
   open: boolean;
@@ -29,19 +30,20 @@ export function AddUnitOfMeasureModal({
     [defaultCode],
   );
 
-  const handleSubmit = (values: UnitOfMeasureFormValues) => {
-    const existing = findUnitOfMeasure(values.code);
-    if (existing) {
-      onCreated(existing.code);
+  const handleSubmit = async (values: UnitOfMeasureFormValues) => {
+    try {
+      const created = await httpUnitOfMeasureService.create({
+        code: values.code,
+        name: values.name,
+        status: "active",
+      });
+      window.dispatchEvent(new Event(UNITS_OF_MEASURE_UPDATED_EVENT));
+      onCreated(created.code);
       onClose();
-      toast.info(`"${existing.code}" already exists.`);
-      return;
+      toast.success(`Added ${created.code} - ${created.name}.`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Could not add unit of measure.");
     }
-
-    const created = addUnitOfMeasure({ code: values.code, name: values.name });
-    onCreated(created.code);
-    onClose();
-    toast.success(`Added ${created.code} - ${created.name}.`);
   };
 
   return (

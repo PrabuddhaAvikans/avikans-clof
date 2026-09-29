@@ -1,0 +1,21 @@
+---
+description: Review architecture, conventions, and theme before any code change
+alwaysApply: true
+---
+
+# Pre-implementation check
+
+Before any feature, bug fix, refactor, or UI change, inspect the project first. The existing solution is the source of truth. When a prompt conflicts with established architecture, follow the project unless the prompt explicitly requests an architectural change.
+
+## Before coding
+
+1. Review structure under `ATSolution/src`: SharedKernel, Core (Domain / Application / Infrastructure), feature modules (Domain / Application / Infrastructure / Api), and Host.
+2. Reuse existing modules, repositories, validators, exception handling, constants, and the client flow page → feature hook → service interface → mock service.
+3. For UI work, reuse tokens in `ATSolution/src/Host/Client/src/index.css` and components in `components/ui` and `components/layout`. Do not add new colors or one-off components.
+4. Find the related files, then make the smallest change that stays backward compatible.
+
+## After coding
+
+- Confirm the change compiles and imports resolve.
+- Confirm existing behavior still works.
+- Confirm UI uses the current theme tokens.

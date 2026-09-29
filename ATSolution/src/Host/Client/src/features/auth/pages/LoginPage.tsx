@@ -33,8 +33,20 @@ import {
 } from "@/services/mock/mockAuthService";
 
 function getErrorMessage(error: unknown): string {
-  if (typeof error === "object" && error && "message" in error) {
-    return String((error as { message: string }).message);
+  if (typeof error === "object" && error) {
+    const apiError = error as {
+      message?: string;
+      details?: Record<string, string[]>;
+    };
+    const fieldErrors = apiError.details
+      ? Object.values(apiError.details).flat().filter(Boolean)
+      : [];
+    if (fieldErrors.length > 0) {
+      return fieldErrors.join(" ");
+    }
+    if (typeof apiError.message === "string" && apiError.message.trim()) {
+      return apiError.message;
+    }
   }
   return "Unable to sign in. Please try again.";
 }

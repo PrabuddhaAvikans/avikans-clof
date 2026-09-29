@@ -1,0 +1,5511 @@
+[
+  {
+    "id": "mj-001",
+    "jobNumber": "PJ-1001",
+    "salesOrderId": "so-001",
+    "salesOrderNumber": "SO-2025-0089",
+    "customerId": "cus-002",
+    "customerName": "Haritha Architects",
+    "productId": "prd-001",
+    "productSku": "AVK-PND-001",
+    "productName": "Aurora LED Pendant",
+    "productVersionId": "prd-001-ver-1",
+    "productVersionLabel": "V1",
+    "quantity": 10,
+    "status": "in_progress",
+    "priority": "medium",
+    "taskSeeds": [
+      {
+        "id": "tsk-pj1001-01",
+        "name": "Cutting",
+        "sequence": 10,
+        "description": "Cut aluminium tubes and sheet to size",
+        "workstation": "Fab Bay 1",
+        "machineName": "CNC Laser Cutter",
+        "estimatedHours": 5,
+        "actualHours": 4.699999999999999,
+        "labourCostRate": 500,
+        "machineCost": 2000,
+        "status": "completed",
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "startedAt": "2025-07-20T08:00:00Z",
+        "completedAt": "2025-07-20T11:30:00Z",
+        "plannedQuantity": 10,
+        "completedQuantity": 10,
+        "productOperationId": "prd-001-op-10",
+        "prerequisiteTaskIds": []
+      },
+      {
+        "id": "tsk-pj1001-02",
+        "name": "Bending",
+        "sequence": 20,
+        "description": "Form pendant body curvature",
+        "workstation": "Fab Bay 1",
+        "machineName": "Press Brake",
+        "estimatedHours": 3.3000000000000003,
+        "actualHours": 4.2,
+        "overtimeHours": 0.8999999999999999,
+        "normalOvertimeHours": 0.8999999999999999,
+        "labourCostRate": 500,
+        "machineCost": 1500,
+        "status": "completed",
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "startedAt": "2025-07-20T12:00:00Z",
+        "completedAt": "2025-07-20T16:00:00Z",
+        "plannedQuantity": 10,
+        "completedQuantity": 10,
+        "productOperationId": "prd-001-op-20",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-01"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-03",
+        "name": "Welding",
+        "sequence": 30,
+        "description": "TIG weld body joints",
+        "workstation": "Welding Bay",
+        "machineName": "TIG Welder",
+        "estimatedHours": 7.5,
+        "labourCostRate": 650,
+        "machineCost": 1000,
+        "status": "in_progress",
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "startedAt": "2025-07-21T08:00:00Z",
+        "plannedQuantity": 10,
+        "completedQuantity": 6,
+        "productOperationId": "prd-001-op-30",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-02"
+        ],
+        "contributors": [
+          {
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "contributionPercent": 0,
+            "quantity": 0,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 0,
+            "overtimeHours": 0,
+            "normalOvertimeHours": 0,
+            "doubleOvertimeHours": 0,
+            "laborCost": 0,
+            "status": "in_progress",
+            "startedAt": "2025-07-21T08:00:00Z"
+          },
+          {
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "contributionPercent": 0,
+            "quantity": 0,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 0,
+            "overtimeHours": 0,
+            "normalOvertimeHours": 0,
+            "doubleOvertimeHours": 0,
+            "laborCost": 0,
+            "status": "in_progress",
+            "startedAt": "2025-07-21T10:00:00Z"
+          }
+        ]
+      },
+      {
+        "id": "tsk-pj1001-04",
+        "name": "Grinding",
+        "sequence": 40,
+        "description": "Smooth weld seams and surface prep",
+        "workstation": "Finishing Bay",
+        "estimatedHours": 3.3000000000000003,
+        "labourCostRate": 450,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-40",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-03"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-05",
+        "name": "Powder Coating",
+        "sequence": 50,
+        "description": "Apply RAL 9005 jet black powder coat",
+        "workstation": "Coating Line A",
+        "machineName": "Powder Booth",
+        "estimatedHours": 20,
+        "labourCostRate": 400,
+        "machineCost": 3000,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-50",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-04"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-06",
+        "name": "Wiring",
+        "sequence": 60,
+        "description": "Install LED module, driver and wiring harness",
+        "workstation": "Assembly Line 2",
+        "estimatedHours": 5,
+        "labourCostRate": 550,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-60",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-05"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-07",
+        "name": "Glass Installation",
+        "sequence": 70,
+        "description": "Mount opal glass diffuser with silicone gasket",
+        "workstation": "Assembly Line 2",
+        "estimatedHours": 3.3000000000000003,
+        "labourCostRate": 500,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-70",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-05"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-08",
+        "name": "Mounting Bracket Installation",
+        "sequence": 80,
+        "description": "Attach ceiling canopy and suspension hardware",
+        "workstation": "Assembly Line 2",
+        "estimatedHours": 2.5,
+        "labourCostRate": 450,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-80",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-05"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-09",
+        "name": "Final Assembly",
+        "sequence": 90,
+        "description": "Complete assembly, cable management, label",
+        "workstation": "Assembly Line 2",
+        "estimatedHours": 5,
+        "labourCostRate": 500,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-90",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-06",
+          "tsk-pj1001-07",
+          "tsk-pj1001-08"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-10",
+        "name": "Testing",
+        "sequence": 100,
+        "description": "Electrical safety test, burn-in, lumen verification",
+        "workstation": "Test Lab",
+        "machineName": "Integrating Sphere",
+        "estimatedHours": 2.5,
+        "labourCostRate": 600,
+        "machineCost": 500,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-100",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-09"
+        ]
+      },
+      {
+        "id": "tsk-pj1001-11",
+        "name": "QC",
+        "sequence": 110,
+        "description": "Final visual and functional quality check",
+        "workstation": "QC Station 1",
+        "estimatedHours": 3.3000000000000003,
+        "labourCostRate": 500,
+        "status": "pending",
+        "plannedQuantity": 10,
+        "productOperationId": "prd-001-op-110",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-10"
+        ]
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-001",
+        "inventoryItemId": "inv-007",
+        "inventoryItemSku": "RAW-GLS-SHADE-180",
+        "inventoryItemName": "Blown Glass Shade 180mm",
+        "requiredQuantity": 10,
+        "reservedQuantity": 10,
+        "issuedQuantity": 10,
+        "unit": "pcs",
+        "status": "issued"
+      },
+      {
+        "id": "mr-002",
+        "inventoryItemId": "inv-002",
+        "inventoryItemSku": "RAW-DRV-24V-60W",
+        "inventoryItemName": "LED Driver 24V 60W Dimmable",
+        "requiredQuantity": 10,
+        "reservedQuantity": 10,
+        "issuedQuantity": 0,
+        "unit": "pcs",
+        "status": "reserved"
+      }
+    ],
+    "plannedStartDate": "2025-07-20T08:00:00Z",
+    "plannedEndDate": "2025-07-28T17:00:00Z",
+    "actualStartDate": "2025-07-20T08:00:00Z",
+    "assignedTo": "usr-004",
+    "assignedToName": "Nuwan Wickramasinghe",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-07-16T10:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.484Z",
+    "tasks": [
+      {
+        "id": "tsk-pj1001-01",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-10",
+        "sequence": 10,
+        "name": "Cutting",
+        "description": "Cut aluminium tubes and sheet to size",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 500,
+        "machineName": "CNC Laser Cutter",
+        "machineCost": 2000,
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "operatorId": "usr-005",
+        "operatorName": "Chaminda Jayasuriya",
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 10,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 10,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-12053f80",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9fcd02eb",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-27e3d991",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-f049dda5",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-8af614a0",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ef840cc1",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ef2fa18b",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-add22f8e",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e1d282bf",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-2942755c",
+            "taskId": "tsk-pj1001-01",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "startedAt": "2025-07-20T08:00:00Z",
+        "completedAt": "2025-07-20T11:30:00Z",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-8428619f",
+            "taskId": "tsk-pj1001-01",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-20T08:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-2f983c50",
+            "taskId": "tsk-pj1001-01",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-20T08:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-9752ca51",
+            "taskId": "tsk-pj1001-01",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-07-20T08:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-59002f12",
+            "taskId": "tsk-pj1001-01",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-07-20T11:30:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Fab Bay 1"
+      },
+      {
+        "id": "tsk-pj1001-02",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-20",
+        "sequence": 20,
+        "name": "Bending",
+        "description": "Form pendant body curvature",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 3.3000000000000003,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 500,
+        "machineName": "Press Brake",
+        "machineCost": 1500,
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "operatorId": "usr-005",
+        "operatorName": "Chaminda Jayasuriya",
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 10,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 10,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-efba04b8",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-4631d23c",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9a9156e0",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-793b8534",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9097214b",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1c9b5ff7",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-acd0f319",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-74ad17a1",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-cff12224",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-854b3591",
+            "taskId": "tsk-pj1001-02",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "startedAt": "2025-07-20T12:00:00Z",
+        "completedAt": "2025-07-20T16:00:00Z",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-01"
+        ],
+        "history": [
+          {
+            "id": "th-0fad2847",
+            "taskId": "tsk-pj1001-02",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-20T12:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-3e34979c",
+            "taskId": "tsk-pj1001-02",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-20T12:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-9b91017f",
+            "taskId": "tsk-pj1001-02",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-07-20T12:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-d33008d0",
+            "taskId": "tsk-pj1001-02",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-07-20T16:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Fab Bay 1"
+      },
+      {
+        "id": "tsk-pj1001-03",
+        "taskNumber": "TASK-003",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-30",
+        "sequence": 30,
+        "name": "Welding",
+        "description": "TIG weld body joints",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 7.5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 650,
+        "machineName": "TIG Welder",
+        "machineCost": 1000,
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "operatorId": "usr-005",
+        "operatorName": "Chaminda Jayasuriya",
+        "contributors": [
+          {
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "contributionPercent": 50,
+            "quantity": 2,
+            "completedQuantity": 0,
+            "inProgressQuantity": 2,
+            "progressPercentage": 0,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 0,
+            "overtimeHours": 0,
+            "normalOvertimeHours": 0,
+            "doubleOvertimeHours": 0,
+            "laborCost": 0,
+            "status": "in_progress",
+            "startedAt": "2025-07-21T08:00:00Z"
+          },
+          {
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "contributionPercent": 50,
+            "quantity": 2,
+            "completedQuantity": 0,
+            "inProgressQuantity": 2,
+            "progressPercentage": 0,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 0,
+            "overtimeHours": 0,
+            "normalOvertimeHours": 0,
+            "doubleOvertimeHours": 0,
+            "laborCost": 0,
+            "status": "in_progress",
+            "startedAt": "2025-07-21T10:00:00Z"
+          }
+        ],
+        "plannedQuantity": 10,
+        "completedQuantity": 6,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 10,
+        "overallProgress": 60,
+        "units": [
+          {
+            "id": "tu-8ed41850",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-6a404e5f",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-dad0477c",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-af10d69d",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-5b608852",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-3841915f",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-884ae643",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "in_progress",
+            "assignments": [
+              {
+                "id": "tua-41f76285",
+                "taskUnitId": "tu-884ae643",
+                "userId": "usr-005",
+                "userName": "Chaminda Jayasuriya",
+                "contributionPercentage": 100,
+                "status": "in_progress",
+                "actualHours": 0,
+                "overtimeHours": 0,
+                "normalOvertimeHours": 0,
+                "doubleOvertimeHours": 0,
+                "laborCost": 0,
+                "rejectedQuantity": 0,
+                "wasteQuantity": 0,
+                "startedAt": "2025-07-21T08:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "tu-e3d1328c",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "in_progress",
+            "assignments": [
+              {
+                "id": "tua-bccf744b",
+                "taskUnitId": "tu-e3d1328c",
+                "userId": "usr-005",
+                "userName": "Chaminda Jayasuriya",
+                "contributionPercentage": 100,
+                "status": "in_progress",
+                "actualHours": 0,
+                "overtimeHours": 0,
+                "normalOvertimeHours": 0,
+                "doubleOvertimeHours": 0,
+                "laborCost": 0,
+                "rejectedQuantity": 0,
+                "wasteQuantity": 0,
+                "startedAt": "2025-07-21T08:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "tu-71fdfe4c",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "in_progress",
+            "assignments": [
+              {
+                "id": "tua-bd948d11",
+                "taskUnitId": "tu-71fdfe4c",
+                "userId": "usr-004",
+                "userName": "Nuwan Wickramasinghe",
+                "contributionPercentage": 100,
+                "status": "in_progress",
+                "actualHours": 0,
+                "overtimeHours": 0,
+                "normalOvertimeHours": 0,
+                "doubleOvertimeHours": 0,
+                "laborCost": 0,
+                "rejectedQuantity": 0,
+                "wasteQuantity": 0,
+                "startedAt": "2025-07-21T10:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "tu-647d2201",
+            "taskId": "tsk-pj1001-03",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "in_progress",
+            "assignments": [
+              {
+                "id": "tua-8cf98ef5",
+                "taskUnitId": "tu-647d2201",
+                "userId": "usr-004",
+                "userName": "Nuwan Wickramasinghe",
+                "contributionPercentage": 100,
+                "status": "in_progress",
+                "actualHours": 0,
+                "overtimeHours": 0,
+                "normalOvertimeHours": 0,
+                "doubleOvertimeHours": 0,
+                "laborCost": 0,
+                "rejectedQuantity": 0,
+                "wasteQuantity": 0,
+                "startedAt": "2025-07-21T10:00:00Z"
+              }
+            ]
+          }
+        ],
+        "status": "in_progress",
+        "startedAt": "2025-07-21T08:00:00Z",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-02"
+        ],
+        "history": [
+          {
+            "id": "th-f5744db1",
+            "taskId": "tsk-pj1001-03",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-21T08:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-ac9d2ed0",
+            "taskId": "tsk-pj1001-03",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-21T08:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-bbab2a38",
+            "taskId": "tsk-pj1001-03",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-07-21T08:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Welding Bay"
+      },
+      {
+        "id": "tsk-pj1001-04",
+        "taskNumber": "TASK-004",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-40",
+        "sequence": 40,
+        "name": "Grinding",
+        "description": "Smooth weld seams and surface prep",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 3.3000000000000003,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 450,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-89ce4404",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-d91f58ac",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-2f2f1889",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-786e1be0",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-4b36c25d",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-bab620a9",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-8cec95bb",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-15cf6bef",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-3fa055bf",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-ef38a8fc",
+            "taskId": "tsk-pj1001-04",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-03"
+        ],
+        "history": [
+          {
+            "id": "th-79d991ac",
+            "taskId": "tsk-pj1001-04",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Finishing Bay"
+      },
+      {
+        "id": "tsk-pj1001-05",
+        "taskNumber": "TASK-005",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-50",
+        "sequence": 50,
+        "name": "Powder Coating",
+        "description": "Apply RAL 9005 jet black powder coat",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 20,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 400,
+        "machineName": "Powder Booth",
+        "machineCost": 3000,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-20f6f8d2",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-2db5d619",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-05fca399",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-bcc21ab5",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-fb2c7b58",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-516e86fd",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-17215865",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-b82dbf4a",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-3a0860c0",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-8faf1b19",
+            "taskId": "tsk-pj1001-05",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-04"
+        ],
+        "history": [
+          {
+            "id": "th-648006f4",
+            "taskId": "tsk-pj1001-05",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Coating Line A"
+      },
+      {
+        "id": "tsk-pj1001-06",
+        "taskNumber": "TASK-006",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-60",
+        "sequence": 60,
+        "name": "Wiring",
+        "description": "Install LED module, driver and wiring harness",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 550,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-4db35ddf",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-f7757962",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-31d5a9d8",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-5cf1319c",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-09fecad8",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-8326716e",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-0acf43a5",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-9d406847",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-ca0d9a52",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-9eeee2e5",
+            "taskId": "tsk-pj1001-06",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-05"
+        ],
+        "history": [
+          {
+            "id": "th-2504ee46",
+            "taskId": "tsk-pj1001-06",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 2"
+      },
+      {
+        "id": "tsk-pj1001-07",
+        "taskNumber": "TASK-007",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-70",
+        "sequence": 70,
+        "name": "Glass Installation",
+        "description": "Mount opal glass diffuser with silicone gasket",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 3.3000000000000003,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 500,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-d9311791",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-e2cce970",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-6ed3418f",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-afba9cd8",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-90d0329f",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-ec94f684",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-cc1ca101",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-05047d88",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-3565f227",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-f871467b",
+            "taskId": "tsk-pj1001-07",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-05"
+        ],
+        "history": [
+          {
+            "id": "th-be01de80",
+            "taskId": "tsk-pj1001-07",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 2"
+      },
+      {
+        "id": "tsk-pj1001-08",
+        "taskNumber": "TASK-008",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-80",
+        "sequence": 80,
+        "name": "Mounting Bracket Installation",
+        "description": "Attach ceiling canopy and suspension hardware",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 2.5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 450,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-83cc195f",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-e41b83c8",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-24c77270",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-0aa51f93",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-98df79cb",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-d218f8e2",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-cbe2536d",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-3693969c",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-8e44fce8",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-f468b9a2",
+            "taskId": "tsk-pj1001-08",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-05"
+        ],
+        "history": [
+          {
+            "id": "th-29cc22d1",
+            "taskId": "tsk-pj1001-08",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 2"
+      },
+      {
+        "id": "tsk-pj1001-09",
+        "taskNumber": "TASK-009",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-90",
+        "sequence": 90,
+        "name": "Final Assembly",
+        "description": "Complete assembly, cable management, label",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 500,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-40f0f812",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-7eddd578",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-dae9360c",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-2eb81d12",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-9eb78153",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-af26aa00",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-5f90c580",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-e3d928d4",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-2a94ba5d",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-8a86c53d",
+            "taskId": "tsk-pj1001-09",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-06",
+          "tsk-pj1001-07",
+          "tsk-pj1001-08"
+        ],
+        "history": [
+          {
+            "id": "th-c0a7f350",
+            "taskId": "tsk-pj1001-09",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 2"
+      },
+      {
+        "id": "tsk-pj1001-10",
+        "taskNumber": "TASK-010",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-100",
+        "sequence": 100,
+        "name": "Testing",
+        "description": "Electrical safety test, burn-in, lumen verification",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": true,
+        "isRework": false,
+        "estimatedHours": 2.5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 600,
+        "machineName": "Integrating Sphere",
+        "machineCost": 500,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-93d542a1",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-6d60ab48",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-376a594a",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-f30de5a8",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-83084580",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-f2290691",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-abe757fa",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-5ae86dbe",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-c7593718",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-a63a1c0e",
+            "taskId": "tsk-pj1001-10",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-09"
+        ],
+        "history": [
+          {
+            "id": "th-1ce50291",
+            "taskId": "tsk-pj1001-10",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Test Lab"
+      },
+      {
+        "id": "tsk-pj1001-11",
+        "taskNumber": "TASK-011",
+        "productionJobId": "mj-001",
+        "productOperationId": "prd-001-op-110",
+        "sequence": 110,
+        "name": "QC",
+        "description": "Final visual and functional quality check",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 3.3000000000000003,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 500,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-e4e8fa1f",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-91f12983",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-a92db3f1",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-91127dde",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-d4b0d283",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-18e44621",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-c5d7d25b",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-c2b27579",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-a4892dea",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-d9c55aa6",
+            "taskId": "tsk-pj1001-11",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "tsk-pj1001-10"
+        ],
+        "history": [
+          {
+            "id": "th-85790fb9",
+            "taskId": "tsk-pj1001-11",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 1"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 23.64,
+    "estimatedCost": 37685,
+    "actualCost": 3500
+  },
+  {
+    "id": "mj-002",
+    "jobNumber": "PJ-1002",
+    "salesOrderId": "so-002",
+    "salesOrderNumber": "SO-2025-0075",
+    "customerId": "cus-006",
+    "customerName": "Mirissa Coastal Resort",
+    "productId": "prd-005",
+    "productSku": "CGO-OUT-005",
+    "productName": "Coastal Glow Outdoor Lantern",
+    "quantity": 12,
+    "status": "completed",
+    "priority": "medium",
+    "taskSeeds": [
+      {
+        "id": "op-005",
+        "name": "Metal Fabrication",
+        "sequence": 10,
+        "workstation": "Fab Bay 2",
+        "estimatedHours": 6,
+        "actualHours": 5.5,
+        "status": "completed",
+        "completedAt": "2025-06-20T17:00:00Z",
+        "plannedQuantity": 12
+      },
+      {
+        "id": "op-006",
+        "name": "Powder Coating",
+        "sequence": 20,
+        "workstation": "Coating Line A",
+        "estimatedHours": 3,
+        "actualHours": 3,
+        "status": "completed",
+        "completedAt": "2025-06-22T12:00:00Z",
+        "plannedQuantity": 12
+      },
+      {
+        "id": "op-007",
+        "name": "Assembly & Wiring",
+        "sequence": 30,
+        "workstation": "Assembly Line 1",
+        "estimatedHours": 4,
+        "actualHours": 5.5,
+        "overtimeHours": 1.5,
+        "normalOvertimeHours": 1,
+        "doubleOvertimeHours": 0.5,
+        "labourCostRate": 550,
+        "status": "completed",
+        "completedAt": "2025-06-25T16:00:00Z",
+        "plannedQuantity": 12,
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "contributors": [
+          {
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "contributionPercent": 30,
+            "quantity": 4,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 1.65,
+            "overtimeHours": 0.45,
+            "normalOvertimeHours": 0.3,
+            "doubleOvertimeHours": 0.15,
+            "laborCost": 0,
+            "status": "completed",
+            "completedAt": "2025-06-25T16:00:00Z"
+          },
+          {
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "contributionPercent": 50,
+            "quantity": 6,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 2.75,
+            "overtimeHours": 0.75,
+            "normalOvertimeHours": 0.5,
+            "doubleOvertimeHours": 0.25,
+            "laborCost": 0,
+            "status": "completed",
+            "completedAt": "2025-06-25T16:00:00Z"
+          },
+          {
+            "userId": "usr-006",
+            "userName": "Sanduni Rathnayake",
+            "contributionPercent": 20,
+            "quantity": 2,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 1.1,
+            "overtimeHours": 0.3,
+            "normalOvertimeHours": 0.2,
+            "doubleOvertimeHours": 0.1,
+            "laborCost": 0,
+            "status": "completed",
+            "completedAt": "2025-06-25T16:00:00Z"
+          }
+        ]
+      },
+      {
+        "id": "op-008",
+        "name": "QC",
+        "sequence": 40,
+        "workstation": "QC Station 1",
+        "estimatedHours": 1,
+        "actualHours": 1,
+        "status": "completed",
+        "completedAt": "2025-06-26T10:00:00Z",
+        "plannedQuantity": 12
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-003",
+        "inventoryItemId": "inv-001",
+        "inventoryItemSku": "RAW-PC-RAL9005",
+        "inventoryItemName": "Powder Coat RAL 9005 (Jet Black)",
+        "requiredQuantity": 6,
+        "reservedQuantity": 6,
+        "issuedQuantity": 6,
+        "unit": "kg",
+        "status": "issued"
+      }
+    ],
+    "qualityInspection": {
+      "id": "qi-001",
+      "inspectionNumber": "QI-2025-0342",
+      "inspectorId": "usr-006",
+      "inspectorName": "Sanduni Rathnayake",
+      "status": "passed",
+      "checklistItems": [
+        {
+          "id": "ci-001",
+          "name": "Visual inspection",
+          "passed": true
+        },
+        {
+          "id": "ci-002",
+          "name": "IP rating test",
+          "passed": true
+        },
+        {
+          "id": "ci-003",
+          "name": "Electrical safety",
+          "passed": true
+        }
+      ],
+      "inspectedAt": "2025-06-26T10:00:00Z"
+    },
+    "plannedStartDate": "2025-06-15T08:00:00Z",
+    "plannedEndDate": "2025-06-28T17:00:00Z",
+    "actualStartDate": "2025-06-15T08:00:00Z",
+    "actualEndDate": "2025-06-26T10:00:00Z",
+    "assignedTo": "usr-004",
+    "assignedToName": "Nuwan Wickramasinghe",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-06-12T09:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.485Z",
+    "productVersionId": "prd-005-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-005",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-002",
+        "sequence": 10,
+        "name": "Metal Fabrication",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 6,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 12,
+        "completedQuantity": 12,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 12,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-11d72b52",
+            "taskId": "op-005",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-0d0f8f30",
+            "taskId": "op-005",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a5acab8c",
+            "taskId": "op-005",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-b0163011",
+            "taskId": "op-005",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-31096a75",
+            "taskId": "op-005",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1a9dee8e",
+            "taskId": "op-005",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-abe50111",
+            "taskId": "op-005",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ef195e88",
+            "taskId": "op-005",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-554f485d",
+            "taskId": "op-005",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-f5759dd0",
+            "taskId": "op-005",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-599e3180",
+            "taskId": "op-005",
+            "unitNo": 11,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-70de5208",
+            "taskId": "op-005",
+            "unitNo": 12,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-06-20T17:00:00Z",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-ad5c7d8f",
+            "taskId": "op-005",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-20T17:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-c86a74c0",
+            "taskId": "op-005",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-20T17:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-f339f704",
+            "taskId": "op-005",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-20T17:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-ed6def68",
+            "taskId": "op-005",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-20T17:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Fab Bay 2"
+      },
+      {
+        "id": "op-006",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-002",
+        "sequence": 20,
+        "name": "Powder Coating",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 3,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 12,
+        "completedQuantity": 12,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 12,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-1e9c70f2",
+            "taskId": "op-006",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-cf706239",
+            "taskId": "op-006",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-85f3bd5a",
+            "taskId": "op-006",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-2b051e4f",
+            "taskId": "op-006",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-22fb761b",
+            "taskId": "op-006",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e05bb982",
+            "taskId": "op-006",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-00db814a",
+            "taskId": "op-006",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-97a912eb",
+            "taskId": "op-006",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-89c11b2b",
+            "taskId": "op-006",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-51c1836c",
+            "taskId": "op-006",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9f154f00",
+            "taskId": "op-006",
+            "unitNo": 11,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-3c28c4fb",
+            "taskId": "op-006",
+            "unitNo": 12,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-06-22T12:00:00Z",
+        "prerequisiteTaskIds": [
+          "op-005"
+        ],
+        "history": [
+          {
+            "id": "th-0eb3a45b",
+            "taskId": "op-006",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-22T12:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-44bac487",
+            "taskId": "op-006",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-22T12:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-e580ea67",
+            "taskId": "op-006",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-22T12:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-a7ec0698",
+            "taskId": "op-006",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-22T12:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Coating Line A"
+      },
+      {
+        "id": "op-007",
+        "taskNumber": "TASK-003",
+        "productionJobId": "mj-002",
+        "sequence": 30,
+        "name": "Assembly & Wiring",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 4,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "labourCostRate": 550,
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "operatorId": "usr-005",
+        "operatorName": "Chaminda Jayasuriya",
+        "contributors": [],
+        "plannedQuantity": 12,
+        "completedQuantity": 12,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 12,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-5769aa31",
+            "taskId": "op-007",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e8478f1f",
+            "taskId": "op-007",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9d722760",
+            "taskId": "op-007",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-990abb68",
+            "taskId": "op-007",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ee69362b",
+            "taskId": "op-007",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-40f5edb3",
+            "taskId": "op-007",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-fd1560e7",
+            "taskId": "op-007",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a9bdac61",
+            "taskId": "op-007",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-f966c08f",
+            "taskId": "op-007",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-372d40b3",
+            "taskId": "op-007",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-938626f1",
+            "taskId": "op-007",
+            "unitNo": 11,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ff706d2c",
+            "taskId": "op-007",
+            "unitNo": 12,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-06-25T16:00:00Z",
+        "prerequisiteTaskIds": [
+          "op-006"
+        ],
+        "history": [
+          {
+            "id": "th-be7b0e9f",
+            "taskId": "op-007",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-25T16:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-97b05f41",
+            "taskId": "op-007",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-25T16:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-36201075",
+            "taskId": "op-007",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-06-25T16:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-972f67d5",
+            "taskId": "op-007",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-06-25T16:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 1"
+      },
+      {
+        "id": "op-008",
+        "taskNumber": "TASK-004",
+        "productionJobId": "mj-002",
+        "sequence": 40,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 1,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 12,
+        "completedQuantity": 12,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 12,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-eceb959a",
+            "taskId": "op-008",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-b2281ef9",
+            "taskId": "op-008",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9db0cc9d",
+            "taskId": "op-008",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-6d4bde50",
+            "taskId": "op-008",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a3bbf04f",
+            "taskId": "op-008",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-b72123bc",
+            "taskId": "op-008",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a90cf9f4",
+            "taskId": "op-008",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-63e2a302",
+            "taskId": "op-008",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a7ed1fea",
+            "taskId": "op-008",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-46a7329d",
+            "taskId": "op-008",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9dc1601d",
+            "taskId": "op-008",
+            "unitNo": 11,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ec491d84",
+            "taskId": "op-008",
+            "unitNo": 12,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-06-26T10:00:00Z",
+        "prerequisiteTaskIds": [
+          "op-007"
+        ],
+        "history": [
+          {
+            "id": "th-fdb8f37d",
+            "taskId": "op-008",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-26T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-fc5bc9c1",
+            "taskId": "op-008",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-26T10:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-9826939d",
+            "taskId": "op-008",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-26T10:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-d4969c9f",
+            "taskId": "op-008",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-06-26T10:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 1"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 100,
+    "estimatedCost": 7200,
+    "actualCost": 0
+  },
+  {
+    "id": "mj-003",
+    "jobNumber": "PJ-1003",
+    "salesOrderId": "so-002",
+    "salesOrderNumber": "SO-2025-0075",
+    "customerId": "cus-006",
+    "customerName": "Mirissa Coastal Resort",
+    "productId": "prd-005",
+    "productSku": "CGO-OUT-005",
+    "productName": "Coastal Glow Outdoor Lantern",
+    "quantity": 8,
+    "status": "completed",
+    "priority": "medium",
+    "taskSeeds": [
+      {
+        "id": "op-009",
+        "name": "Metal Fabrication",
+        "sequence": 10,
+        "workstation": "Fab Bay 2",
+        "estimatedHours": 4,
+        "actualHours": 3.5,
+        "status": "completed",
+        "completedAt": "2025-07-28T16:00:00Z",
+        "plannedQuantity": 8
+      },
+      {
+        "id": "op-009b",
+        "name": "QC",
+        "sequence": 20,
+        "workstation": "QC Station 1",
+        "estimatedHours": 1,
+        "actualHours": 1,
+        "status": "completed",
+        "completedAt": "2025-07-30T11:00:00Z",
+        "plannedQuantity": 8
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-004",
+        "inventoryItemId": "inv-001",
+        "inventoryItemSku": "RAW-PC-RAL9005",
+        "inventoryItemName": "Powder Coat RAL 9005 (Jet Black)",
+        "requiredQuantity": 4,
+        "reservedQuantity": 4,
+        "issuedQuantity": 4,
+        "unit": "kg",
+        "status": "issued"
+      }
+    ],
+    "qualityInspection": {
+      "id": "qi-003",
+      "inspectionNumber": "QI-2025-0410",
+      "inspectorId": "usr-006",
+      "inspectorName": "Sanduni Rathnayake",
+      "status": "passed",
+      "checklistItems": [
+        {
+          "id": "ci-010",
+          "name": "Visual inspection",
+          "passed": true
+        },
+        {
+          "id": "ci-011",
+          "name": "IP rating test",
+          "passed": true
+        }
+      ],
+      "inspectedAt": "2025-07-30T11:00:00Z"
+    },
+    "plannedStartDate": "2025-07-25T08:00:00Z",
+    "plannedEndDate": "2025-08-05T17:00:00Z",
+    "actualStartDate": "2025-07-25T08:00:00Z",
+    "actualEndDate": "2025-07-30T11:00:00Z",
+    "assignedTo": "usr-004",
+    "assignedToName": "Nuwan Wickramasinghe",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-07-01T09:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.485Z",
+    "productVersionId": "prd-005-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-009",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-003",
+        "sequence": 10,
+        "name": "Metal Fabrication",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 4,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 8,
+        "completedQuantity": 8,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 8,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-b45dd911",
+            "taskId": "op-009",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1f4dd248",
+            "taskId": "op-009",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-520520d7",
+            "taskId": "op-009",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1a5feba2",
+            "taskId": "op-009",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-d218a17b",
+            "taskId": "op-009",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-516c5ebd",
+            "taskId": "op-009",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1f09bc85",
+            "taskId": "op-009",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-f4937f17",
+            "taskId": "op-009",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-07-28T16:00:00Z",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-1387a7c9",
+            "taskId": "op-009",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-28T16:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-e600207c",
+            "taskId": "op-009",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-28T16:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-e4eb3886",
+            "taskId": "op-009",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-28T16:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-c43543ee",
+            "taskId": "op-009",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-28T16:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Fab Bay 2"
+      },
+      {
+        "id": "op-009b",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-003",
+        "sequence": 20,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 1,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 8,
+        "completedQuantity": 8,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 8,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-dfd79bf0",
+            "taskId": "op-009b",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-f4ab1e9c",
+            "taskId": "op-009b",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-35533fda",
+            "taskId": "op-009b",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-7fdebb76",
+            "taskId": "op-009b",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-554dce00",
+            "taskId": "op-009b",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-2f735d13",
+            "taskId": "op-009b",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-d3fb1753",
+            "taskId": "op-009b",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-5d0c28b7",
+            "taskId": "op-009b",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-07-30T11:00:00Z",
+        "prerequisiteTaskIds": [
+          "op-009"
+        ],
+        "history": [
+          {
+            "id": "th-10bf4aae",
+            "taskId": "op-009b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-30T11:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-76bd11a8",
+            "taskId": "op-009b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-30T11:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-61548582",
+            "taskId": "op-009b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-30T11:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-ba2422af",
+            "taskId": "op-009b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-30T11:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 1"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 100,
+    "estimatedCost": 2500,
+    "actualCost": 0
+  },
+  {
+    "id": "mj-004",
+    "jobNumber": "PJ-1004",
+    "salesOrderId": "so-003",
+    "salesOrderNumber": "SO-2025-0062",
+    "customerId": "cus-008",
+    "customerName": "Anjali Premaratne",
+    "productId": "prd-006",
+    "productSku": "AMW-CHD-006",
+    "productName": "Artisan Custom Chandelier",
+    "quantity": 1,
+    "status": "in_progress",
+    "priority": "high",
+    "taskSeeds": [
+      {
+        "id": "op-010",
+        "name": "Brass Forging",
+        "sequence": 10,
+        "workstation": "Artisan Workshop",
+        "estimatedHours": 40,
+        "actualHours": 28,
+        "status": "in_progress",
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "startedAt": "2025-05-15T08:00:00Z",
+        "plannedQuantity": 1,
+        "completedQuantity": 0
+      },
+      {
+        "id": "op-011",
+        "name": "Crystal Mounting",
+        "sequence": 20,
+        "workstation": "Artisan Workshop",
+        "estimatedHours": 16,
+        "status": "pending",
+        "plannedQuantity": 1
+      },
+      {
+        "id": "op-012",
+        "name": "Final Assembly",
+        "sequence": 30,
+        "workstation": "Assembly Line 3",
+        "estimatedHours": 8,
+        "status": "pending",
+        "plannedQuantity": 1
+      },
+      {
+        "id": "op-012b",
+        "name": "QC",
+        "sequence": 40,
+        "workstation": "QC Station 1",
+        "estimatedHours": 2,
+        "status": "pending",
+        "plannedQuantity": 1
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-005",
+        "inventoryItemId": "inv-010",
+        "inventoryItemSku": "RAW-CBL-CHAIN-1M",
+        "inventoryItemName": "Decorative Chain 1m (Brass)",
+        "requiredQuantity": 3,
+        "reservedQuantity": 0,
+        "issuedQuantity": 0,
+        "unit": "pcs",
+        "status": "pending"
+      }
+    ],
+    "plannedStartDate": "2025-05-10T08:00:00Z",
+    "plannedEndDate": "2025-08-30T17:00:00Z",
+    "actualStartDate": "2025-05-15T08:00:00Z",
+    "assignedTo": "usr-004",
+    "assignedToName": "Nuwan Wickramasinghe",
+    "notes": "Custom crystal drops sourced from Italy - ETA Aug 1.",
+    "createdBy": "usr-001",
+    "createdByName": "Prabuddha Jayawardhana",
+    "createdAt": "2025-05-06T10:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.486Z",
+    "productVersionId": "prd-006-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-010",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-004",
+        "sequence": 10,
+        "name": "Brass Forging",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 40,
+        "actualHours": 28,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "assignedTo": "usr-005",
+        "assignedToName": "Chaminda Jayasuriya",
+        "operatorId": "usr-005",
+        "operatorName": "Chaminda Jayasuriya",
+        "contributors": [
+          {
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "contributionPercent": 100,
+            "quantity": 1,
+            "completedQuantity": 0,
+            "inProgressQuantity": 1,
+            "progressPercentage": 0,
+            "rejectedQuantity": 0,
+            "wasteQuantity": 0,
+            "actualHours": 28,
+            "overtimeHours": 0,
+            "normalOvertimeHours": 0,
+            "doubleOvertimeHours": 0,
+            "laborCost": 0,
+            "status": "in_progress",
+            "startedAt": "2025-05-15T08:00:00Z"
+          }
+        ],
+        "plannedQuantity": 1,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 1,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-e54085da",
+            "taskId": "op-010",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "in_progress",
+            "assignments": [
+              {
+                "id": "tua-f24e943f",
+                "taskUnitId": "tu-e54085da",
+                "userId": "usr-005",
+                "userName": "Chaminda Jayasuriya",
+                "contributionPercentage": 100,
+                "status": "in_progress",
+                "actualHours": 28,
+                "overtimeHours": 0,
+                "normalOvertimeHours": 0,
+                "doubleOvertimeHours": 0,
+                "laborCost": 0,
+                "rejectedQuantity": 0,
+                "wasteQuantity": 0,
+                "startedAt": "2025-05-15T08:00:00Z"
+              }
+            ]
+          }
+        ],
+        "status": "in_progress",
+        "startedAt": "2025-05-15T08:00:00Z",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-e9e022b7",
+            "taskId": "op-010",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-05-15T08:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-feb472a9",
+            "taskId": "op-010",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-05-15T08:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-76b13777",
+            "taskId": "op-010",
+            "userId": "usr-005",
+            "userName": "Chaminda Jayasuriya",
+            "occurredAt": "2025-05-15T08:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Artisan Workshop"
+      },
+      {
+        "id": "op-011",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-004",
+        "sequence": 20,
+        "name": "Crystal Mounting",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 16,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 1,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-e1a3f411",
+            "taskId": "op-011",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "op-010"
+        ],
+        "history": [
+          {
+            "id": "th-f1097379",
+            "taskId": "op-011",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Artisan Workshop"
+      },
+      {
+        "id": "op-012",
+        "taskNumber": "TASK-003",
+        "productionJobId": "mj-004",
+        "sequence": 30,
+        "name": "Final Assembly",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 8,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 1,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-ab89b736",
+            "taskId": "op-012",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "op-011"
+        ],
+        "history": [
+          {
+            "id": "th-473cd809",
+            "taskId": "op-012",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 3"
+      },
+      {
+        "id": "op-012b",
+        "taskNumber": "TASK-004",
+        "productionJobId": "mj-004",
+        "sequence": 40,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 2,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 1,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-44e3b2f2",
+            "taskId": "op-012b",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "op-012"
+        ],
+        "history": [
+          {
+            "id": "th-6fdeee1a",
+            "taskId": "op-012b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 1"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 0,
+    "estimatedCost": 33000,
+    "actualCost": 14000
+  },
+  {
+    "id": "mj-005",
+    "jobNumber": "PJ-1005",
+    "salesOrderId": "so-005",
+    "salesOrderNumber": "SO-2025-0050",
+    "customerId": "cus-001",
+    "customerName": "Colombo Grand Hotel",
+    "productId": "prd-003",
+    "productSku": "LMC-CLP-600",
+    "productName": "LumenCraft Ceiling Panel 600×600",
+    "quantity": 24,
+    "status": "completed",
+    "priority": "high",
+    "taskSeeds": [
+      {
+        "id": "op-013",
+        "name": "Panel Assembly",
+        "sequence": 10,
+        "workstation": "Assembly Line 1",
+        "estimatedHours": 12,
+        "actualHours": 11,
+        "status": "completed",
+        "completedAt": "2025-04-20T17:00:00Z",
+        "plannedQuantity": 24
+      },
+      {
+        "id": "op-014",
+        "name": "QC",
+        "sequence": 20,
+        "workstation": "QC Station 2",
+        "estimatedHours": 2,
+        "actualHours": 2,
+        "status": "completed",
+        "completedAt": "2025-04-22T12:00:00Z",
+        "plannedQuantity": 24
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-006",
+        "inventoryItemId": "inv-004",
+        "inventoryItemSku": "RAW-DIFF-OPAL-300",
+        "inventoryItemName": "Opal Acrylic Diffuser 300mm",
+        "requiredQuantity": 96,
+        "reservedQuantity": 96,
+        "issuedQuantity": 96,
+        "unit": "pcs",
+        "status": "issued"
+      }
+    ],
+    "qualityInspection": {
+      "id": "qi-002",
+      "inspectionNumber": "QI-2025-0289",
+      "inspectorId": "usr-006",
+      "inspectorName": "Sanduni Rathnayake",
+      "status": "passed",
+      "checklistItems": [
+        {
+          "id": "ci-004",
+          "name": "Lumen output test",
+          "passed": true
+        },
+        {
+          "id": "ci-005",
+          "name": "Color consistency",
+          "passed": true
+        }
+      ],
+      "inspectedAt": "2025-04-22T12:00:00Z"
+    },
+    "plannedStartDate": "2025-04-05T08:00:00Z",
+    "plannedEndDate": "2025-04-25T17:00:00Z",
+    "actualStartDate": "2025-04-05T08:00:00Z",
+    "actualEndDate": "2025-04-22T12:00:00Z",
+    "assignedTo": "usr-004",
+    "assignedToName": "Nuwan Wickramasinghe",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-04-02T09:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.487Z",
+    "productVersionId": "prd-003-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-013",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-005",
+        "sequence": 10,
+        "name": "Panel Assembly",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 12,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 24,
+        "completedQuantity": 24,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 24,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-7f145db7",
+            "taskId": "op-013",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-c3cc8b12",
+            "taskId": "op-013",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-2cbbf528",
+            "taskId": "op-013",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-0911150d",
+            "taskId": "op-013",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-0b39335c",
+            "taskId": "op-013",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-dbe0829b",
+            "taskId": "op-013",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-057816f0",
+            "taskId": "op-013",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-6b548964",
+            "taskId": "op-013",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-8b0e67d6",
+            "taskId": "op-013",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-69e255d6",
+            "taskId": "op-013",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-33e856f8",
+            "taskId": "op-013",
+            "unitNo": 11,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1f5928c9",
+            "taskId": "op-013",
+            "unitNo": 12,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-4f68c45d",
+            "taskId": "op-013",
+            "unitNo": 13,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a6835bbf",
+            "taskId": "op-013",
+            "unitNo": 14,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-0e848732",
+            "taskId": "op-013",
+            "unitNo": 15,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-5b0c4ecf",
+            "taskId": "op-013",
+            "unitNo": 16,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-07b7ed14",
+            "taskId": "op-013",
+            "unitNo": 17,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-3dcc81d8",
+            "taskId": "op-013",
+            "unitNo": 18,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-578c8772",
+            "taskId": "op-013",
+            "unitNo": 19,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-0c2afa62",
+            "taskId": "op-013",
+            "unitNo": 20,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-8d480051",
+            "taskId": "op-013",
+            "unitNo": 21,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-4b39e560",
+            "taskId": "op-013",
+            "unitNo": 22,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-92addb17",
+            "taskId": "op-013",
+            "unitNo": 23,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a7e3fdcd",
+            "taskId": "op-013",
+            "unitNo": 24,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-04-20T17:00:00Z",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-064b6eec",
+            "taskId": "op-013",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-20T17:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-1c67f8f3",
+            "taskId": "op-013",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-20T17:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-0668c203",
+            "taskId": "op-013",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-20T17:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-215c608f",
+            "taskId": "op-013",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-20T17:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 1"
+      },
+      {
+        "id": "op-014",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-005",
+        "sequence": 20,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 2,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 24,
+        "completedQuantity": 24,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 24,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-b4854a87",
+            "taskId": "op-014",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-d609e221",
+            "taskId": "op-014",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-c21e2496",
+            "taskId": "op-014",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-09d8e1de",
+            "taskId": "op-014",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-29ee834a",
+            "taskId": "op-014",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-394903c0",
+            "taskId": "op-014",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-9377e150",
+            "taskId": "op-014",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-c88756d5",
+            "taskId": "op-014",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-60c5cb56",
+            "taskId": "op-014",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-d2f8bb9d",
+            "taskId": "op-014",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1b900f8d",
+            "taskId": "op-014",
+            "unitNo": 11,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-2a0208f4",
+            "taskId": "op-014",
+            "unitNo": 12,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-8715d2c4",
+            "taskId": "op-014",
+            "unitNo": 13,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-7eb10b80",
+            "taskId": "op-014",
+            "unitNo": 14,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e0410349",
+            "taskId": "op-014",
+            "unitNo": 15,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e2b3dc9b",
+            "taskId": "op-014",
+            "unitNo": 16,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-cb230292",
+            "taskId": "op-014",
+            "unitNo": 17,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e085b891",
+            "taskId": "op-014",
+            "unitNo": 18,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-5115be2d",
+            "taskId": "op-014",
+            "unitNo": 19,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ab66f911",
+            "taskId": "op-014",
+            "unitNo": 20,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-d9843f99",
+            "taskId": "op-014",
+            "unitNo": 21,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-80c8cd48",
+            "taskId": "op-014",
+            "unitNo": 22,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-895809c8",
+            "taskId": "op-014",
+            "unitNo": 23,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a6a22d70",
+            "taskId": "op-014",
+            "unitNo": 24,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-04-22T12:00:00Z",
+        "prerequisiteTaskIds": [
+          "op-013"
+        ],
+        "history": [
+          {
+            "id": "th-a75f7aeb",
+            "taskId": "op-014",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-22T12:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-f14884d4",
+            "taskId": "op-014",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-22T12:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-866ccb8e",
+            "taskId": "op-014",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-22T12:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-6f81af42",
+            "taskId": "op-014",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-04-22T12:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 2"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 100,
+    "estimatedCost": 7000,
+    "actualCost": 0
+  },
+  {
+    "id": "mj-006",
+    "jobNumber": "PJ-1006",
+    "salesOrderId": "so-001",
+    "salesOrderNumber": "SO-2025-0089",
+    "customerId": "cus-002",
+    "customerName": "Haritha Architects",
+    "productId": "prd-002",
+    "productSku": "AVK-WSC-002",
+    "productName": "Horizon Wall Sconce",
+    "quantity": 4,
+    "status": "planned",
+    "priority": "low",
+    "taskSeeds": [
+      {
+        "id": "op-015",
+        "name": "Metal Fabrication",
+        "sequence": 10,
+        "workstation": "Fab Bay 1",
+        "estimatedHours": 2,
+        "status": "pending",
+        "plannedQuantity": 4
+      },
+      {
+        "id": "op-015b",
+        "name": "QC",
+        "sequence": 20,
+        "workstation": "QC Station 1",
+        "estimatedHours": 0.5,
+        "status": "pending",
+        "plannedQuantity": 4
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-007",
+        "inventoryItemId": "inv-003",
+        "inventoryItemSku": "RAW-ALU-EXTR-40",
+        "inventoryItemName": "Aluminum Extrusion Profile 40mm",
+        "requiredQuantity": 4,
+        "reservedQuantity": 4,
+        "issuedQuantity": 0,
+        "unit": "pcs",
+        "status": "reserved"
+      }
+    ],
+    "plannedStartDate": "2025-08-01T08:00:00Z",
+    "plannedEndDate": "2025-08-05T17:00:00Z",
+    "assignedTo": "usr-005",
+    "assignedToName": "Chaminda Jayasuriya",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-07-22T10:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.487Z",
+    "productVersionId": "prd-002-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-015",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-006",
+        "sequence": 10,
+        "name": "Metal Fabrication",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 2,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 4,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-1f379816",
+            "taskId": "op-015",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-a9acabb5",
+            "taskId": "op-015",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-3330d8b0",
+            "taskId": "op-015",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-5459bf4f",
+            "taskId": "op-015",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "ready",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-86e2082c",
+            "taskId": "op-015",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Fab Bay 1"
+      },
+      {
+        "id": "op-015b",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-006",
+        "sequence": 20,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 0.5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 4,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-75ca0bb5",
+            "taskId": "op-015b",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-d61f56fd",
+            "taskId": "op-015b",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-6849c0c9",
+            "taskId": "op-015b",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-2dc6f054",
+            "taskId": "op-015b",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "op-015"
+        ],
+        "history": [
+          {
+            "id": "th-c282222e",
+            "taskId": "op-015b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 1"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 0,
+    "estimatedCost": 1250,
+    "actualCost": 0
+  },
+  {
+    "id": "mj-007",
+    "jobNumber": "PJ-1007",
+    "salesOrderId": "so-004",
+    "salesOrderNumber": "SO-2025-0095",
+    "customerId": "cus-003",
+    "customerName": "Ranmini Interiors Pvt Ltd",
+    "productId": "prd-004",
+    "productSku": "AVK-TRK-004",
+    "productName": "FlexTrack Spot Light",
+    "quantity": 16,
+    "status": "ready_to_start",
+    "priority": "medium",
+    "taskSeeds": [
+      {
+        "id": "op-016",
+        "name": "Assembly",
+        "sequence": 10,
+        "workstation": "Assembly Line 2",
+        "estimatedHours": 4,
+        "status": "ready",
+        "plannedQuantity": 16
+      },
+      {
+        "id": "op-016b",
+        "name": "QC",
+        "sequence": 20,
+        "workstation": "QC Station 1",
+        "estimatedHours": 1,
+        "status": "pending",
+        "plannedQuantity": 16
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-008",
+        "inventoryItemId": "inv-003",
+        "inventoryItemSku": "RAW-ALU-EXTR-40",
+        "inventoryItemName": "Aluminum Extrusion Profile 40mm",
+        "requiredQuantity": 8,
+        "reservedQuantity": 8,
+        "issuedQuantity": 8,
+        "unit": "pcs",
+        "status": "issued"
+      }
+    ],
+    "plannedStartDate": "2025-08-01T08:00:00Z",
+    "plannedEndDate": "2025-08-04T17:00:00Z",
+    "assignedTo": "usr-005",
+    "assignedToName": "Chaminda Jayasuriya",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-07-29T09:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.487Z",
+    "productVersionId": "prd-004-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-016",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-007",
+        "sequence": 10,
+        "name": "Assembly",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 4,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 16,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-81a425ad",
+            "taskId": "op-016",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-39bc5721",
+            "taskId": "op-016",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-292504f2",
+            "taskId": "op-016",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-fa14a8bb",
+            "taskId": "op-016",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-49ce8b08",
+            "taskId": "op-016",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-5c67b940",
+            "taskId": "op-016",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-5036836b",
+            "taskId": "op-016",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-8f2b1d9f",
+            "taskId": "op-016",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-550139f9",
+            "taskId": "op-016",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-79970e18",
+            "taskId": "op-016",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-2fe79330",
+            "taskId": "op-016",
+            "unitNo": 11,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-b191ec52",
+            "taskId": "op-016",
+            "unitNo": 12,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-21a49aff",
+            "taskId": "op-016",
+            "unitNo": 13,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-39391696",
+            "taskId": "op-016",
+            "unitNo": 14,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-cfd55335",
+            "taskId": "op-016",
+            "unitNo": 15,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-dea86dc0",
+            "taskId": "op-016",
+            "unitNo": 16,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "ready",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-aceba155",
+            "taskId": "op-016",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-e5b9b535",
+            "taskId": "op-016",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 2"
+      },
+      {
+        "id": "op-016b",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-007",
+        "sequence": 20,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 1,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 16,
+        "completedQuantity": 0,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 0,
+        "overallProgress": 0,
+        "units": [
+          {
+            "id": "tu-c8177765",
+            "taskId": "op-016b",
+            "unitNo": 1,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-51fbf3b3",
+            "taskId": "op-016b",
+            "unitNo": 2,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-517d3aaf",
+            "taskId": "op-016b",
+            "unitNo": 3,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-bc071a27",
+            "taskId": "op-016b",
+            "unitNo": 4,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-720fbb32",
+            "taskId": "op-016b",
+            "unitNo": 5,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-ca9c433a",
+            "taskId": "op-016b",
+            "unitNo": 6,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-8d71354c",
+            "taskId": "op-016b",
+            "unitNo": 7,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-fe4d9ad8",
+            "taskId": "op-016b",
+            "unitNo": 8,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-c0885115",
+            "taskId": "op-016b",
+            "unitNo": 9,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-a09a4caa",
+            "taskId": "op-016b",
+            "unitNo": 10,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-5e5c9dce",
+            "taskId": "op-016b",
+            "unitNo": 11,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-ea8a9176",
+            "taskId": "op-016b",
+            "unitNo": 12,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-54d45d9c",
+            "taskId": "op-016b",
+            "unitNo": 13,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-45daa90b",
+            "taskId": "op-016b",
+            "unitNo": 14,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-b120d403",
+            "taskId": "op-016b",
+            "unitNo": 15,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          },
+          {
+            "id": "tu-a2b82a27",
+            "taskId": "op-016b",
+            "unitNo": 16,
+            "progressPercentage": 0,
+            "status": "pending",
+            "assignments": []
+          }
+        ],
+        "status": "pending",
+        "prerequisiteTaskIds": [
+          "op-016"
+        ],
+        "history": [
+          {
+            "id": "th-0d409f81",
+            "taskId": "op-016b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-07-16T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 1"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 0,
+    "estimatedCost": 2500,
+    "actualCost": 0
+  },
+  {
+    "id": "mj-008",
+    "jobNumber": "PJ-1008",
+    "salesOrderId": "so-004",
+    "salesOrderNumber": "SO-2025-0095",
+    "customerId": "cus-003",
+    "customerName": "Ranmini Interiors Pvt Ltd",
+    "productId": "prd-007",
+    "productSku": "AVK-DSK-007",
+    "productName": "Studio Desk Lamp",
+    "quantity": 10,
+    "status": "completed",
+    "priority": "medium",
+    "taskSeeds": [
+      {
+        "id": "op-017",
+        "name": "Assembly",
+        "sequence": 10,
+        "workstation": "Assembly Line 2",
+        "estimatedHours": 5,
+        "actualHours": 4.5,
+        "status": "completed",
+        "completedAt": "2025-08-18T15:00:00Z",
+        "plannedQuantity": 10
+      },
+      {
+        "id": "op-017b",
+        "name": "QC",
+        "sequence": 20,
+        "workstation": "QC Station 1",
+        "estimatedHours": 1,
+        "actualHours": 1,
+        "status": "completed",
+        "completedAt": "2025-08-19T10:00:00Z",
+        "plannedQuantity": 10
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-009",
+        "inventoryItemId": "inv-002",
+        "inventoryItemSku": "RAW-DRV-24V-60W",
+        "inventoryItemName": "LED Driver 24V 60W Dimmable",
+        "requiredQuantity": 10,
+        "reservedQuantity": 10,
+        "issuedQuantity": 10,
+        "unit": "pcs",
+        "status": "issued"
+      }
+    ],
+    "qualityInspection": {
+      "id": "qi-004",
+      "inspectionNumber": "QI-2025-0422",
+      "inspectorId": "usr-006",
+      "inspectorName": "Sanduni Rathnayake",
+      "status": "passed",
+      "checklistItems": [
+        {
+          "id": "ci-012",
+          "name": "Visual inspection",
+          "passed": true
+        },
+        {
+          "id": "ci-013",
+          "name": "Electrical safety",
+          "passed": true
+        }
+      ],
+      "inspectedAt": "2025-08-19T10:00:00Z"
+    },
+    "plannedStartDate": "2025-08-12T08:00:00Z",
+    "plannedEndDate": "2025-08-20T17:00:00Z",
+    "actualStartDate": "2025-08-12T08:00:00Z",
+    "actualEndDate": "2025-08-19T10:00:00Z",
+    "assignedTo": "usr-005",
+    "assignedToName": "Chaminda Jayasuriya",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-08-10T09:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.488Z",
+    "productVersionId": "prd-007-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-017",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-008",
+        "sequence": 10,
+        "name": "Assembly",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 5,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 10,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 10,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-bbce935d",
+            "taskId": "op-017",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-749cf8dc",
+            "taskId": "op-017",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-4e850787",
+            "taskId": "op-017",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-7da020c7",
+            "taskId": "op-017",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a504b9ac",
+            "taskId": "op-017",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-02b50613",
+            "taskId": "op-017",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ca6557f1",
+            "taskId": "op-017",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e186ffff",
+            "taskId": "op-017",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e6d7bcec",
+            "taskId": "op-017",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-35a1376a",
+            "taskId": "op-017",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-08-18T15:00:00Z",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-36b6b0fe",
+            "taskId": "op-017",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-18T15:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-3fc7708c",
+            "taskId": "op-017",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-18T15:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-6d8293c5",
+            "taskId": "op-017",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-18T15:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-2b638394",
+            "taskId": "op-017",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-18T15:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Assembly Line 2"
+      },
+      {
+        "id": "op-017b",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-008",
+        "sequence": 20,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 1,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 10,
+        "completedQuantity": 10,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 10,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-a911deaf",
+            "taskId": "op-017b",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-06738ddf",
+            "taskId": "op-017b",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-189c0702",
+            "taskId": "op-017b",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-5969eb8c",
+            "taskId": "op-017b",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-cb403762",
+            "taskId": "op-017b",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-08c3d17e",
+            "taskId": "op-017b",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-7b8c1fd6",
+            "taskId": "op-017b",
+            "unitNo": 7,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-3419dacd",
+            "taskId": "op-017b",
+            "unitNo": 8,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-e3b39eb2",
+            "taskId": "op-017b",
+            "unitNo": 9,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-fa3f65b7",
+            "taskId": "op-017b",
+            "unitNo": 10,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-08-19T10:00:00Z",
+        "prerequisiteTaskIds": [
+          "op-017"
+        ],
+        "history": [
+          {
+            "id": "th-9cfec4dc",
+            "taskId": "op-017b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-19T10:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-60edd3fd",
+            "taskId": "op-017b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-19T10:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-aa97a87d",
+            "taskId": "op-017b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-19T10:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-70c9552f",
+            "taskId": "op-017b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-19T10:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 1"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 100,
+    "estimatedCost": 3000,
+    "actualCost": 0
+  },
+  {
+    "id": "mj-009",
+    "jobNumber": "PJ-1009",
+    "salesOrderId": "so-006",
+    "salesOrderNumber": "SO-2025-0098",
+    "customerId": "cus-005",
+    "customerName": "LankaTech Solutions",
+    "productId": "prd-008",
+    "productSku": "AVK-LNP-008",
+    "productName": "Linear Pendant 1200mm",
+    "quantity": 6,
+    "status": "completed",
+    "priority": "urgent",
+    "taskSeeds": [
+      {
+        "id": "op-018",
+        "name": "Extrusion Cut",
+        "sequence": 10,
+        "workstation": "Fab Bay 1",
+        "estimatedHours": 3,
+        "actualHours": 3,
+        "status": "completed",
+        "completedAt": "2025-08-21T14:00:00Z",
+        "plannedQuantity": 6
+      },
+      {
+        "id": "op-018b",
+        "name": "QC",
+        "sequence": 20,
+        "workstation": "QC Station 2",
+        "estimatedHours": 1,
+        "actualHours": 1,
+        "status": "completed",
+        "completedAt": "2025-08-22T09:30:00Z",
+        "plannedQuantity": 6
+      }
+    ],
+    "materialRequirements": [
+      {
+        "id": "mr-010",
+        "inventoryItemId": "inv-003",
+        "inventoryItemSku": "RAW-ALU-EXTR-40",
+        "inventoryItemName": "Aluminum Extrusion Profile 40mm",
+        "requiredQuantity": 12,
+        "reservedQuantity": 12,
+        "issuedQuantity": 4,
+        "unit": "pcs",
+        "status": "reserved"
+      }
+    ],
+    "qualityInspection": {
+      "id": "qi-005",
+      "inspectionNumber": "QI-2025-0428",
+      "inspectorId": "usr-006",
+      "inspectorName": "Sanduni Rathnayake",
+      "status": "passed",
+      "checklistItems": [
+        {
+          "id": "ci-014",
+          "name": "Length tolerance",
+          "passed": true
+        },
+        {
+          "id": "ci-015",
+          "name": "Finish check",
+          "passed": true
+        }
+      ],
+      "inspectedAt": "2025-08-22T09:30:00Z"
+    },
+    "plannedStartDate": "2025-08-18T08:00:00Z",
+    "plannedEndDate": "2025-08-25T17:00:00Z",
+    "actualStartDate": "2025-08-18T08:00:00Z",
+    "actualEndDate": "2025-08-22T09:30:00Z",
+    "assignedTo": "usr-004",
+    "assignedToName": "Nuwan Wickramasinghe",
+    "notes": "Demo: finished job still short on issued materials.",
+    "createdBy": "usr-004",
+    "createdByName": "Nuwan Wickramasinghe",
+    "createdAt": "2025-08-16T09:00:00Z",
+    "updatedAt": "2026-09-25T10:07:56.488Z",
+    "productVersionId": "prd-008-ver-1",
+    "productVersionLabel": "V1",
+    "tasks": [
+      {
+        "id": "op-018",
+        "taskNumber": "TASK-001",
+        "productionJobId": "mj-009",
+        "sequence": 10,
+        "name": "Extrusion Cut",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": false,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 3,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 6,
+        "completedQuantity": 6,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 6,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-55b47dc8",
+            "taskId": "op-018",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-a3f77369",
+            "taskId": "op-018",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-4d50b8cc",
+            "taskId": "op-018",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-59c2760b",
+            "taskId": "op-018",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-34a20cf4",
+            "taskId": "op-018",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-7ae61e8d",
+            "taskId": "op-018",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-08-21T14:00:00Z",
+        "prerequisiteTaskIds": [],
+        "history": [
+          {
+            "id": "th-b118cdc3",
+            "taskId": "op-018",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-21T14:00:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-bfb925a4",
+            "taskId": "op-018",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-21T14:00:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-79c8ba7a",
+            "taskId": "op-018",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-21T14:00:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-590279ea",
+            "taskId": "op-018",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-21T14:00:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "Fab Bay 1"
+      },
+      {
+        "id": "op-018b",
+        "taskNumber": "TASK-002",
+        "productionJobId": "mj-009",
+        "sequence": 20,
+        "name": "QC",
+        "isRequired": true,
+        "isEnabled": true,
+        "isQcTask": true,
+        "isTestingTask": false,
+        "isRework": false,
+        "estimatedHours": 1,
+        "actualHours": 0,
+        "overtimeHours": 0,
+        "normalOvertimeHours": 0,
+        "doubleOvertimeHours": 0,
+        "contributors": [],
+        "plannedQuantity": 6,
+        "completedQuantity": 6,
+        "partiallyCompletedQuantity": 0,
+        "rejectedQuantity": 0,
+        "reworkQuantity": 0,
+        "wasteQuantity": 0,
+        "startedQuantity": 6,
+        "overallProgress": 100,
+        "units": [
+          {
+            "id": "tu-5c3bb2ca",
+            "taskId": "op-018b",
+            "unitNo": 1,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-98d5a692",
+            "taskId": "op-018b",
+            "unitNo": 2,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-1c6ccc46",
+            "taskId": "op-018b",
+            "unitNo": 3,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-27e1a884",
+            "taskId": "op-018b",
+            "unitNo": 4,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-8856b678",
+            "taskId": "op-018b",
+            "unitNo": 5,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          },
+          {
+            "id": "tu-ee9dde18",
+            "taskId": "op-018b",
+            "unitNo": 6,
+            "progressPercentage": 100,
+            "status": "completed",
+            "assignments": []
+          }
+        ],
+        "status": "completed",
+        "completedAt": "2025-08-22T09:30:00Z",
+        "prerequisiteTaskIds": [
+          "op-018"
+        ],
+        "history": [
+          {
+            "id": "th-3b637490",
+            "taskId": "op-018b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-22T09:30:00Z",
+            "action": "created",
+            "newStatus": "pending",
+            "comments": "Generated from product version"
+          },
+          {
+            "id": "th-7b9651c5",
+            "taskId": "op-018b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-22T09:30:00Z",
+            "action": "ready",
+            "oldStatus": "pending",
+            "newStatus": "ready"
+          },
+          {
+            "id": "th-430617c4",
+            "taskId": "op-018b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-22T09:30:00Z",
+            "action": "started",
+            "oldStatus": "ready",
+            "newStatus": "in_progress"
+          },
+          {
+            "id": "th-3edfdb8e",
+            "taskId": "op-018b",
+            "userId": "usr-004",
+            "userName": "Nuwan Wickramasinghe",
+            "occurredAt": "2025-08-22T09:30:00Z",
+            "action": "completed",
+            "oldStatus": "in_progress",
+            "newStatus": "completed"
+          }
+        ],
+        "materialsUsed": [],
+        "workstation": "QC Station 2"
+      }
+    ],
+    "reworks": [],
+    "progressPercent": 100,
+    "estimatedCost": 2000,
+    "actualCost": 0
+  }
+]

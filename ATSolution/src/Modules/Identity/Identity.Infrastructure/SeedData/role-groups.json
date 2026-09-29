@@ -1,0 +1,94 @@
+[
+  {
+    "id": "rg-001",
+    "name": "Executive Team",
+    "description": "Senior leadership with broad access.",
+    "roleIds": [
+      "rol-001"
+    ],
+    "roleNames": [
+      "Administrator"
+    ],
+    "userCount": 1,
+    "status": "active",
+    "createdAt": "2024-01-01T08:00:00Z",
+    "updatedAt": "2024-01-01T08:00:00Z"
+  },
+  {
+    "id": "rg-002",
+    "name": "Sales Department",
+    "description": "Sales managers and representatives.",
+    "roleIds": [
+      "rol-002"
+    ],
+    "roleNames": [
+      "Sales Manager"
+    ],
+    "userCount": 2,
+    "status": "active",
+    "createdAt": "2024-01-15T08:00:00Z",
+    "updatedAt": "2024-01-15T08:00:00Z"
+  },
+  {
+    "id": "rg-003",
+    "name": "Production Floor",
+    "description": "Manufacturing and quality control staff.",
+    "roleIds": [
+      "rol-003",
+      "rol-005"
+    ],
+    "roleNames": [
+      "Production Manager",
+      "Quality Inspector"
+    ],
+    "userCount": 2,
+    "status": "active",
+    "createdAt": "2024-02-01T08:00:00Z",
+    "updatedAt": "2024-02-01T08:00:00Z"
+  },
+  {
+    "id": "rg-004",
+    "name": "Logistics",
+    "description": "Warehouse and delivery operations.",
+    "roleIds": [
+      "rol-004"
+    ],
+    "roleNames": [
+      "Warehouse Operator"
+    ],
+    "userCount": 2,
+    "status": "active",
+    "createdAt": "2024-03-01T08:00:00Z",
+    "updatedAt": "2024-03-01T08:00:00Z"
+  },
+  {
+    "id": "rg-005",
+    "name": "Finance",
+    "description": "Finance managers responsible for period close.",
+    "roleIds": [
+      "rol-006"
+    ],
+    "roleNames": [
+      "Finance Manager"
+    ],
+    "userCount": 0,
+    "status": "active",
+    "createdAt": "2024-04-15T08:00:00Z",
+    "updatedAt": "2024-04-15T08:00:00Z"
+  },
+  {
+    "id": "rg-006",
+    "name": "External Auditors",
+    "description": "Read-only access for compliance reviews.",
+    "roleIds": [
+      "rol-007"
+    ],
+    "roleNames": [
+      "Viewer"
+    ],
+    "userCount": 0,
+    "status": "inactive",
+    "createdAt": "2024-05-01T08:00:00Z",
+    "updatedAt": "2025-01-15T10:00:00Z"
+  }
+]

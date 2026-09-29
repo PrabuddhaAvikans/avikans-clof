@@ -7,6 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.10">
 		  <PrivateAssets>all</PrivateAssets>
@@ -20,6 +21,18 @@
 		<ProjectReference Include="..\..\..\Core\ATSolution.Application\ATSolution.Application.csproj" />
 		<ProjectReference Include="..\..\..\Core\ATSolution.Infrastructure\ATSolution.Infrastructure.csproj" />
 		<ProjectReference Include="..\..\..\Modules\Identity\Identity.Api\Identity.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Catalog\Catalog.Api\Catalog.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Inventory\Inventory.Api\Inventory.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Customers\Customers.Api\Customers.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Sales\Sales.Api\Sales.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Manufacturing\Manufacturing.Api\Manufacturing.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Delivery\Delivery.Api\Delivery.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Finance\Finance.Api\Finance.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\PeriodClose\PeriodClose.Api\PeriodClose.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Reporting\Reporting.Api\Reporting.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Audit\Audit.Api\Audit.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Configuration\Configuration.Api\Configuration.Api.csproj" />
+		<ProjectReference Include="..\..\..\Modules\Notifications\Notifications.Api\Notifications.Api.csproj" />
 		<ProjectReference Include="..\..\..\SharedKernel\ATSolution.SharedKernel\ATSolution.SharedKernel.csproj" />
 	</ItemGroup>
 

@@ -1,5 +1,4 @@
 using AutoMapper;
-using Identity.Application.Mappings.Resolvers;
 using Identity.Application.Users;
 using Identity.Domain.Users;
 
@@ -13,12 +12,14 @@ public sealed class UserMappingProfile : Profile
 
         CreateMap<CreateUserCommand, User>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(_ => Guid.NewGuid()))
-            .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom<PasswordHashResolver>())
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}".Trim()))
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedOnUtc, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))
             .ForMember(dest => dest.ModifiedOnUtc, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow));
 
         CreateMap<UpdateUserCommand, User>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}".Trim()))
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedOnUtc, opt => opt.Ignore())
             .ForMember(dest => dest.ModifiedOnUtc, opt => opt.MapFrom(_ => DateTimeOffset.UtcNow))

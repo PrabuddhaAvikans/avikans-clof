@@ -23,6 +23,78 @@
     <Project Path="src/Modules/Identity/Identity.Domain/Identity.Domain.csproj" />
     <Project Path="src/Modules/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/Catalog.Api/Catalog.Api.csproj" />
+    <Project Path="src/Modules/Catalog/Catalog.Application/Catalog.Application.csproj" />
+    <Project Path="src/Modules/Catalog/Catalog.Domain/Catalog.Domain.csproj" />
+    <Project Path="src/Modules/Catalog/Catalog.Infrastructure/Catalog.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/Inventory.Api/Inventory.Api.csproj" />
+    <Project Path="src/Modules/Inventory/Inventory.Application/Inventory.Application.csproj" />
+    <Project Path="src/Modules/Inventory/Inventory.Domain/Inventory.Domain.csproj" />
+    <Project Path="src/Modules/Inventory/Inventory.Infrastructure/Inventory.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Customers/">
+    <Project Path="src/Modules/Customers/Customers.Api/Customers.Api.csproj" />
+    <Project Path="src/Modules/Customers/Customers.Application/Customers.Application.csproj" />
+    <Project Path="src/Modules/Customers/Customers.Domain/Customers.Domain.csproj" />
+    <Project Path="src/Modules/Customers/Customers.Infrastructure/Customers.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Sales/">
+    <Project Path="src/Modules/Sales/Sales.Api/Sales.Api.csproj" />
+    <Project Path="src/Modules/Sales/Sales.Application/Sales.Application.csproj" />
+    <Project Path="src/Modules/Sales/Sales.Domain/Sales.Domain.csproj" />
+    <Project Path="src/Modules/Sales/Sales.Infrastructure/Sales.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Manufacturing/">
+    <Project Path="src/Modules/Manufacturing/Manufacturing.Api/Manufacturing.Api.csproj" />
+    <Project Path="src/Modules/Manufacturing/Manufacturing.Application/Manufacturing.Application.csproj" />
+    <Project Path="src/Modules/Manufacturing/Manufacturing.Domain/Manufacturing.Domain.csproj" />
+    <Project Path="src/Modules/Manufacturing/Manufacturing.Infrastructure/Manufacturing.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Delivery/">
+    <Project Path="src/Modules/Delivery/Delivery.Api/Delivery.Api.csproj" />
+    <Project Path="src/Modules/Delivery/Delivery.Application/Delivery.Application.csproj" />
+    <Project Path="src/Modules/Delivery/Delivery.Domain/Delivery.Domain.csproj" />
+    <Project Path="src/Modules/Delivery/Delivery.Infrastructure/Delivery.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Finance/">
+    <Project Path="src/Modules/Finance/Finance.Api/Finance.Api.csproj" />
+    <Project Path="src/Modules/Finance/Finance.Application/Finance.Application.csproj" />
+    <Project Path="src/Modules/Finance/Finance.Domain/Finance.Domain.csproj" />
+    <Project Path="src/Modules/Finance/Finance.Infrastructure/Finance.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/PeriodClose/">
+    <Project Path="src/Modules/PeriodClose/PeriodClose.Api/PeriodClose.Api.csproj" />
+    <Project Path="src/Modules/PeriodClose/PeriodClose.Application/PeriodClose.Application.csproj" />
+    <Project Path="src/Modules/PeriodClose/PeriodClose.Domain/PeriodClose.Domain.csproj" />
+    <Project Path="src/Modules/PeriodClose/PeriodClose.Infrastructure/PeriodClose.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Reporting/">
+    <Project Path="src/Modules/Reporting/Reporting.Api/Reporting.Api.csproj" />
+    <Project Path="src/Modules/Reporting/Reporting.Application/Reporting.Application.csproj" />
+    <Project Path="src/Modules/Reporting/Reporting.Domain/Reporting.Domain.csproj" />
+    <Project Path="src/Modules/Reporting/Reporting.Infrastructure/Reporting.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Audit/">
+    <Project Path="src/Modules/Audit/Audit.Api/Audit.Api.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Application/Audit.Application.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Domain/Audit.Domain.csproj" />
+    <Project Path="src/Modules/Audit/Audit.Infrastructure/Audit.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Configuration/">
+    <Project Path="src/Modules/Configuration/Configuration.Api/Configuration.Api.csproj" />
+    <Project Path="src/Modules/Configuration/Configuration.Application/Configuration.Application.csproj" />
+    <Project Path="src/Modules/Configuration/Configuration.Domain/Configuration.Domain.csproj" />
+    <Project Path="src/Modules/Configuration/Configuration.Infrastructure/Configuration.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/Notifications.Api/Notifications.Api.csproj" />
+    <Project Path="src/Modules/Notifications/Notifications.Application/Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/Notifications.Domain/Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/Notifications.Infrastructure/Notifications.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/SharedKernel/">
     <Project Path="src/SharedKernel/ATSolution.SharedKernel/ATSolution.SharedKernel.csproj" Id="a54ec77d-1095-4f09-8bd6-acacefc3abba" />
   </Folder>

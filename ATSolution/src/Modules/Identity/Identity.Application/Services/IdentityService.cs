@@ -1,32 +1,39 @@
 ﻿using ATSolution.Application;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
-using ATSolution.Application.Exceptions;
 using ATSolution.SharedKernel.Constants;
 using AutoMapper;
 using Identity.Application.Abstractions;
 using Identity.Application.Users;
+using Identity.Domain.Roles;
 using Identity.Domain.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace Identity.Application.Services;
 
 public sealed class IdentityService : IIdentityService
 {
     private readonly IIdentityRepository _identityRepository;
+    private readonly IRepository<Role, Guid> _roles;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
     private readonly IMapper _mapper;
+    private readonly IPasswordHasher _passwordHasher;
 
     public IdentityService(
         IIdentityRepository identityRepository,
+        IRepository<Role, Guid> roles,
         IUnitOfWork unitOfWork,
         IApplicationValidator validator,
-        IMapper mapper)
+        IMapper mapper,
+        IPasswordHasher passwordHasher)
     {
         _identityRepository = identityRepository;
+        _roles = roles;
         _unitOfWork = unitOfWork;
         _validator = validator;
         _mapper = mapper;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<string> GetStatusAsync(
@@ -73,7 +80,21 @@ public sealed class IdentityService : IIdentityService
     {
         await _validator.ValidateAsync(command, cancellationToken);
 
-        var user = _mapper.Map<User>(command);
+        var adminRole = await _roles.Query()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                role => role.Name == IdentityMessages.AdminRoleName,
+                cancellationToken)
+            ?? throw new NotFoundException(
+                string.Format(IdentityMessages.RoleNotFound, IdentityMessages.AdminRoleName));
+
+        var user = User.Create(
+            command.FirstName,
+            command.LastName,
+            command.Email,
+            _passwordHasher.Hash(command.Password),
+            adminRole.Id,
+            status: EntityStatuses.Active);
 
         await _identityRepository.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -98,7 +119,16 @@ public sealed class IdentityService : IIdentityService
                 string.Format(IdentityMessages.UserNotFoundByEmail, command.CurrentEmail));
         }
 
-        _mapper.Map(command, user);
+        user.UpdateProfile(
+            command.FirstName,
+            command.LastName,
+            command.Email,
+            user.RoleId,
+            user.Phone,
+            user.Department,
+            user.JobTitle,
+            user.Status);
+
         _identityRepository.Update(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -122,7 +152,12 @@ public sealed class IdentityService : IIdentityService
                 string.Format(IdentityMessages.UserNotFoundByEmail, command.CurrentEmail));
         }
 
-        _mapper.Map(command, user);
+        user.ApplyPartialUpdate(
+            command.FirstName,
+            command.LastName,
+            command.Email,
+            passwordHash: null);
+
         _identityRepository.Update(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

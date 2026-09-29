@@ -1,14 +1,16 @@
-﻿using ATSolution.SharedKernel.Constants;
+using ATSolution.SharedKernel.Constants;
 using ATSolution.SharedKernel.Models;
 using AutoMapper;
 using Identity.Api.DTOs.Requests;
 using Identity.Api.DTOs.Responses;
 using Identity.Application.Abstractions;
 using Identity.Application.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.Api.Controllers;
 
+[Authorize]
 [Route(ApiRoutes.Identity.Base)]
 [ApiController]
 public sealed class IdentityController : ControllerBase

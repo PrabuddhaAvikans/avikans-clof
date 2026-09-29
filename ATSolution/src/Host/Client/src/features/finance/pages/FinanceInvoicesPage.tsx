@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Download, Printer } from "lucide-react";
 import { toast } from "@/components/feedback/toast";
@@ -11,7 +11,6 @@ import { DataTable, type ColumnDef } from "@/components/tables/DataTable";
 import { MappedStatusBadge } from "@/features/shared/components/MappedStatusBadge";
 import type { Invoice } from "@/types/invoice";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { initialInvoices } from "@/features/finance/mock/mockInvoices";
 import { InvoiceStatus } from "@/types/status";
 import { Input } from "@/components/ui/Input";
 import { RowActions, type RowActionItem } from "@/components/ui/RowActions";
@@ -21,11 +20,39 @@ import {
   printCommercialDocument,
 } from "@/lib/commercialDocument";
 import { loadSystemSettings } from "@/lib/systemSettings";
+import { httpInvoiceService } from "@/services/http/httpInvoiceService";
 
 export function FinanceInvoicesPage() {
   const navigate = useNavigate();
-  const [invoices] = useState<Invoice[]>(initialInvoices);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    httpInvoiceService
+      .list({ page: 1, pageSize: 200 })
+      .then((page) => {
+        if (!cancelled) {
+          setInvoices(page.items);
+          setError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load invoices.");
+          setInvoices([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -122,7 +149,7 @@ export function FinanceInvoicesPage() {
         }
       />
 
-      <PageContent>
+      <PageContent isLoading={isLoading} error={error} loadingVariant="table">
         <div className="mb-4 max-w-md">
           <Input
             label="Search"
@@ -145,4 +172,3 @@ export function FinanceInvoicesPage() {
     </PageContainer>
   );
 }
-
