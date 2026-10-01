@@ -1,4 +1,5 @@
 using ATSolution.Application;
+using ATSolution.Application.Abstractions.Periods;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Application.Exceptions;
@@ -22,19 +23,22 @@ public sealed class CreditNoteService : ICreditNoteService
     private readonly IRepository<DocumentSequence, Guid> _sequences;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
+    private readonly IBusinessPeriodGuard _periodGuard;
 
     public CreditNoteService(
         IRepository<CreditNote, Guid> creditNotes,
         IRepository<Invoice, Guid> invoices,
         IRepository<DocumentSequence, Guid> sequences,
         IUnitOfWork unitOfWork,
-        IApplicationValidator validator)
+        IApplicationValidator validator,
+        IBusinessPeriodGuard periodGuard)
     {
         _creditNotes = creditNotes;
         _invoices = invoices;
         _sequences = sequences;
         _unitOfWork = unitOfWork;
         _validator = validator;
+        _periodGuard = periodGuard;
     }
 
     public async Task<PaginatedResponse<CreditNoteDto>> ListAsync(
@@ -86,6 +90,7 @@ public sealed class CreditNoteService : ICreditNoteService
         CancellationToken cancellationToken = default)
     {
         await _validator.ValidateAsync(command, cancellationToken);
+        await _periodGuard.EnsureWritableAsync(DateTimeOffset.UtcNow, cancellationToken);
 
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {

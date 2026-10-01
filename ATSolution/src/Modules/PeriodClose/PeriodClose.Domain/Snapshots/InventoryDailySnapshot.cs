@@ -40,4 +40,46 @@ public class InventoryDailySnapshot : Entity<Guid>
             RecordedAt = recordedAt,
         };
     }
+
+    public static InventoryDailySnapshot Capture(
+        Guid businessPeriodId,
+        string businessDate,
+        string inventoryItemId,
+        string sku,
+        string name,
+        string unit,
+        decimal openingQty,
+        decimal receipts,
+        decimal returns,
+        decimal productionOutput,
+        decimal issues,
+        decimal consumption,
+        decimal deliveries,
+        decimal adjustments,
+        decimal closingQty,
+        string movementIdsJson,
+        DateTimeOffset recordedAt)
+    {
+        return new InventoryDailySnapshot
+        {
+            Id = Guid.NewGuid(),
+            BusinessPeriodId = businessPeriodId,
+            BusinessDate = businessDate,
+            InventoryItemId = inventoryItemId,
+            Sku = sku,
+            Name = name,
+            Unit = unit,
+            OpeningQty = openingQty,
+            Receipts = receipts,
+            Returns = returns,
+            ProductionOutput = productionOutput,
+            Issues = issues,
+            Consumption = consumption,
+            Deliveries = deliveries,
+            Adjustments = adjustments,
+            ClosingQty = closingQty,
+            MovementIdsJson = string.IsNullOrWhiteSpace(movementIdsJson) ? "[]" : movementIdsJson,
+            RecordedAt = recordedAt,
+        };
+    }
 }

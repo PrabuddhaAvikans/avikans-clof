@@ -266,6 +266,7 @@ const periodCloseSlice = createSlice({
       setMutationSuccess(state.reopenDay);
       invalidateEntries(state.dayLists);
       invalidateEntries(state.dayWorkspaces);
+      invalidateEntries(state.monthWorkspaces);
     },
     reopenDayFailure(state, action: PayloadAction<FailurePayload>) {
       setMutationFailure(state.reopenDay, action);
@@ -314,6 +315,7 @@ const periodCloseSlice = createSlice({
       setMutationSuccess(state.reopenMonth);
       invalidateEntries(state.monthLists);
       invalidateEntries(state.monthWorkspaces);
+      invalidateEntries(state.dayWorkspaces);
     },
     reopenMonthFailure(state, action: PayloadAction<FailurePayload>) {
       setMutationFailure(state.reopenMonth, action);

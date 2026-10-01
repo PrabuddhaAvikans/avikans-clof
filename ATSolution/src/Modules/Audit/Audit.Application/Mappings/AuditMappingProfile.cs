@@ -9,7 +9,6 @@ public sealed class AuditMappingProfile : Profile
     public AuditMappingProfile()
     {
         CreateMap<AuditLogEntry, AuditLogEntryDto>()
-            .ForMember(d => d.Timestamp, o => o.MapFrom(s => s.Timestamp.ToString("O")))
             .ForMember(d => d.Changes, o => o.Ignore());
     }
 }

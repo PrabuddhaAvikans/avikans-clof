@@ -98,4 +98,7 @@
   <Folder Name="/src/SharedKernel/">
     <Project Path="src/SharedKernel/ATSolution.SharedKernel/ATSolution.SharedKernel.csproj" Id="a54ec77d-1095-4f09-8bd6-acacefc3abba" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sales.Domain.Tests/Sales.Domain.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -18,7 +18,7 @@ public sealed class ReportsController : ControllerBase
         _reportService = reportService;
     }
 
-    [HttpGet("{reportId}")]
+    [HttpGet(ApiRoutes.Reporting.ByReportId)]
     public async Task<ActionResult<ReportDatasetDto>> GetReport(string reportId, CancellationToken cancellationToken)
     {
         return Ok(await _reportService.GetReportAsync(reportId, cancellationToken));

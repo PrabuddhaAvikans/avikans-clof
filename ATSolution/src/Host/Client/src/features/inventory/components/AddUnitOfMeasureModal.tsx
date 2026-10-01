@@ -6,8 +6,8 @@ import {
   unitOfMeasureFormSchema,
   type UnitOfMeasureFormValues,
 } from "@/features/inventory/schemas/inventorySchema";
+import { useCreateUnitOfMeasure } from "@/features/inventory/hooks/useUnitsOfMeasureApi";
 import { UNITS_OF_MEASURE_UPDATED_EVENT } from "@/lib/unitsOfMeasure";
-import { httpUnitOfMeasureService } from "@/services/http/httpUnitOfMeasureService";
 
 export type AddUnitOfMeasureModalProps = {
   open: boolean;
@@ -22,6 +22,7 @@ export function AddUnitOfMeasureModal({
   onCreated,
   defaultCode = "",
 }: AddUnitOfMeasureModalProps) {
+  const createUnit = useCreateUnitOfMeasure();
   const initialValues = useMemo<UnitOfMeasureFormValues>(
     () => ({
       code: defaultCode,
@@ -32,7 +33,7 @@ export function AddUnitOfMeasureModal({
 
   const handleSubmit = async (values: UnitOfMeasureFormValues) => {
     try {
-      const created = await httpUnitOfMeasureService.create({
+      const created = await createUnit.mutateAsync({
         code: values.code,
         name: values.name,
         status: "active",

@@ -28,14 +28,14 @@ public sealed class CostingController : ControllerBase
         return Ok(await _costingService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<CostingRequestDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var item = await _costingService.GetByIdAsync(id, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 
-    [HttpGet("by-sales-order/{salesOrderId:guid}")]
+    [HttpGet(ApiRoutes.Sales.BySalesOrder)]
     public async Task<ActionResult<CostingRequestDto?>> GetBySalesOrderId(
         Guid salesOrderId,
         CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ public sealed class CostingController : ControllerBase
         return Ok(await _costingService.GetBySalesOrderIdAsync(salesOrderId, cancellationToken));
     }
 
-    [HttpPost("from-sales-order/{salesOrderId:guid}")]
+    [HttpPost(ApiRoutes.Sales.FromSalesOrderById)]
     public async Task<ActionResult<CostingRequestDto>> CreateFromSalesOrder(
         Guid salesOrderId,
         CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ public sealed class CostingController : ControllerBase
         return Ok(await _costingService.CreateFromSalesOrderAsync(salesOrderId, cancellationToken));
     }
 
-    [HttpPost("sync-from-sales-order/{salesOrderId:guid}")]
+    [HttpPost(ApiRoutes.Sales.SyncFromSalesOrderById)]
     public async Task<ActionResult<CostingRequestDto>> SyncFromSalesOrder(
         Guid salesOrderId,
         CancellationToken cancellationToken)
@@ -62,7 +62,7 @@ public sealed class CostingController : ControllerBase
     /// <summary>
     /// Accepts a full sales order payload from the client and syncs/creates costing for that order id.
     /// </summary>
-    [HttpPost("from-sales-order")]
+    [HttpPost(ApiRoutes.Sales.FromSalesOrder)]
     public async Task<ActionResult<CostingRequestDto>> CreateFromSalesOrderBody(
         [FromBody] SalesOrderDto order,
         CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ public sealed class CostingController : ControllerBase
         return Ok(await _costingService.CreateFromSalesOrderAsync(order.Id, cancellationToken));
     }
 
-    [HttpPost("sync-from-sales-order")]
+    [HttpPost(ApiRoutes.Sales.SyncFromSalesOrder)]
     public async Task<ActionResult<CostingRequestDto>> SyncFromSalesOrderBody(
         [FromBody] SalesOrderDto order,
         CancellationToken cancellationToken)
@@ -78,7 +78,7 @@ public sealed class CostingController : ControllerBase
         return Ok(await _costingService.SyncFromSalesOrderAsync(order.Id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/submit-coating")]
+    [HttpPost(ApiRoutes.Sales.SubmitCoating)]
     public async Task<ActionResult<CostingRequestDto>> SubmitCoating(
         Guid id,
         [FromBody] SubmitCoatingRequestDto request,
@@ -89,7 +89,7 @@ public sealed class CostingController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{id:guid}/approve")]
+    [HttpPost(ApiRoutes.Sales.Approve)]
     public async Task<ActionResult<CostingRequestDto>> Approve(
         Guid id,
         [FromBody] CommentRequestDto? request,
@@ -100,7 +100,7 @@ public sealed class CostingController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{id:guid}/reject")]
+    [HttpPost(ApiRoutes.Sales.Reject)]
     public async Task<ActionResult<CostingRequestDto>> Reject(
         Guid id,
         [FromBody] CommentRequestDto request,
@@ -111,7 +111,7 @@ public sealed class CostingController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{id:guid}/request-changes")]
+    [HttpPost(ApiRoutes.Sales.RequestChanges)]
     public async Task<ActionResult<CostingRequestDto>> RequestChanges(
         Guid id,
         [FromBody] CommentRequestDto request,
@@ -122,7 +122,7 @@ public sealed class CostingController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPut("{id:guid}/notes")]
+    [HttpPut(ApiRoutes.Sales.Notes)]
     public async Task<ActionResult<CostingRequestDto>> UpdateNotes(
         Guid id,
         [FromBody] NotesBodyDto request,
@@ -133,7 +133,7 @@ public sealed class CostingController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{id:guid}/comments")]
+    [HttpPost(ApiRoutes.Sales.Comments)]
     public async Task<ActionResult<CostingRequestDto>> AddComment(
         Guid id,
         [FromBody] CommentRequestDto request,

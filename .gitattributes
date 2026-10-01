@@ -1,0 +1,10 @@
+# Default: let Git detect text files
+* text=auto
+
+# Match ATSolution/.editorconfig (end_of_line = crlf) for .NET sources
+*.cs text eol=crlf
+*.csproj text eol=crlf
+*.sln text eol=crlf
+*.props text eol=crlf
+*.targets text eol=crlf
+*.editorconfig text eol=crlf

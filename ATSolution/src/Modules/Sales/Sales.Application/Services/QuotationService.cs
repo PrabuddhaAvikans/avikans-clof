@@ -154,8 +154,8 @@ public sealed class QuotationService : IQuotationService
                 shipping is null ? null : JsonColumn.Serialize(shipping),
                 JsonColumn.Serialize(command.Attachments ?? Array.Empty<AttachmentDto>()),
                 JsonColumn.Serialize(new[] { revision }),
-                command.WorkflowSnapshot.HasValue
-                    ? command.WorkflowSnapshot.Value.GetRawText()
+                command.WorkflowSnapshot is not null
+                    ? command.WorkflowSnapshot.ToJsonString()
                     : JsonColumn.Serialize(new { capturedAt = DateTimeOffset.UtcNow, version = 1 }),
                 createdBy,
                 createdByName);
@@ -176,9 +176,9 @@ public sealed class QuotationService : IQuotationService
                     line.DiscountPercent,
                     line.TaxPercent,
                     SalesTotals.ComputeLineTotal(line.Quantity, line.UnitPrice, line.DiscountPercent, line.TaxPercent),
-                    line.IsCustomized ?? line.Customization.HasValue,
+                    line.IsCustomized ?? line.Customization is not null,
                     line.RequiresManufacturing ?? false,
-                    line.Customization?.GetRawText(),
+                    line.CustomizationJson,
                     sort++));
             }
 
@@ -196,26 +196,34 @@ public sealed class QuotationService : IQuotationService
         }, cancellationToken);
     }
 
-    public async Task<QuotationDto> UpdateAsync(
-        UpdateQuotationCommand command,
-        CancellationToken cancellationToken = default)
+    public async Task<QuotationDto> UpdateAsync(UpdateQuotationCommand command, CancellationToken cancellationToken = default)
     {
         await _validator.ValidateAsync(command, cancellationToken);
         var quotation = await LoadQuotationAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException($"Quotation '{command.Id}' was not found.");
 
-        if (quotation.Status is QuotationStatuses.Converted or QuotationStatuses.Rejected)
+        if (!QuotationStatuses.IsEditable(quotation.Status))
         {
             throw new ApplicationValidationException(
             [
-                new ValidationError("status", "Converted or rejected quotations cannot be updated.", "INVALID_STATE"),
+                new ValidationError(
+                    "status",
+                    "Converted, rejected, or expired quotations cannot be updated.",
+                    ValidationErrorCodes.InvalidState),
             ]);
         }
 
+        var contentChanged = false;
         if (command.LineItems is not null)
         {
-            _quotationLines.RemoveRange(quotation.Lines);
+            contentChanged = true;
+            var existingLines = quotation.Lines.ToList();
             quotation.Lines.Clear();
+            if (existingLines.Count > 0)
+            {
+                _quotationLines.RemoveRange(existingLines);
+            }
+
             var sort = 0;
             foreach (var line in command.LineItems)
             {
@@ -232,11 +240,21 @@ public sealed class QuotationService : IQuotationService
                     line.DiscountPercent,
                     line.TaxPercent,
                     SalesTotals.ComputeLineTotal(line.Quantity, line.UnitPrice, line.DiscountPercent, line.TaxPercent),
-                    line.IsCustomized ?? line.Customization.HasValue,
+                    line.IsCustomized ?? line.Customization is not null,
                     line.RequiresManufacturing ?? false,
-                    line.Customization?.GetRawText(),
+                    line.CustomizationJson,
                     sort++));
             }
+        }
+
+        if (command.DiscountAmount.HasValue
+            || command.Notes is not null
+            || command.TermsAndConditions is not null
+            || command.Attachments is not null
+            || command.Priority is not null
+            || command.ValidUntil.HasValue)
+        {
+            contentChanged = true;
         }
 
         var discount = command.DiscountAmount ?? quotation.DiscountAmount;
@@ -244,16 +262,64 @@ public sealed class QuotationService : IQuotationService
             quotation.Lines.Select(l => (l.Quantity, l.UnitPrice, l.DiscountPercent, l.TaxPercent)),
             discount);
 
-        var status = quotation.Status;
-        if (string.Equals(command.SaveMode, "save", StringComparison.OrdinalIgnoreCase)
-            && quotation.Status == QuotationStatuses.Draft)
+        var previousStatus = quotation.Status;
+        var effectiveSaveMode = command.SaveMode;
+        if (string.IsNullOrWhiteSpace(effectiveSaveMode)
+            && contentChanged
+            && QuotationStatuses.IsIssuedOrLater(previousStatus))
         {
-            status = QuotationStatuses.ReadyToSend;
+            effectiveSaveMode = "save";
         }
-        else if (command.Status is not null)
+
+        string status;
+        if (!string.IsNullOrWhiteSpace(command.Status))
         {
+            if (!QuotationStatuses.IsKnown(command.Status))
+            {
+                throw new ApplicationValidationException(
+                [
+                    new ValidationError(
+                        "status",
+                        $"Unknown quotation status '{command.Status}'.",
+                        ValidationErrorCodes.InvalidState),
+                ]);
+            }
+
+            if (!QuotationStatuses.CanTransitionTo(previousStatus, command.Status))
+            {
+                throw new ApplicationValidationException(
+                [
+                    new ValidationError(
+                        "status",
+                        $"Cannot change quotation status from '{previousStatus}' to '{command.Status}'.",
+                        ValidationErrorCodes.InvalidState),
+                ]);
+            }
+
             status = command.Status;
         }
+        else
+        {
+            status = QuotationStatuses.ResolveStatusAfterContentSave(previousStatus, effectiveSaveMode);
+        }
+
+        var revisionNotes = QuotationStatuses.IsIssuedOrLater(previousStatus)
+            && !string.IsNullOrWhiteSpace(effectiveSaveMode)
+                ? (string.Equals(effectiveSaveMode, "draft", StringComparison.OrdinalIgnoreCase)
+                    ? "Draft revision after customer issue"
+                    : "Revised after customer feedback")
+                : null;
+
+        var revisionsJson = string.IsNullOrWhiteSpace(effectiveSaveMode)
+            ? null
+            : ApplySaveModeRevisions(
+                quotation.RevisionsJson,
+                effectiveSaveMode,
+                totals.TotalAmount,
+                quotation.Currency,
+                quotation.CreatedBy,
+                quotation.CreatedByName,
+                revisionNotes);
 
         quotation.UpdateHeader(
             command.Priority,
@@ -264,9 +330,27 @@ public sealed class QuotationService : IQuotationService
             totals.Subtotal,
             totals.TaxAmount,
             totals.TotalAmount,
-            status,
+            status: null,
             command.Attachments is null ? null : JsonColumn.Serialize(command.Attachments),
-            null);
+            revisionsJson);
+
+        if (status != previousStatus)
+        {
+            if (status == QuotationStatuses.Rejected)
+            {
+                var reason = command.RejectionReason!.Trim();
+                quotation.Contacts.Add(QuotationContact.Create(
+                    quotation.Id,
+                    "comment",
+                    "Quotation rejected",
+                    reason,
+                    "Rejected",
+                    quotation.CreatedBy,
+                    quotation.CreatedByName));
+            }
+
+            quotation.ApplyStatus(status);
+        }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return SalesMappers.MapQuotation(quotation);
@@ -277,11 +361,14 @@ public sealed class QuotationService : IQuotationService
         var quotation = await LoadQuotationAsync(id, cancellationToken)
             ?? throw new NotFoundException($"Quotation '{id}' was not found.");
 
-        if (quotation.Status is not QuotationStatuses.Draft and not QuotationStatuses.ReadyToSend)
+        if (!QuotationStatuses.IsDeletable(quotation.Status))
         {
             throw new ApplicationValidationException(
             [
-                new ValidationError("status", "Only draft or ready-to-send quotations can be deleted.", "INVALID_STATE"),
+                new ValidationError(
+                    "status",
+                    "Only draft or ready-to-send quotations can be deleted.",
+                    ValidationErrorCodes.InvalidState),
             ]);
         }
 
@@ -296,6 +383,17 @@ public sealed class QuotationService : IQuotationService
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new NotFoundException($"Quotation '{id}' was not found.");
 
+        if (!QuotationStatuses.CanSend(quotation.Status))
+        {
+            throw new ApplicationValidationException(
+            [
+                new ValidationError(
+                    "status",
+                    $"Cannot send a quotation in '{quotation.Status}' status.",
+                    ValidationErrorCodes.InvalidState),
+            ]);
+        }
+
         var pending = quotation.Lines.FirstOrDefault(line =>
             line.IsCustomized
             && !string.IsNullOrWhiteSpace(line.CustomizationJson)
@@ -309,7 +407,7 @@ public sealed class QuotationService : IQuotationService
                 new ValidationError(
                     "lineItems",
                     "Customized lines must be estimated and approved before sending the quotation.",
-                    "INVALID_STATE"),
+                    ValidationErrorCodes.InvalidState),
             ]);
         }
 
@@ -339,11 +437,14 @@ public sealed class QuotationService : IQuotationService
             var quotation = await LoadQuotationAsync(id, ct)
                 ?? throw new NotFoundException($"Quotation '{id}' was not found.");
 
-            if (quotation.Status is not QuotationStatuses.Accepted and not QuotationStatuses.Sent)
+            if (!QuotationStatuses.CanConvert(quotation.Status))
             {
                 throw new ApplicationValidationException(
                 [
-                    new ValidationError("status", "Quotation must be accepted or sent before conversion.", "INVALID_STATE"),
+                    new ValidationError(
+                        "status",
+                        "Quotation must be approved, sent, or revised before conversion.",
+                        ValidationErrorCodes.InvalidState),
                 ]);
             }
 
@@ -402,7 +503,8 @@ public sealed class QuotationService : IQuotationService
             await _salesOrders.AddAsync(order, ct);
 
             var costingNumber = await DocumentNumberGenerator.NextAsync(_sequences, DocumentSequenceTypes.CostingRequest, ct);
-            var built = CostingBuilder.BuildFromSalesOrder(order, costingNumber, null);
+            var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
+            var built = CostingBuilder.BuildFromSalesOrder(order, costingNumber, null, resolve);
             var costing = CostingRequest.Create(
                 built.RequestNumber,
                 order.Id,
@@ -439,28 +541,47 @@ public sealed class QuotationService : IQuotationService
         CancellationToken cancellationToken = default)
     {
         await _validator.ValidateAsync(command, cancellationToken);
-        var quotation = await LoadQuotationAsync(command.QuotationId, cancellationToken)
-            ?? throw new NotFoundException($"Quotation '{command.QuotationId}' was not found.");
 
-        if (quotation.Status is QuotationStatuses.Accepted or QuotationStatuses.Converted or QuotationStatuses.Rejected)
+        return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
-            throw new ApplicationValidationException(
-            [
-                new ValidationError("status", "Contact history can only be logged until the quotation is approved.", "INVALID_STATE"),
-            ]);
-        }
+            var quotation = await LoadQuotationAsync(command.QuotationId, ct)
+                ?? throw new NotFoundException($"Quotation '{command.QuotationId}' was not found.");
 
-        quotation.Contacts.Add(QuotationContact.Create(
-            quotation.Id,
-            command.Type,
-            command.Summary,
-            command.Detail,
-            command.Outcome,
-            command.ContactedBy ?? "system",
-            command.ContactedByName ?? "System"));
-        quotation.Touch();
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return SalesMappers.MapQuotation(quotation);
+            if (!QuotationStatuses.CanLogContact(quotation.Status))
+            {
+                throw new ApplicationValidationException(
+                [
+                    new ValidationError(
+                        "status",
+                        "Contact history cannot be logged for this quotation status.",
+                        ValidationErrorCodes.InvalidState),
+                ]);
+            }
+
+            // Preserve approval / conversion state. Only move sent/viewed into customer feedback.
+            var shouldMarkFeedback = QuotationStatuses.ShouldRecordCustomerFeedback(quotation.Status)
+                && IsCustomerFacingContact(command.Type);
+
+            quotation.Contacts.Add(QuotationContact.Create(
+                quotation.Id,
+                command.Type,
+                command.Summary,
+                command.Detail,
+                command.Outcome,
+                command.ContactedBy ?? "system",
+                command.ContactedByName ?? "System"));
+
+            if (shouldMarkFeedback)
+            {
+                quotation.MarkCustomerFeedback();
+            }
+            else
+            {
+                quotation.Touch();
+            }
+
+            return SalesMappers.MapQuotation(quotation);
+        }, cancellationToken);
     }
 
     public async Task<QuotationDto> ApproveLineCustomizationAsync(
@@ -652,6 +773,119 @@ public sealed class QuotationService : IQuotationService
             return new PromoteCustomizationResultDto(SalesMappers.MapQuotation(quotation), productDto);
         }, cancellationToken);
     }
+
+    private static string ApplySaveModeRevisions(
+        string revisionsJson,
+        string saveMode,
+        decimal totalAmount,
+        string currency,
+        string createdBy,
+        string createdByName,
+        string? notesOverride = null)
+    {
+        var revisions = JsonColumn.Deserialize(revisionsJson, Array.Empty<QuotationRevisionDto>()).ToList();
+        var now = DateTimeOffset.UtcNow;
+        var isDraftMode = string.Equals(saveMode, "draft", StringComparison.OrdinalIgnoreCase);
+
+        if (revisions.Count == 0)
+        {
+            revisions.Add(new QuotationRevisionDto(
+                Guid.NewGuid(),
+                1,
+                "v1.0",
+                true,
+                isDraftMode,
+                totalAmount,
+                currency,
+                notesOverride ?? (isDraftMode ? "Initial draft" : "Initial version"),
+                now,
+                createdBy,
+                createdByName));
+            return JsonColumn.Serialize(revisions);
+        }
+
+        var current = revisions.FirstOrDefault(revision => revision.IsCurrent) ?? revisions[0];
+        var nextNumber = revisions.Max(revision => revision.VersionNumber) + 1;
+
+        static string FormatLabel(int versionNumber) => $"v1.{Math.Max(0, versionNumber - 1)}";
+
+        if (isDraftMode)
+        {
+            if (current.IsDraft)
+            {
+                revisions = revisions
+                    .Select(revision => revision.Id == current.Id
+                        ? revision with
+                        {
+                            IsCurrent = true,
+                            TotalAmount = totalAmount,
+                            Currency = currency,
+                            Notes = notesOverride ?? "Draft updated",
+                            CreatedAt = now,
+                            CreatedBy = createdBy,
+                            CreatedByName = createdByName,
+                        }
+                        : revision with { IsCurrent = false })
+                    .ToList();
+            }
+            else
+            {
+                revisions = revisions.Select(revision => revision with { IsCurrent = false }).ToList();
+                revisions.Insert(0, new QuotationRevisionDto(
+                    Guid.NewGuid(),
+                    nextNumber,
+                    FormatLabel(nextNumber),
+                    true,
+                    true,
+                    totalAmount,
+                    currency,
+                    notesOverride ?? "Draft saved",
+                    now,
+                    createdBy,
+                    createdByName));
+            }
+        }
+        else if (current.IsDraft)
+        {
+            revisions = revisions
+                .Select(revision => revision.Id == current.Id
+                    ? revision with
+                    {
+                        IsDraft = false,
+                        IsCurrent = true,
+                        TotalAmount = totalAmount,
+                        Currency = currency,
+                        Notes = notesOverride ?? "Saved",
+                        CreatedAt = now,
+                        CreatedBy = createdBy,
+                        CreatedByName = createdByName,
+                    }
+                    : revision with { IsCurrent = false })
+                .ToList();
+        }
+        else
+        {
+            revisions = revisions.Select(revision => revision with { IsCurrent = false }).ToList();
+            revisions.Insert(0, new QuotationRevisionDto(
+                Guid.NewGuid(),
+                nextNumber,
+                FormatLabel(nextNumber),
+                true,
+                false,
+                totalAmount,
+                currency,
+                notesOverride ?? "Saved",
+                now,
+                createdBy,
+                createdByName));
+        }
+
+        return JsonColumn.Serialize(revisions);
+    }
+
+    private static bool IsCustomerFacingContact(string type) =>
+        type is "call" or "email" or "whatsapp" or "meeting" or "follow_up";
+    // "comment" is internal-only and must not change quotation workflow status.
 
     private async Task<Quotation?> LoadQuotationAsync(
         Guid id,

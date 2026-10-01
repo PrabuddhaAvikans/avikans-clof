@@ -77,8 +77,8 @@ public class WorkflowVersion : Entity<Guid>, IAuditableEntity
     public void Publish()
     {
         Status = WorkflowVersionStatuses.Published;
-        PublishedAtUtc = DateTimeOffset.UtcNow;
-        ModifiedOnUtc = PublishedAtUtc.Value;
+        PublishedAtUtc ??= DateTimeOffset.UtcNow;
+        ModifiedOnUtc = DateTimeOffset.UtcNow;
     }
 
     public void Retire()

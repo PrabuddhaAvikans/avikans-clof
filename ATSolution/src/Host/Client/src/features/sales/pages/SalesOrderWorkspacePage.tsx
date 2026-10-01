@@ -23,9 +23,12 @@ import {
   useCostingBySalesOrder,
   useCreateCostingFromSalesOrder,
 } from "@/features/costing/hooks/useCosting";
+import {
+  useApplyCreditNote,
+  useCreditNotes,
+} from "@/features/finance/hooks/useCreditNotes";
+import { useInvoices } from "@/features/finance/hooks/useInvoices";
 import { canConfirmSalesOrder, getConfirmBlockReason } from "@/features/sales/lib/salesOrderFlow";
-import type { CreditNote } from "@/types/credit-note";
-import type { Invoice } from "@/types/invoice";
 import type { SalesOrderStatusValue } from "@/types/status";
 import { cn } from "@/lib/utils";
 import {
@@ -35,8 +38,6 @@ import {
   workspacePanelGrow,
   workspacePanelHug,
 } from "@/lib/panelLayout";
-import { httpCreditNoteService } from "@/services/http/httpCreditNoteService";
-import { httpInvoiceService } from "@/services/http/httpInvoiceService";
 
 export function SalesOrderWorkspacePage() {
   const navigate = useNavigate();
@@ -48,8 +49,6 @@ export function SalesOrderWorkspacePage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [applyCreditOpen, setApplyCreditOpen] = useState(false);
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   const { data, isLoading, error, refetch } = useSalesOrders({
     page,
@@ -60,32 +59,23 @@ export function SalesOrderWorkspacePage() {
 
   const { data: countsData } = useSalesOrders({ page: 1, pageSize: 100 });
   const { data: selectedOrder } = useSalesOrder(selectedId ?? "");
+  const { data: creditData, refetch: refetchCredits } = useCreditNotes({
+    page: 1,
+    pageSize: 200,
+  });
+  const { data: invoiceData, refetch: refetchInvoices } = useInvoices({
+    page: 1,
+    pageSize: 200,
+  });
+  const applyCreditNote = useApplyCreditNote();
+
+  const creditNotes = creditData?.items ?? [];
+  const invoices = invoiceData?.items ?? [];
 
   const confirmOrder = useConfirmSalesOrder();
   const cancelOrder = useCancelSalesOrder();
   const { data: orderCosting } = useCostingBySalesOrder(selectedId ?? "");
   const createCosting = useCreateCostingFromSalesOrder();
-
-  useEffect(() => {
-    let cancelled = false;
-    void Promise.all([
-      httpCreditNoteService.list({ page: 1, pageSize: 200 }),
-      httpInvoiceService.list({ page: 1, pageSize: 200 }),
-    ])
-      .then(([creditPage, invoicePage]) => {
-        if (cancelled) return;
-        setCreditNotes(creditPage.items);
-        setInvoices(invoicePage.items);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setCreditNotes([]);
-        setInvoices([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (!selectedId && data?.items.length) {
@@ -201,16 +191,16 @@ export function SalesOrderWorkspacePage() {
       if (applyAmount <= 0) return;
 
       try {
-        const updated = await httpCreditNoteService.apply(args.creditNoteId, {
-          invoiceId: args.invoiceId,
-          amount: applyAmount,
-          note: args.note,
+        await applyCreditNote.mutateAsync({
+          id: args.creditNoteId,
+          data: {
+            invoiceId: args.invoiceId,
+            amount: applyAmount,
+            note: args.note,
+          },
         });
-        setCreditNotes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-        const refreshedInvoice = await httpInvoiceService.getById(args.invoiceId);
-        setInvoices((prev) =>
-          prev.map((inv) => (inv.id === refreshedInvoice.id ? refreshedInvoice : inv)),
-        );
+        refetchCredits();
+        refetchInvoices();
         toast.success(
           `Applied ${applyAmount.toFixed(2)} from ${credit.creditNoteNumber} to ${invoice.invoiceNumber}.`,
         );
@@ -218,7 +208,7 @@ export function SalesOrderWorkspacePage() {
         toast.error(err instanceof Error ? err.message : "Failed to apply credit note.");
       }
     },
-    [creditNotes, invoices],
+    [applyCreditNote, creditNotes, invoices, refetchCredits, refetchInvoices],
   );
 
   return (

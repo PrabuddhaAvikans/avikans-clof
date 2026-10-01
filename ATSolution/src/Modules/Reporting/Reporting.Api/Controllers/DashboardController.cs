@@ -18,7 +18,7 @@ public sealed class DashboardController : ControllerBase
         _dashboardService = dashboardService;
     }
 
-    [HttpGet("summary")]
+    [HttpGet(ApiRoutes.Reporting.Summary)]
     public async Task<ActionResult<DashboardSummaryDto>> GetSummary(CancellationToken cancellationToken)
     {
         return Ok(await _dashboardService.GetSummaryAsync(cancellationToken));

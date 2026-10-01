@@ -29,7 +29,7 @@ public sealed class UsersController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<UserDetailDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var user = await _userManagementService.GetByIdAsync(id, cancellationToken);
@@ -58,7 +58,7 @@ public sealed class UsersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<UserDetailDto>> Update(
         Guid id,
         [FromBody] UpdateManagedUserRequestDto request,
@@ -81,14 +81,14 @@ public sealed class UsersController : ControllerBase
         return Ok(user);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _userManagementService.DeleteAsync(id, cancellationToken);
         return Ok(ApiResponse.Succeeded(IdentityMessages.UserDeletedSuccessfully));
     }
 
-    [HttpGet("{id:guid}/permission-assignment")]
+    [HttpGet(ApiRoutes.Identity.PermissionAssignment)]
     public async Task<ActionResult<PermissionAssignmentDto>> GetPermissionAssignment(
         Guid id,
         CancellationToken cancellationToken)

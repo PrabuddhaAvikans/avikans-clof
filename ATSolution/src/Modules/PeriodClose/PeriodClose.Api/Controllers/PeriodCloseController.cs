@@ -19,7 +19,7 @@ public sealed class PeriodCloseController : ControllerBase
         _periodCloseService = periodCloseService;
     }
 
-    [HttpGet("settings")]
+    [HttpGet(ApiRoutes.PeriodClose.Settings)]
     public async Task<ActionResult<PeriodCloseSettingsDto>> GetSettings(
         [FromQuery] string? branchId,
         CancellationToken cancellationToken)
@@ -27,7 +27,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.GetSettingsAsync(branchId, cancellationToken));
     }
 
-    [HttpPut("settings")]
+    [HttpPut(ApiRoutes.PeriodClose.Settings)]
     public async Task<ActionResult<PeriodCloseSettingsDto>> UpdateSettings(
         [FromBody] UpdatePeriodCloseSettingsCommand command,
         CancellationToken cancellationToken)
@@ -35,7 +35,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.UpdateSettingsAsync(command, cancellationToken));
     }
 
-    [HttpGet("days")]
+    [HttpGet(ApiRoutes.PeriodClose.Days)]
     public async Task<ActionResult<PaginatedResponse<BusinessPeriodDto>>> ListDays(
         [FromQuery] BusinessPeriodListQuery query,
         CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListDayPeriodsAsync(query, cancellationToken));
     }
 
-    [HttpGet("months")]
+    [HttpGet(ApiRoutes.PeriodClose.Months)]
     public async Task<ActionResult<PaginatedResponse<MonthlyPeriodDto>>> ListMonths(
         [FromQuery] MonthlyPeriodListQuery query,
         CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListMonthlyPeriodsAsync(query, cancellationToken));
     }
 
-    [HttpGet("days/current")]
+    [HttpGet(ApiRoutes.PeriodClose.CurrentDay)]
     public async Task<ActionResult<DayCloseWorkspaceDto>> GetCurrentDay(
         [FromQuery] string? branchId,
         CancellationToken cancellationToken)
@@ -63,7 +63,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpGet("days/{id:guid}")]
+    [HttpGet(ApiRoutes.PeriodClose.DayById)]
     public async Task<ActionResult<DayCloseWorkspaceDto>> GetDayWorkspace(
         Guid id,
         CancellationToken cancellationToken)
@@ -71,7 +71,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.GetDayWorkspaceAsync(id, cancellationToken));
     }
 
-    [HttpGet("months/current")]
+    [HttpGet(ApiRoutes.PeriodClose.CurrentMonth)]
     public async Task<ActionResult<MonthlyCloseWorkspaceDto>> GetCurrentMonth(
         [FromQuery] string? branchId,
         CancellationToken cancellationToken)
@@ -83,7 +83,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpGet("months/{id:guid}")]
+    [HttpGet(ApiRoutes.PeriodClose.MonthById)]
     public async Task<ActionResult<MonthlyCloseWorkspaceDto>> GetMonthWorkspace(
         Guid id,
         CancellationToken cancellationToken)
@@ -91,7 +91,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.GetMonthWorkspaceAsync(id, cancellationToken));
     }
 
-    [HttpPost("days/{id:guid}/validate")]
+    [HttpPost(ApiRoutes.PeriodClose.ValidateDay)]
     public async Task<ActionResult<DayCloseWorkspaceDto>> ValidateDay(
         Guid id,
         [FromBody] CloseDayOptions? options,
@@ -105,7 +105,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("days/{id:guid}/close")]
+    [HttpPost(ApiRoutes.PeriodClose.CloseDay)]
     public async Task<ActionResult<CloseDayResultDto>> CloseDay(
         Guid id,
         [FromBody] CloseDayOptions? options,
@@ -119,7 +119,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("days/{id:guid}/reopen")]
+    [HttpPost(ApiRoutes.PeriodClose.ReopenDay)]
     public async Task<ActionResult<BusinessPeriodDto>> ReopenDay(
         Guid id,
         [FromBody] ReopenPeriodCommand command,
@@ -133,7 +133,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("months/{id:guid}/validate")]
+    [HttpPost(ApiRoutes.PeriodClose.ValidateMonth)]
     public async Task<ActionResult<MonthlyCloseWorkspaceDto>> ValidateMonth(
         Guid id,
         CancellationToken cancellationToken)
@@ -145,7 +145,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("months/{id:guid}/close")]
+    [HttpPost(ApiRoutes.PeriodClose.CloseMonth)]
     public async Task<ActionResult<CloseMonthResultDto>> CloseMonth(
         Guid id,
         CancellationToken cancellationToken)
@@ -157,7 +157,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("months/{id:guid}/reopen")]
+    [HttpPost(ApiRoutes.PeriodClose.ReopenMonth)]
     public async Task<ActionResult<MonthlyPeriodDto>> ReopenMonth(
         Guid id,
         [FromBody] ReopenPeriodCommand command,
@@ -171,7 +171,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpGet("days/{id:guid}/audit")]
+    [HttpGet(ApiRoutes.PeriodClose.DayAudit)]
     public async Task<ActionResult<IReadOnlyList<PeriodAuditLogDto>>> ListDayAudit(
         Guid id,
         CancellationToken cancellationToken)
@@ -179,7 +179,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListDayAuditAsync(id, cancellationToken));
     }
 
-    [HttpGet("months/{id:guid}/audit")]
+    [HttpGet(ApiRoutes.PeriodClose.MonthAudit)]
     public async Task<ActionResult<IReadOnlyList<PeriodAuditLogDto>>> ListMonthAudit(
         Guid id,
         CancellationToken cancellationToken)
@@ -187,7 +187,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListMonthAuditAsync(id, cancellationToken));
     }
 
-    [HttpGet("days/{id:guid}/summary")]
+    [HttpGet(ApiRoutes.PeriodClose.DaySummary)]
     public async Task<ActionResult<DailyClosingSummaryDto?>> GetDailySummary(
         Guid id,
         CancellationToken cancellationToken)
@@ -195,7 +195,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.GetDailySummaryAsync(id, cancellationToken));
     }
 
-    [HttpGet("months/{id:guid}/summary")]
+    [HttpGet(ApiRoutes.PeriodClose.MonthSummary)]
     public async Task<ActionResult<MonthlyClosingSummaryDto?>> GetMonthlySummary(
         Guid id,
         CancellationToken cancellationToken)
@@ -203,7 +203,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.GetMonthlySummaryAsync(id, cancellationToken));
     }
 
-    [HttpGet("days/{id:guid}/production-snapshots")]
+    [HttpGet(ApiRoutes.PeriodClose.DayProductionSnapshots)]
     public async Task<ActionResult<IReadOnlyList<ProductionDailySnapshotDto>>> ListProductionDailySnapshots(
         Guid id,
         CancellationToken cancellationToken)
@@ -211,7 +211,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListProductionDailySnapshotsAsync(id, cancellationToken));
     }
 
-    [HttpGet("months/{id:guid}/production-snapshots")]
+    [HttpGet(ApiRoutes.PeriodClose.MonthProductionSnapshots)]
     public async Task<ActionResult<IReadOnlyList<ProductionMonthlySnapshotDto>>> ListProductionMonthlySnapshots(
         Guid id,
         CancellationToken cancellationToken)
@@ -219,7 +219,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListProductionMonthlySnapshotsAsync(id, cancellationToken));
     }
 
-    [HttpGet("days/{id:guid}/inventory-snapshots")]
+    [HttpGet(ApiRoutes.PeriodClose.DayInventorySnapshots)]
     public async Task<ActionResult<IReadOnlyList<InventoryDailySnapshotDto>>> ListInventoryDailySnapshots(
         Guid id,
         CancellationToken cancellationToken)
@@ -227,7 +227,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListInventoryDailySnapshotsAsync(id, cancellationToken));
     }
 
-    [HttpGet("months/{id:guid}/inventory-snapshots")]
+    [HttpGet(ApiRoutes.PeriodClose.MonthInventorySnapshots)]
     public async Task<ActionResult<IReadOnlyList<InventoryMonthlySnapshotDto>>> ListInventoryMonthlySnapshots(
         Guid id,
         CancellationToken cancellationToken)
@@ -235,7 +235,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListInventoryMonthlySnapshotsAsync(id, cancellationToken));
     }
 
-    [HttpGet("days/{id:guid}/session-checkpoints")]
+    [HttpGet(ApiRoutes.PeriodClose.DaySessionCheckpoints)]
     public async Task<ActionResult<IReadOnlyList<WorkerSessionCheckpointDto>>> ListSessionCheckpoints(
         Guid id,
         CancellationToken cancellationToken)
@@ -243,7 +243,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListSessionCheckpointsAsync(id, cancellationToken));
     }
 
-    [HttpPost("adjustments")]
+    [HttpPost(ApiRoutes.PeriodClose.Adjustments)]
     public async Task<ActionResult<PeriodAdjustmentDto>> CreateAdjustment(
         [FromBody] CreatePeriodAdjustmentCommand command,
         CancellationToken cancellationToken)
@@ -255,7 +255,7 @@ public sealed class PeriodCloseController : ControllerBase
             cancellationToken));
     }
 
-    [HttpGet("adjustments")]
+    [HttpGet(ApiRoutes.PeriodClose.Adjustments)]
     public async Task<ActionResult<IReadOnlyList<PeriodAdjustmentDto>>> ListAdjustments(
         [FromQuery] string? branchId,
         CancellationToken cancellationToken)
@@ -263,7 +263,7 @@ public sealed class PeriodCloseController : ControllerBase
         return Ok(await _periodCloseService.ListAdjustmentsAsync(branchId, cancellationToken));
     }
 
-    [HttpPost("assert-writable")]
+    [HttpPost(ApiRoutes.PeriodClose.AssertWritable)]
     public async Task<ActionResult> AssertWritable(
         [FromBody] AssertWritableCommand command,
         CancellationToken cancellationToken)

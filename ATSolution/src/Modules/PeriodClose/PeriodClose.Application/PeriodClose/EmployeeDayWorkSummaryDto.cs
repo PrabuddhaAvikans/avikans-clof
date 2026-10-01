@@ -1,0 +1,25 @@
+namespace PeriodClose.Application.PeriodClose;
+
+public sealed record EmployeeDayWorkSummaryDto(
+    string EmployeeId,
+    string EmployeeName,
+    string BusinessDate,
+    int RequiredMinutes,
+    int WorkedMinutes,
+    int RegularMinutes,
+    int NormalOvertimeMinutes,
+    int DoubleOvertimeMinutes,
+    int OvertimeMinutes,
+    int PauseMinutes,
+    int BreakMinutes,
+    int AttendanceMinutes,
+    int RemainingMinutes,
+    string DayStatus,
+    bool CanClose,
+    decimal RegularCost,
+    decimal NormalOvertimeCost,
+    decimal DoubleOvertimeCost,
+    decimal OvertimeCost,
+    decimal LaborCost,
+    IReadOnlyList<EmployeeWorkSessionDto> Sessions,
+    IReadOnlyList<EmployeeTaskWorkBreakdownDto> TaskBreakdown);

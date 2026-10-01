@@ -27,14 +27,14 @@ public sealed class NotificationsController : ControllerBase
         return Ok(await _notificationService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<NotificationDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var item = await _notificationService.GetByIdAsync(id, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 
-    [HttpGet("unread-count")]
+    [HttpGet(ApiRoutes.Notifications.UnreadCount)]
     public async Task<ActionResult<UnreadCountDto>> UnreadCount(
         [FromQuery] string recipientId,
         CancellationToken cancellationToken)
@@ -51,13 +51,13 @@ public sealed class NotificationsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
     }
 
-    [HttpPost("{id:guid}/read")]
+    [HttpPost(ApiRoutes.Notifications.Read)]
     public async Task<ActionResult<NotificationDto>> MarkAsRead(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _notificationService.MarkAsReadAsync(id, cancellationToken));
     }
 
-    [HttpPost("mark-all-read")]
+    [HttpPost(ApiRoutes.Notifications.MarkAllRead)]
     public async Task<IActionResult> MarkAllAsRead(
         [FromBody] MarkAllReadCommand command,
         CancellationToken cancellationToken)
@@ -66,7 +66,7 @@ public sealed class NotificationsController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _notificationService.DeleteAsync(id, cancellationToken);

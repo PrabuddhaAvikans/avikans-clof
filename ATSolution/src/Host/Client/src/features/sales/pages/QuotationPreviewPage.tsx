@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { MappedStatusBadge } from "@/features/shared/components/MappedStatusBadge";
 import { SendQuotationModal } from "@/features/sales/components/SendQuotationModal";
 import { QuotationTotalsSummary } from "@/features/sales/components/QuotationTotalsSummary";
-import { computeLineAmounts, computeQuotationTotals } from "@/features/sales/schemas/quotationSchema";
+import { computeLineAmounts, storedQuotationTotals } from "@/features/sales/schemas/quotationSchema";
 import { useQuotation } from "@/features/sales/hooks/useQuotations";
 import { getCountryConfig } from "@/lib/countryConfig";
 import { DEFAULT_COUNTRY } from "@/lib/countries";
@@ -27,7 +27,7 @@ export function QuotationPreviewPage() {
 
   const { data: quotation, isLoading, error } = useQuotation(id);
   const totals = quotation
-    ? computeQuotationTotals(quotation.lineItems, quotation.discountAmount)
+    ? storedQuotationTotals(quotation.lineItems, quotation)
     : null;
   const taxCountry =
     quotation?.billingAddress?.country ||

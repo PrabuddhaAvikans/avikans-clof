@@ -1,4 +1,5 @@
 using ATSolution.Application;
+using ATSolution.Application.Abstractions.Periods;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Application.Exceptions;
@@ -18,7 +19,7 @@ using PeriodClose.Domain.Validations;
 
 namespace PeriodClose.Application.Services;
 
-public sealed class PeriodCloseService : IPeriodCloseService
+public sealed class PeriodCloseService : IPeriodCloseService, IBusinessPeriodGuard
 {
     private readonly IRepository<BusinessPeriod, Guid> _dayPeriods;
     private readonly IRepository<MonthlyPeriod, Guid> _monthPeriods;
@@ -34,6 +35,7 @@ public sealed class PeriodCloseService : IPeriodCloseService
     private readonly IRepository<WorkerSessionCheckpoint, Guid> _sessionCheckpoints;
     private readonly IRepository<PeriodAuditLog, Guid> _auditLogs;
     private readonly IRepository<PeriodAdjustment, Guid> _adjustments;
+    private readonly IPeriodCloseOperations _operations;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
 
@@ -52,6 +54,7 @@ public sealed class PeriodCloseService : IPeriodCloseService
         IRepository<WorkerSessionCheckpoint, Guid> sessionCheckpoints,
         IRepository<PeriodAuditLog, Guid> auditLogs,
         IRepository<PeriodAdjustment, Guid> adjustments,
+        IPeriodCloseOperations operations,
         IUnitOfWork unitOfWork,
         IApplicationValidator validator)
     {
@@ -69,6 +72,7 @@ public sealed class PeriodCloseService : IPeriodCloseService
         _sessionCheckpoints = sessionCheckpoints;
         _auditLogs = auditLogs;
         _adjustments = adjustments;
+        _operations = operations;
         _unitOfWork = unitOfWork;
         _validator = validator;
     }
@@ -195,7 +199,9 @@ public sealed class PeriodCloseService : IPeriodCloseService
     {
         var period = await RequireDayAsync(periodId, cancellationToken, track: true);
         var (userId, userName) = ResolveActor(actorUserId, actorUserName);
-        await PersistDayValidationsAsync(period, options, cancellationToken);
+        var settings = await EnsureSettingsAsync(period.BranchId, cancellationToken);
+        var picture = await _operations.LoadDayAsync(period.BusinessDate, ToPolicy(settings), cancellationToken);
+        await PersistDayValidationsAsync(period, options, picture, cancellationToken);
         await AddAuditAsync(PeriodTypes.Day, period.Id, "validation_run", userId, userName, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return await BuildDayWorkspaceAsync(period, cancellationToken);
@@ -236,14 +242,11 @@ public sealed class PeriodCloseService : IPeriodCloseService
             ]);
         }
 
-        period.MarkClosing();
-        await AddAuditAsync(PeriodTypes.Day, period.Id, "closing_started", userId, userName, cancellationToken: cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var issues = await PersistDayValidationsAsync(period, options, cancellationToken);
+        var settings = await EnsureSettingsAsync(period.BranchId, cancellationToken);
+        var picture = await _operations.LoadDayAsync(period.BusinessDate, ToPolicy(settings), cancellationToken);
+        var issues = await PersistDayValidationsAsync(period, options, picture, cancellationToken);
         if (issues.Any(i => i.IsBlocking))
         {
-            period.MarkOpen();
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             throw new ApplicationValidationException(
             [
@@ -255,8 +258,50 @@ public sealed class PeriodCloseService : IPeriodCloseService
         }
 
         var now = DateTimeOffset.UtcNow;
-        var emptyRefs = JsonColumn.Serialize(EmptyDailyRefs());
-        var summary = DailyClosingSummary.Create(period.Id, period.BusinessDate, period.BranchId, emptyRefs, now);
+        await AddAuditAsync(PeriodTypes.Day, period.Id, "closing_started", userId, userName, cancellationToken: cancellationToken);
+
+        IReadOnlyList<SessionCheckpointSeed> checkpoints = [];
+        if (settings.WorkerSessionCloseRule != WorkerSessionCloseRules.AllowCrossDate)
+        {
+            checkpoints = await _operations.PauseOpenWorkAsync(
+                period.BusinessDate,
+                $"Day Close checkpoint for {period.BusinessDate}",
+                cancellationToken);
+        }
+
+        await ReplaceDailySnapshotsAsync(period, picture, checkpoints, now, cancellationToken);
+
+        var summary = DailyClosingSummary.Create(
+            period.Id,
+            period.BusinessDate,
+            period.BranchId,
+            JsonColumn.Serialize(picture.Figures.TransactionRefs),
+            now);
+        summary.Apply(
+            picture.Figures.OrdersCreated,
+            picture.Figures.ProductionJobs,
+            picture.Figures.CompletedProductionQty,
+            picture.Figures.PartialProductionQty,
+            picture.Figures.Invoices,
+            picture.Figures.InvoiceTotal,
+            picture.Figures.Payments,
+            picture.Figures.PaymentTotal,
+            picture.Figures.Deliveries,
+            picture.Figures.MaterialIssues,
+            picture.Figures.MaterialReturns,
+            picture.Figures.InventoryMovementCount,
+            picture.Figures.QuotationValue,
+            picture.Figures.SalesOrderValue,
+            picture.Figures.CreditNoteTotal,
+            picture.Figures.PaymentTotal,
+            0,
+            0,
+            0,
+            0,
+            picture.Figures.OpeningReceivable,
+            picture.Figures.ClosingReceivable,
+            picture.Figures.OutstandingAmount,
+            JsonColumn.Serialize(picture.Figures.TransactionRefs));
 
         var existingSummaries = await _daySummaries.Query()
             .Where(s => s.BusinessPeriodId == period.Id)
@@ -271,7 +316,23 @@ public sealed class PeriodCloseService : IPeriodCloseService
             "snapshots_generated",
             userId,
             userName,
-            detailsJson: JsonColumn.Serialize(new { production = 0, inventory = 0 }),
+            detailsJson: JsonColumn.Serialize(new
+            {
+                production = picture.Production.Count,
+                inventory = picture.Inventory.Count,
+            }),
+            cancellationToken: cancellationToken);
+        await AddAuditAsync(
+            PeriodTypes.Day,
+            period.Id,
+            "sessions_checkpointed",
+            userId,
+            userName,
+            detailsJson: JsonColumn.Serialize(new
+            {
+                count = checkpoints.Count,
+                rule = settings.WorkerSessionCloseRule,
+            }),
             cancellationToken: cancellationToken);
 
         period.Close(userId, userName, now);
@@ -304,9 +365,9 @@ public sealed class PeriodCloseService : IPeriodCloseService
             MapDay(nextPeriod),
             MapDailySummary(summary),
             issues.Select(MapDayIssue).ToList(),
-            [],
-            [],
-            []);
+            picture.Production,
+            picture.Inventory,
+            checkpoints.Select(seed => MapCheckpointSeed(period.Id, period.BusinessDate, seed, settings.WorkerSessionCloseRule, now)).ToList());
     }
 
     public async Task<BusinessPeriodDto> ReopenDayAsync(
@@ -356,7 +417,9 @@ public sealed class PeriodCloseService : IPeriodCloseService
     {
         var period = await RequireMonthAsync(periodId, cancellationToken, track: true);
         var (userId, userName) = ResolveActor(actorUserId, actorUserName);
-        await PersistMonthValidationsAsync(period, cancellationToken);
+        var settings = await EnsureSettingsAsync(period.BranchId, cancellationToken);
+        var picture = await _operations.LoadMonthAsync(period.Year, period.Month, settings.AllowNegativeStock, cancellationToken);
+        await PersistMonthValidationsAsync(period, picture, cancellationToken);
         await AddAuditAsync(PeriodTypes.Month, period.Id, "validation_run", userId, userName, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return await BuildMonthWorkspaceAsync(period, cancellationToken);
@@ -379,14 +442,11 @@ public sealed class PeriodCloseService : IPeriodCloseService
             ]);
         }
 
-        period.MarkClosing();
-        await AddAuditAsync(PeriodTypes.Month, period.Id, "closing_started", userId, userName, cancellationToken: cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var issues = await PersistMonthValidationsAsync(period, cancellationToken);
+        var settings = await EnsureSettingsAsync(period.BranchId, cancellationToken);
+        var picture = await _operations.LoadMonthAsync(period.Year, period.Month, settings.AllowNegativeStock, cancellationToken);
+        var issues = await PersistMonthValidationsAsync(period, picture, cancellationToken);
         if (issues.Any(i => i.IsBlocking))
         {
-            period.MarkOpen();
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             throw new ApplicationValidationException(
             [
@@ -398,8 +458,35 @@ public sealed class PeriodCloseService : IPeriodCloseService
         }
 
         var now = DateTimeOffset.UtcNow;
-        var emptyRefs = JsonColumn.Serialize(EmptyMonthlyRefs());
-        var summary = MonthlyClosingSummary.Create(period.Id, period.Year, period.Month, period.BranchId, emptyRefs, now);
+        await AddAuditAsync(PeriodTypes.Month, period.Id, "closing_started", userId, userName, cancellationToken: cancellationToken);
+        await ReplaceMonthlySnapshotsAsync(period, picture, now, cancellationToken);
+
+        var summary = MonthlyClosingSummary.Create(
+            period.Id,
+            period.Year,
+            period.Month,
+            period.BranchId,
+            JsonColumn.Serialize(picture.Figures.TransactionRefs),
+            now);
+        var figures = picture.Figures;
+        summary.Apply(
+            figures.SalesTotal,
+            figures.PurchaseTotal,
+            figures.PaymentTotal,
+            figures.ExpenseTotal,
+            figures.InventoryValue,
+            figures.WipValue,
+            figures.CostOfGoodsSold,
+            figures.GrossProfit,
+            figures.RawMaterials,
+            figures.Labour,
+            figures.Production,
+            figures.Waste,
+            figures.ReusableWaste,
+            figures.Overhead,
+            figures.CreditNotes,
+            figures.NetMargin,
+            JsonColumn.Serialize(figures.TransactionRefs));
 
         var existingSummaries = await _monthSummaries.Query()
             .Where(s => s.MonthlyPeriodId == period.Id)
@@ -414,7 +501,11 @@ public sealed class PeriodCloseService : IPeriodCloseService
             "snapshots_generated",
             userId,
             userName,
-            detailsJson: JsonColumn.Serialize(new { production = 0, inventory = 0 }),
+            detailsJson: JsonColumn.Serialize(new
+            {
+                production = picture.Production.Count,
+                inventory = picture.Inventory.Count,
+            }),
             cancellationToken: cancellationToken);
 
         period.Close(userId, userName, now);
@@ -447,8 +538,8 @@ public sealed class PeriodCloseService : IPeriodCloseService
             MapMonth(nextPeriod),
             MapMonthlySummary(summary),
             issues.Select(MapMonthIssue).ToList(),
-            [],
-            []);
+            picture.Production,
+            picture.Inventory);
     }
 
     public async Task<MonthlyPeriodDto> ReopenMonthAsync(
@@ -649,6 +740,12 @@ public sealed class PeriodCloseService : IPeriodCloseService
         return items.Select(MapAdjustment).ToList();
     }
 
+    public Task EnsureWritableAsync(DateTimeOffset occurredAtUtc, CancellationToken cancellationToken = default) =>
+        AssertWritableAsync(
+            PeriodCloseDefaults.DefaultBranchId,
+            occurredAtUtc.UtcDateTime.ToString("yyyy-MM-dd"),
+            cancellationToken);
+
     public async Task AssertWritableAsync(
         string branchId,
         string businessDate,
@@ -728,27 +825,40 @@ public sealed class PeriodCloseService : IPeriodCloseService
             .OrderByDescending(a => a.PerformedAt)
             .ToListAsync(cancellationToken);
 
-        var canClose = PeriodStatuses.CanClose(period.Status) && !validations.Any(v => v.IsBlocking);
+        var live = await _operations.LoadDayAsync(period.BusinessDate, ToPolicy(settings), cancellationToken);
+        var writable = PeriodStatuses.IsWritable(period.Status);
+        var liveIssues = writable
+            ? BuildDayIssues(period, settings, null, live).Select(MapDayIssue).ToList()
+            : validations.Select(MapDayIssue).ToList();
+        var employees = live.Employees;
+        var incomplete = employees.Count(e => !e.CanClose);
+        var overtimeEmployees = employees.Where(e => e.OvertimeMinutes > 0).ToList();
+        var productionRows = writable ? live.Production : production.Select(MapProductionDaily).ToList();
+        var inventoryRows = writable ? live.Inventory : inventory.Select(MapInventoryDaily).ToList();
+        var activeSessions = writable
+            ? live.ActiveSessionCount
+            : checkpoints.Count(c => c.Status is "paused" or "awaiting_confirm");
+        var canClose = PeriodStatuses.CanClose(period.Status) && !liveIssues.Any(v => v.IsBlocking);
         var canReopen = period.Status == PeriodStatuses.Closed;
 
         return new DayCloseWorkspaceDto(
             MapDay(period),
             summary is null ? null : MapDailySummary(summary),
-            validations.Select(MapDayIssue).ToList(),
-            production.Select(MapProductionDaily).ToList(),
-            inventory.Select(MapInventoryDaily).ToList(),
+            liveIssues,
+            productionRows,
+            inventoryRows,
             checkpoints.Select(MapCheckpoint).ToList(),
-            [],
+            employees,
             audit.Select(MapAudit).ToList(),
             canClose,
             canReopen,
-            checkpoints.Count(c => c.Status is "paused" or "awaiting_confirm"),
+            activeSessions,
             settings.WorkerSessionCloseRule,
             settings.RequiredDailyWorkMinutes,
             settings.AllowIncompleteEmployeeHoursException,
-            0,
-            0,
-            0,
+            incomplete,
+            overtimeEmployees.Count,
+            overtimeEmployees.Sum(e => e.OvertimeMinutes),
             settings.RequireOvertimeApproval);
     }
 
@@ -781,18 +891,28 @@ public sealed class PeriodCloseService : IPeriodCloseService
             .OrderByDescending(a => a.PerformedAt)
             .ToListAsync(cancellationToken);
 
-        var openDayCount = dayPeriods.Count(d => PeriodStatuses.IsWritable(d.Status) || d.Status == PeriodStatuses.Closing);
-        var closedDayCount = dayPeriods.Count(d => d.Status == PeriodStatuses.Closed);
-        var canClose = PeriodStatuses.CanClose(period.Status) && !validations.Any(v => v.IsBlocking);
-        if (settings.RequireAllDaysClosedForMonthlyClose && openDayCount > 0)
-            canClose = false;
+        var requiredDates = BusinessDatesInMonth(period.Year, period.Month);
+        var byDate = dayPeriods.ToDictionary(d => d.BusinessDate, d => d);
+        var closedDayCount = settings.RequireAllDaysClosedForMonthlyClose
+            ? requiredDates.Count(date => byDate.TryGetValue(date, out var day) && day.Status == PeriodStatuses.Closed)
+            : dayPeriods.Count(d => d.Status == PeriodStatuses.Closed);
+        var openDayCount = settings.RequireAllDaysClosedForMonthlyClose
+            ? requiredDates.Count - closedDayCount
+            : dayPeriods.Count(d => PeriodStatuses.IsWritable(d.Status) || d.Status == PeriodStatuses.Closing);
+        var live = PeriodStatuses.IsWritable(period.Status)
+            ? await _operations.LoadMonthAsync(period.Year, period.Month, settings.AllowNegativeStock, cancellationToken)
+            : null;
+        var liveIssues = live is null
+            ? validations.Select(MapMonthIssue).ToList()
+            : BuildMonthIssues(period, settings, dayPeriods, live).Select(MapMonthIssue).ToList();
+        var canClose = PeriodStatuses.CanClose(period.Status) && !liveIssues.Any(v => v.IsBlocking);
 
         return new MonthlyCloseWorkspaceDto(
             MapMonth(period),
             summary is null ? null : MapMonthlySummary(summary),
-            validations.Select(MapMonthIssue).ToList(),
-            production.Select(MapProductionMonthly).ToList(),
-            inventory.Select(MapInventoryMonthly).ToList(),
+            liveIssues,
+            live?.Production ?? production.Select(MapProductionMonthly).ToList(),
+            live?.Inventory ?? inventory.Select(MapInventoryMonthly).ToList(),
             dayPeriods.Select(MapDay).ToList(),
             audit.Select(MapAudit).ToList(),
             canClose,
@@ -804,6 +924,7 @@ public sealed class PeriodCloseService : IPeriodCloseService
     private async Task<IReadOnlyList<DayCloseValidationIssue>> PersistDayValidationsAsync(
         BusinessPeriod period,
         CloseDayOptions? options,
+        DayOperationalPicture picture,
         CancellationToken cancellationToken)
     {
         var existing = await _dayValidations.Query()
@@ -813,28 +934,109 @@ public sealed class PeriodCloseService : IPeriodCloseService
             _dayValidations.Remove(item);
 
         var settings = await EnsureSettingsAsync(period.BranchId, cancellationToken);
-        var issues = new List<DayCloseValidationIssue>();
-
-        if (settings.WorkerSessionCloseRule == WorkerSessionCloseRules.RequireSupervisorConfirm
-            && options?.SupervisorConfirmed != true)
-        {
-            // Informational/warning only when no live sessions are available cross-module.
-            issues.Add(DayCloseValidationIssue.Create(
-                period.Id,
-                "ACTIVE_SESSIONS_REQUIRE_CONFIRM",
-                "sessions",
-                "Supervisor confirmation is required when active worker sessions exist.",
-                isBlocking: false));
-        }
-
+        var issues = BuildDayIssues(period, settings, options, picture);
         foreach (var issue in issues)
             await _dayValidations.AddAsync(issue, cancellationToken);
 
         return issues;
     }
 
+    private static List<DayCloseValidationIssue> BuildDayIssues(
+        BusinessPeriod period,
+        PeriodCloseSettings settings,
+        CloseDayOptions? options,
+        DayOperationalPicture picture)
+    {
+        var issues = new List<DayCloseValidationIssue>();
+        foreach (var issue in picture.Issues)
+        {
+            issues.Add(DayCloseValidationIssue.Create(
+                period.Id,
+                issue.Code,
+                issue.Type,
+                issue.Message,
+                issue.IsBlocking,
+                issue.EntityType,
+                issue.EntityId));
+        }
+
+        if (settings.WorkerSessionCloseRule == WorkerSessionCloseRules.RequireSupervisorConfirm
+            && picture.ActiveSessionCount > 0
+            && options?.SupervisorConfirmed != true)
+        {
+            issues.Add(DayCloseValidationIssue.Create(
+                period.Id,
+                "ACTIVE_SESSIONS_NEED_CONFIRM",
+                "production",
+                $"{picture.ActiveSessionCount} active worker session(s) require supervisor confirmation before Day Close.",
+                isBlocking: true));
+        }
+
+        foreach (var employee in picture.Employees.Where(e => !e.CanClose))
+        {
+            var workedH = (employee.WorkedMinutes / 60d).ToString("0.0");
+            var requiredH = (employee.RequiredMinutes / 60d).ToString("0");
+            var remainingH = (employee.RemainingMinutes / 60d).ToString("0.0");
+            if (settings.AllowIncompleteEmployeeHoursException && options?.IncompleteHoursExceptionConfirmed == true)
+            {
+                issues.Add(DayCloseValidationIssue.Create(
+                    period.Id,
+                    "EMPLOYEE_HOURS_INCOMPLETE_EXCEPTION",
+                    "employee_hours",
+                    $"{employee.EmployeeName}: worked {workedH}h of {requiredH}h required ({remainingH}h remaining) — closing under approved exception.",
+                    isBlocking: false,
+                    "employee",
+                    employee.EmployeeId));
+            }
+            else
+            {
+                var needsConfirm = settings.AllowIncompleteEmployeeHoursException;
+                issues.Add(DayCloseValidationIssue.Create(
+                    period.Id,
+                    needsConfirm ? "EMPLOYEE_HOURS_NEED_EXCEPTION" : "EMPLOYEE_HOURS_INCOMPLETE",
+                    "employee_hours",
+                    needsConfirm
+                        ? $"{employee.EmployeeName}: worked {workedH}h of {requiredH}h ({remainingH}h remaining). Supervisor exception required to close."
+                        : $"{employee.EmployeeName}: worked {workedH}h of {requiredH}h required ({remainingH}h remaining). Employee day is incomplete.",
+                    isBlocking: true,
+                    "employee",
+                    employee.EmployeeId));
+            }
+        }
+
+        var withOt = picture.Employees.Where(e => e.OvertimeMinutes > 0).ToList();
+        if (withOt.Count > 0)
+        {
+            var totalOtH = (withOt.Sum(e => e.OvertimeMinutes) / 60d).ToString("0.0");
+            var names = string.Join(", ", withOt.Select(e => e.EmployeeName));
+            if (settings.RequireOvertimeApproval && options?.OvertimeApproved != true)
+            {
+                issues.Add(DayCloseValidationIssue.Create(
+                    period.Id,
+                    "EMPLOYEE_OT_NEED_APPROVAL",
+                    "employee_hours",
+                    $"{withOt.Count} employee(s) have {totalOtH}h overtime ({names}). Approve overtime before Day Close.",
+                    isBlocking: true));
+            }
+            else
+            {
+                issues.Add(DayCloseValidationIssue.Create(
+                    period.Id,
+                    options?.OvertimeApproved == true ? "EMPLOYEE_OT_APPROVED" : "EMPLOYEE_OT_RECORDED",
+                    "employee_hours",
+                    options?.OvertimeApproved == true
+                        ? $"Overtime approved: {totalOtH}h across {withOt.Count} employee(s) ({names})."
+                        : $"Overtime recorded: {totalOtH}h across {withOt.Count} employee(s) ({names}).",
+                    isBlocking: false));
+            }
+        }
+
+        return issues;
+    }
+
     private async Task<IReadOnlyList<MonthlyCloseValidationIssue>> PersistMonthValidationsAsync(
         MonthlyPeriod period,
+        MonthOperationalPicture picture,
         CancellationToken cancellationToken)
     {
         var existing = await _monthValidations.Query()
@@ -844,20 +1046,31 @@ public sealed class PeriodCloseService : IPeriodCloseService
             _monthValidations.Remove(item);
 
         var settings = await EnsureSettingsAsync(period.BranchId, cancellationToken);
-        var issues = new List<MonthlyCloseValidationIssue>();
+        var prefix = $"{period.Year}-{period.Month:D2}";
+        var dayPeriods = await _dayPeriods.Query().AsNoTracking()
+            .Where(p => p.BranchId == period.BranchId && p.BusinessDate.StartsWith(prefix))
+            .ToListAsync(cancellationToken);
+        var issues = BuildMonthIssues(period, settings, dayPeriods, picture);
+        foreach (var issue in issues)
+            await _monthValidations.AddAsync(issue, cancellationToken);
 
+        return issues;
+    }
+
+    private static List<MonthlyCloseValidationIssue> BuildMonthIssues(
+        MonthlyPeriod period,
+        PeriodCloseSettings settings,
+        IReadOnlyList<BusinessPeriod> dayPeriods,
+        MonthOperationalPicture picture)
+    {
+        var issues = new List<MonthlyCloseValidationIssue>();
         if (settings.RequireAllDaysClosedForMonthlyClose)
         {
             var requiredDates = BusinessDatesInMonth(period.Year, period.Month);
-            var prefix = $"{period.Year}-{period.Month:D2}";
-            var dayPeriods = await _dayPeriods.Query().AsNoTracking()
-                .Where(p => p.BranchId == period.BranchId && p.BusinessDate.StartsWith(prefix))
-                .ToListAsync(cancellationToken);
             var byDate = dayPeriods.ToDictionary(p => p.BusinessDate, p => p);
             var missingOrOpen = requiredDates
                 .Where(date => !byDate.TryGetValue(date, out var day) || day.Status != PeriodStatuses.Closed)
                 .ToList();
-
             if (missingOrOpen.Count > 0)
             {
                 issues.Add(MonthlyCloseValidationIssue.Create(
@@ -869,8 +1082,17 @@ public sealed class PeriodCloseService : IPeriodCloseService
             }
         }
 
-        foreach (var issue in issues)
-            await _monthValidations.AddAsync(issue, cancellationToken);
+        foreach (var issue in picture.Issues)
+        {
+            issues.Add(MonthlyCloseValidationIssue.Create(
+                period.Id,
+                issue.Code,
+                issue.Type,
+                issue.Message,
+                issue.IsBlocking,
+                issue.EntityType,
+                issue.EntityId));
+        }
 
         return issues;
     }
@@ -902,12 +1124,22 @@ public sealed class PeriodCloseService : IPeriodCloseService
             return open;
 
         var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
-        var existing = await _dayPeriods.Query()
-            .FirstOrDefaultAsync(p => p.BranchId == branchId && p.BusinessDate == today, cancellationToken);
-        if (existing is not null)
-            return existing;
+        var latest = await _dayPeriods.Query()
+            .Where(p => p.BranchId == branchId)
+            .OrderByDescending(p => p.BusinessDate)
+            .FirstOrDefaultAsync(cancellationToken);
+        var date = latest is null ? today : AddBusinessDays(latest.BusinessDate, 1);
+        if (string.Compare(date, today, StringComparison.Ordinal) < 0)
+            date = today;
 
-        var period = BusinessPeriod.Open(branchId, today, userId, userName);
+        var existing = await _dayPeriods.Query()
+            .FirstOrDefaultAsync(p => p.BranchId == branchId && p.BusinessDate == date, cancellationToken);
+        if (existing is not null && PeriodStatuses.IsWritable(existing.Status))
+            return existing;
+        if (existing is not null)
+            date = AddBusinessDays(existing.BusinessDate, 1);
+
+        var period = BusinessPeriod.Open(branchId, date, userId, userName);
         await _dayPeriods.AddAsync(period, cancellationToken);
         await AddAuditAsync(PeriodTypes.Day, period.Id, "opened", userId, userName, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -929,14 +1161,27 @@ public sealed class PeriodCloseService : IPeriodCloseService
             return open;
 
         var now = DateTime.UtcNow;
+        var latest = await _monthPeriods.Query()
+            .Where(p => p.BranchId == branchId)
+            .OrderByDescending(p => p.Year)
+            .ThenByDescending(p => p.Month)
+            .FirstOrDefaultAsync(cancellationToken);
+        var (year, month) = latest is null
+            ? (now.Year, now.Month)
+            : NextCalendarMonth(latest.Year, latest.Month);
+        if (year < now.Year || (year == now.Year && month < now.Month))
+            (year, month) = (now.Year, now.Month);
+
         var existing = await _monthPeriods.Query()
             .FirstOrDefaultAsync(
-                p => p.BranchId == branchId && p.Year == now.Year && p.Month == now.Month,
+                p => p.BranchId == branchId && p.Year == year && p.Month == month,
                 cancellationToken);
-        if (existing is not null)
+        if (existing is not null && PeriodStatuses.IsWritable(existing.Status))
             return existing;
+        if (existing is not null)
+            (year, month) = NextCalendarMonth(existing.Year, existing.Month);
 
-        var period = MonthlyPeriod.Open(branchId, now.Year, now.Month, userId, userName);
+        var period = MonthlyPeriod.Open(branchId, year, month, userId, userName);
         await _monthPeriods.AddAsync(period, cancellationToken);
         await AddAuditAsync(PeriodTypes.Month, period.Id, "opened", userId, userName, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -1028,6 +1273,184 @@ public sealed class PeriodCloseService : IPeriodCloseService
 
     private static MonthlyTransactionRefsDto EmptyMonthlyRefs() =>
         new([], [], [], [], [], []);
+
+    private static PeriodClosePolicy ToPolicy(PeriodCloseSettings settings) =>
+        new(
+            settings.RequiredDailyWorkMinutes,
+            settings.CountPauseAsWorked,
+            settings.DoubleOvertimeAfterMinutes,
+            500m);
+
+    private async Task ReplaceDailySnapshotsAsync(
+        BusinessPeriod period,
+        DayOperationalPicture picture,
+        IReadOnlyList<SessionCheckpointSeed> checkpoints,
+        DateTimeOffset recordedAt,
+        CancellationToken cancellationToken)
+    {
+        var existingProduction = await _productionDaily.Query()
+            .Where(s => s.BusinessPeriodId == period.Id)
+            .ToListAsync(cancellationToken);
+        foreach (var item in existingProduction)
+            _productionDaily.Remove(item);
+        foreach (var row in picture.Production)
+        {
+            await _productionDaily.AddAsync(ProductionDailySnapshot.Capture(
+                period.Id,
+                period.BusinessDate,
+                row.ProductionOrderId,
+                row.ProductionOrderNumber,
+                row.OperationId,
+                row.OperationName,
+                row.WorkerId,
+                row.WorkerName,
+                row.TotalQty,
+                row.CompletedQty,
+                row.PartialQty,
+                row.ProgressPercentage,
+                row.WorkedMinutes,
+                row.ProducedQty,
+                row.RejectedQty,
+                row.JobStatus,
+                row.TaskStatus,
+                recordedAt), cancellationToken);
+        }
+
+        var existingInventory = await _inventoryDaily.Query()
+            .Where(s => s.BusinessPeriodId == period.Id)
+            .ToListAsync(cancellationToken);
+        foreach (var item in existingInventory)
+            _inventoryDaily.Remove(item);
+        foreach (var row in picture.Inventory)
+        {
+            await _inventoryDaily.AddAsync(InventoryDailySnapshot.Capture(
+                period.Id,
+                period.BusinessDate,
+                row.InventoryItemId,
+                row.Sku,
+                row.Name,
+                row.Unit,
+                row.OpeningQty,
+                row.Receipts,
+                row.Returns,
+                row.ProductionOutput,
+                row.Issues,
+                row.Consumption,
+                row.Deliveries,
+                row.Adjustments,
+                row.ClosingQty,
+                JsonColumn.Serialize(row.MovementIds),
+                recordedAt), cancellationToken);
+        }
+
+        var existingCheckpoints = await _sessionCheckpoints.Query()
+            .Where(s => s.BusinessPeriodId == period.Id)
+            .ToListAsync(cancellationToken);
+        foreach (var item in existingCheckpoints)
+            _sessionCheckpoints.Remove(item);
+        foreach (var seed in checkpoints)
+        {
+            await _sessionCheckpoints.AddAsync(WorkerSessionCheckpoint.Create(
+                period.Id,
+                period.BusinessDate,
+                seed.SessionId,
+                seed.WorkerId,
+                seed.WorkerName,
+                seed.ProductionOrderId,
+                seed.OperationId,
+                seed.OperationName,
+                seed.ProgressPercentage,
+                seed.StartedAt,
+                recordedAt,
+                WorkerSessionCloseRules.PauseAndCheckpoint,
+                seed.Status), cancellationToken);
+        }
+    }
+
+    private async Task ReplaceMonthlySnapshotsAsync(
+        MonthlyPeriod period,
+        MonthOperationalPicture picture,
+        DateTimeOffset recordedAt,
+        CancellationToken cancellationToken)
+    {
+        var existingProduction = await _productionMonthly.Query()
+            .Where(s => s.MonthlyPeriodId == period.Id)
+            .ToListAsync(cancellationToken);
+        foreach (var item in existingProduction)
+            _productionMonthly.Remove(item);
+        foreach (var row in picture.Production)
+        {
+            await _productionMonthly.AddAsync(ProductionMonthlySnapshot.Capture(
+                period.Id,
+                period.Year,
+                period.Month,
+                row.ProductionOrderId,
+                row.ProductionOrderNumber,
+                row.OperationId,
+                row.OperationName,
+                row.TotalQty,
+                row.CompletedQty,
+                row.WorkInProgressQty,
+                row.ProgressPercentage,
+                row.MaterialConsumed,
+                row.LaborHours,
+                row.EstimatedCost,
+                row.ActualCostToDate,
+                row.WipCost,
+                recordedAt), cancellationToken);
+        }
+
+        var existingInventory = await _inventoryMonthly.Query()
+            .Where(s => s.MonthlyPeriodId == period.Id)
+            .ToListAsync(cancellationToken);
+        foreach (var item in existingInventory)
+            _inventoryMonthly.Remove(item);
+        foreach (var row in picture.Inventory)
+        {
+            await _inventoryMonthly.AddAsync(InventoryMonthlySnapshot.Capture(
+                period.Id,
+                period.Year,
+                period.Month,
+                row.InventoryItemId,
+                row.Sku,
+                row.Name,
+                row.Unit,
+                row.OpeningQty,
+                row.OpeningValue,
+                row.ReceivedQty,
+                row.ReceivedValue,
+                row.ConsumedQty,
+                row.ConsumedValue,
+                row.AdjustmentQty,
+                row.AdjustmentValue,
+                row.ClosingQty,
+                row.ClosingValue,
+                recordedAt), cancellationToken);
+        }
+    }
+
+    private static WorkerSessionCheckpointDto MapCheckpointSeed(
+        Guid periodId,
+        string businessDate,
+        SessionCheckpointSeed seed,
+        string rule,
+        DateTimeOffset checkpointAt) =>
+        new(
+            Guid.NewGuid(),
+            periodId,
+            businessDate,
+            seed.SessionId,
+            seed.WorkerId,
+            seed.WorkerName,
+            seed.ProductionOrderId,
+            seed.OperationId,
+            seed.OperationName,
+            seed.ProgressPercentage,
+            seed.StartedAt,
+            checkpointAt,
+            rule,
+            null,
+            seed.Status);
 
     private static PeriodCloseSettingsDto MapSettings(PeriodCloseSettings s) =>
         new(

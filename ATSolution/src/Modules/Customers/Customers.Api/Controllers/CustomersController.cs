@@ -27,7 +27,7 @@ public sealed class CustomersController : ControllerBase
         return Ok(await _customerService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<CustomerDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var customer = await _customerService.GetByIdAsync(id, cancellationToken);
@@ -43,7 +43,7 @@ public sealed class CustomersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<CustomerDto>> Update(
         Guid id,
         [FromBody] UpdateCustomerCommand request,
@@ -52,7 +52,7 @@ public sealed class CustomersController : ControllerBase
         return Ok(await _customerService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _customerService.DeleteAsync(id, cancellationToken);

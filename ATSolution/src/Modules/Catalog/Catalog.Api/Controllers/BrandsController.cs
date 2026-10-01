@@ -28,7 +28,7 @@ public sealed class BrandsController : ControllerBase
         return Ok(await _brandService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<BrandDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var brand = await _brandService.GetByIdAsync(id, cancellationToken);
@@ -44,7 +44,7 @@ public sealed class BrandsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = brand.Id }, brand);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<BrandDto>> Update(
         Guid id,
         [FromBody] UpdateBrandRequestDto request,
@@ -64,7 +64,7 @@ public sealed class BrandsController : ControllerBase
         return Ok(brand);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _brandService.DeleteAsync(id, cancellationToken);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightLeft, Download, Printer } from "lucide-react";
 import { toast } from "@/components/feedback/toast";
@@ -20,39 +20,13 @@ import {
   printCommercialDocument,
 } from "@/lib/commercialDocument";
 import { loadSystemSettings } from "@/lib/systemSettings";
-import { httpInvoiceService } from "@/services/http/httpInvoiceService";
+import { useInvoices } from "@/features/finance/hooks/useInvoices";
 
 export function FinanceInvoicesPage() {
   const navigate = useNavigate();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error } = useInvoices({ page: 1, pageSize: 200 });
+  const invoices = data?.items ?? [];
   const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-    httpInvoiceService
-      .list({ page: 1, pageSize: 200 })
-      .then((page) => {
-        if (!cancelled) {
-          setInvoices(page.items);
-          setError(null);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load invoices.");
-          setInvoices([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -149,7 +123,11 @@ export function FinanceInvoicesPage() {
         }
       />
 
-      <PageContent isLoading={isLoading} error={error} loadingVariant="table">
+      <PageContent
+        isLoading={isLoading}
+        error={error ? error.message : null}
+        loadingVariant="table"
+      >
         <div className="mb-4 max-w-md">
           <Input
             label="Search"

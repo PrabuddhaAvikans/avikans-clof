@@ -6,6 +6,7 @@ using ATSolution.Application.Exceptions;
 using ATSolution.SharedKernel.Constants;
 using ATSolution.SharedKernel.Models;
 using Microsoft.EntityFrameworkCore;
+using Catalog.Domain.Products;
 using Sales.Application.Abstractions;
 using Sales.Application.Common;
 using Sales.Application.Costing;
@@ -20,6 +21,7 @@ public sealed class CostingService : ICostingService
 {
     private readonly IRepository<CostingRequest, Guid> _costingRequests;
     private readonly IRepository<SalesOrder, Guid> _salesOrders;
+    private readonly IRepository<Product, Guid> _products;
     private readonly IRepository<DocumentSequence, Guid> _sequences;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
@@ -27,12 +29,14 @@ public sealed class CostingService : ICostingService
     public CostingService(
         IRepository<CostingRequest, Guid> costingRequests,
         IRepository<SalesOrder, Guid> salesOrders,
+        IRepository<Product, Guid> products,
         IRepository<DocumentSequence, Guid> sequences,
         IUnitOfWork unitOfWork,
         IApplicationValidator validator)
     {
         _costingRequests = costingRequests;
         _salesOrders = salesOrders;
+        _products = products;
         _sequences = sequences;
         _unitOfWork = unitOfWork;
         _validator = validator;
@@ -69,14 +73,20 @@ public sealed class CostingService : ICostingService
         items = items.OrderByDescending(x => x.ModifiedOnUtc);
         var totalCount = await items.CountAsync(cancellationToken);
         var pageItems = await items.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
-        return PaginatedResponse<CostingRequestDto>.Create(pageItems.Select(CostingBuilder.Map).ToList(), totalCount, page, pageSize);
+        var mapped = new List<CostingRequestDto>(pageItems.Count);
+        foreach (var item in pageItems)
+        {
+            mapped.Add(CostingBuilder.Map(await RepairPlaceholderAsync(item, cancellationToken)));
+        }
+
+        return PaginatedResponse<CostingRequestDto>.Create(mapped, totalCount, page, pageSize);
     }
 
     public async Task<CostingRequestDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await _costingRequests.Query().AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-        return entity is null ? null : CostingBuilder.Map(entity);
+        return entity is null ? null : CostingBuilder.Map(await RepairPlaceholderAsync(entity, cancellationToken));
     }
 
     public async Task<CostingRequestDto?> GetBySalesOrderIdAsync(
@@ -85,7 +95,7 @@ public sealed class CostingService : ICostingService
     {
         var entity = await _costingRequests.Query().AsNoTracking()
             .FirstOrDefaultAsync(x => x.SalesOrderId == salesOrderId, cancellationToken);
-        return entity is null ? null : CostingBuilder.Map(entity);
+        return entity is null ? null : CostingBuilder.Map(await RepairPlaceholderAsync(entity, cancellationToken));
     }
 
     public async Task<CostingRequestDto> CreateFromSalesOrderAsync(
@@ -100,7 +110,8 @@ public sealed class CostingService : ICostingService
 
             if (existing is not null
                 && (existing.Status == CostingRequestStatuses.Approved
-                    || (!IsEmptyJsonArray(existing.EstimationProductLinesJson)
+                    || (!CostingBuilder.IsSellingPricePlaceholder(existing)
+                        && !IsEmptyJsonArray(existing.EstimationProductLinesJson)
                         && existing.CoatingStatus != CoatingStatuses.Pending)))
             {
                 return CostingBuilder.Map(existing);
@@ -108,7 +119,8 @@ public sealed class CostingService : ICostingService
 
             var number = existing?.Number
                 ?? await DocumentNumberGenerator.NextAsync(_sequences, DocumentSequenceTypes.CostingRequest, ct);
-            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing);
+            var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
+            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing, resolve);
 
             if (existing is null)
             {
@@ -177,7 +189,8 @@ public sealed class CostingService : ICostingService
 
             var number = existing?.Number
                 ?? await DocumentNumberGenerator.NextAsync(_sequences, DocumentSequenceTypes.CostingRequest, ct);
-            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing);
+            var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
+            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing, resolve);
 
             if (existing is null)
             {
@@ -235,97 +248,46 @@ public sealed class CostingService : ICostingService
             .FirstOrDefaultAsync(x => x.Id == command.Id, cancellationToken)
             ?? throw new NotFoundException($"Costing request '{command.Id}' was not found.");
 
-        var coatingItems = command.Items.Select(item =>
+        if (entity.Status is CostingRequestStatuses.Approved or CostingRequestStatuses.Rejected)
         {
-            var unitCost = item.UnitCost;
-            var quantity = item.Quantity;
-            return new
-            {
-                id = item.Id ?? Guid.NewGuid(),
-                productId = item.ProductId,
-                productName = item.ProductName,
-                finish = item.Finish,
-                process = item.Process,
-                quantity,
-                unitCost,
-                lineTotal = Math.Round(unitCost * quantity, 2, MidpointRounding.AwayFromZero),
-                salesOrderLineItemId = item.SalesOrderLineItemId,
-                sourceType = item.SourceType,
-                productVersionLabel = item.ProductVersionLabel,
-                productSku = item.ProductSku,
-            };
-        }).ToList();
-
-        var materialsJson = entity.EstimationMaterialsJson;
-        var lineItemsJson = entity.LineItemsJson;
-        var totalEstimate = entity.TotalEstimate;
-
-        if (command.Materials is { Count: > 0 })
-        {
-            var materials = command.Materials.Select(mat =>
-            {
-                var required = Math.Round(mat.Quantity * (1 + mat.WastePercent / 100m), 4, MidpointRounding.AwayFromZero);
-                var totalCost = Math.Round(required * mat.UnitCost, 2, MidpointRounding.AwayFromZero);
-                return new
-                {
-                    id = mat.Id ?? Guid.NewGuid(),
-                    inventoryItemId = mat.InventoryItemId,
-                    inventoryItemName = mat.InventoryItemName,
-                    sku = mat.Sku,
-                    quantity = mat.Quantity,
-                    unit = mat.Unit,
-                    wastePercent = mat.WastePercent,
-                    requiredQuantity = required,
-                    unitCost = mat.UnitCost,
-                    totalCost,
-                    isRequired = mat.IsRequired,
-                    alternativeItemId = mat.AlternativeItemId,
-                    alternativeItemName = mat.AlternativeItemName,
-                    notes = mat.Notes,
-                    salesOrderLineItemId = mat.SalesOrderLineItemId,
-                    sourceType = mat.SourceType,
-                    sourceProductName = mat.SourceProductName,
-                    productVersionLabel = mat.ProductVersionLabel,
-                };
-            }).ToList();
-
-            materialsJson = JsonColumn.Serialize(materials);
-            var materialTotal = materials.Sum(m => m.totalCost);
-            var existingLines = JsonColumn.Deserialize(entity.LineItemsJson, new List<Dictionary<string, JsonElement>>());
-            // Rebuild material category line simply
-            var lineItems = new List<object>
-            {
-                new
-                {
-                    id = Guid.NewGuid(),
-                    description = "Estimation materials & components",
-                    category = "Materials (Components)",
-                    baseCost = materialTotal,
-                    percentOfCost = 100m,
-                },
-            };
-            lineItemsJson = JsonColumn.Serialize(lineItems);
-            totalEstimate = materialTotal;
+            throw new ApplicationValidationException(
+            [
+                new ValidationError(
+                    nameof(command.Id),
+                    "Approved or rejected costing is kept as a historical snapshot and cannot be recalculated.",
+                    ValidationErrorCodes.InvalidState),
+            ]);
         }
 
-        var marginPercent = entity.ProposedPrice > 0
-            ? Math.Round((entity.ProposedPrice - totalEstimate) / entity.ProposedPrice * 100m, 2, MidpointRounding.AwayFromZero)
-            : entity.MarginPercent;
-
+        var submitted = CostingBuilder.ApplySubmission(entity, command.Items, command.Materials);
         var history = PrefixedHistory(entity.HistoryJson, "Coating submitted", command.ActorName ?? "System", command.Notes);
         var status = entity.Status is CostingRequestStatuses.Pending or CostingRequestStatuses.ChangesRequested
             ? CostingRequestStatuses.InReview
             : entity.Status;
 
         entity.SubmitCoating(
-            JsonColumn.Serialize(coatingItems),
-            materialsJson,
-            lineItemsJson,
-            totalEstimate,
-            marginPercent,
+            submitted.CoatingItemsJson,
+            submitted.MaterialsJson,
+            submitted.LineItemsJson,
+            submitted.TotalEstimate,
+            submitted.MarginPercent,
             status,
             history,
             null);
+        if (submitted.ProductLinesJson != entity.EstimationProductLinesJson)
+        {
+            entity.SyncContent(
+                entity.TotalEstimate,
+                entity.ProposedPrice,
+                entity.MarginPercent,
+                entity.LineItemsJson,
+                entity.CoatingItemsJson,
+                entity.EstimationMaterialsJson,
+                submitted.ProductLinesJson,
+                entity.Status,
+                entity.CoatingStatus,
+                entity.HistoryJson);
+        }
 
         if (!string.IsNullOrWhiteSpace(command.Notes))
         {
@@ -497,6 +459,40 @@ public sealed class CostingService : ICostingService
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return CostingBuilder.Map(entity);
+    }
+
+    private async Task<CostingRequest> RepairPlaceholderAsync(CostingRequest entity, CancellationToken cancellationToken)
+    {
+        if (!CostingBuilder.IsSellingPricePlaceholder(entity))
+        {
+            return entity;
+        }
+
+        return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        {
+            var tracked = await _costingRequests.Query()
+                .FirstOrDefaultAsync(x => x.Id == entity.Id, ct);
+            if (tracked is null || !CostingBuilder.IsSellingPricePlaceholder(tracked))
+            {
+                return tracked ?? entity;
+            }
+
+            var order = await LoadOrderAsync(tracked.SalesOrderId, ct);
+            var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
+            var built = CostingBuilder.BuildFromSalesOrder(order, tracked.Number, tracked, resolve);
+            tracked.SyncContent(
+                built.TotalEstimate,
+                built.ProposedPrice,
+                built.MarginPercent,
+                built.LineItemsJson,
+                built.CoatingItemsJson,
+                built.EstimationMaterialsJson,
+                built.EstimationProductLinesJson,
+                built.Status,
+                built.CoatingStatus,
+                built.HistoryJson);
+            return tracked;
+        }, cancellationToken);
     }
 
     private async Task<SalesOrder> LoadOrderAsync(Guid salesOrderId, CancellationToken cancellationToken)

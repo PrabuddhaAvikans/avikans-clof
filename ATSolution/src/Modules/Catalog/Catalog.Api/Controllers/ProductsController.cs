@@ -28,7 +28,7 @@ public sealed class ProductsController : ControllerBase
         return Ok(await _productService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<ProductDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var product = await _productService.GetByIdAsync(id, cancellationToken);
@@ -44,7 +44,7 @@ public sealed class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<ProductDto>> Update(
         Guid id,
         [FromBody] UpdateProductRequestDto request,
@@ -81,14 +81,14 @@ public sealed class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _productService.DeleteAsync(id, cancellationToken);
         return Ok(ApiResponse.Succeeded("Product deleted successfully."));
     }
 
-    [HttpGet("{productId:guid}/versions/{versionId:guid}")]
+    [HttpGet(ApiRoutes.Catalog.ProductVersion)]
     public async Task<ActionResult<ProductVersionDto>> GetVersion(
         Guid productId,
         Guid versionId,
@@ -98,7 +98,7 @@ public sealed class ProductsController : ControllerBase
         return version is null ? NotFound() : Ok(version);
     }
 
-    [HttpPut("{productId:guid}/versions/{versionId:guid}")]
+    [HttpPut(ApiRoutes.Catalog.ProductVersion)]
     public async Task<ActionResult<ProductDto>> UpdateVersion(
         Guid productId,
         Guid versionId,
@@ -126,7 +126,7 @@ public sealed class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [HttpPost("{productId:guid}/versions/{sourceVersionId:guid}/revise")]
+    [HttpPost(ApiRoutes.Catalog.ReviseProductVersion)]
     public async Task<ActionResult<ProductDto>> ReviseVersion(
         Guid productId,
         Guid sourceVersionId,
@@ -139,7 +139,7 @@ public sealed class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    [HttpPut("{productId:guid}/header")]
+    [HttpPut(ApiRoutes.Catalog.ProductHeader)]
     public async Task<ActionResult<ProductDto>> UpdateHeader(
         Guid productId,
         [FromBody] UpdateProductHeaderCommand request,

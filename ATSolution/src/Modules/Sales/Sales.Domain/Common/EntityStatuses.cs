@@ -6,10 +6,96 @@ public static class QuotationStatuses
     public const string ReadyToSend = "ready_to_send";
     public const string Sent = "sent";
     public const string Viewed = "viewed";
+    public const string CustomerFeedback = "customer_feedback";
+    public const string RevisionRequired = "revision_required";
+    public const string Revised = "revised";
     public const string Accepted = "accepted";
     public const string Rejected = "rejected";
     public const string Expired = "expired";
     public const string Converted = "converted";
+
+    public static bool IsKnown(string status) =>
+        status is Draft or ReadyToSend or Sent or Viewed or CustomerFeedback
+            or RevisionRequired or Revised or Accepted or Rejected or Expired or Converted;
+
+    public static bool IsTerminal(string status) =>
+        status is Converted or Rejected or Expired;
+
+    public static bool IsEditable(string status) =>
+        status is Draft or ReadyToSend or Sent or Viewed or CustomerFeedback
+            or RevisionRequired or Revised or Accepted;
+
+    public static bool IsDeletable(string status) =>
+        status is Draft or ReadyToSend;
+
+    public static bool CanSend(string status) =>
+        status is Draft or ReadyToSend or Revised or RevisionRequired
+            or CustomerFeedback or Viewed or Sent;
+
+    public static bool CanConvert(string status) =>
+        status is Accepted or Sent or Revised;
+
+    public static bool CanLogContact(string status) =>
+        IsKnown(status);
+
+    /// <summary>
+    /// Issued to the customer (or later). Content edits create a new revision.
+    /// </summary>
+    public static bool IsIssuedOrLater(string status) =>
+        status is Sent or Viewed or CustomerFeedback or RevisionRequired
+            or Revised or Accepted;
+
+    public static bool ShouldRecordCustomerFeedback(string status) =>
+        status is Sent or Viewed;
+
+    public static bool CanTransitionTo(string from, string to)
+    {
+        if (from == to) return true;
+        if (IsTerminal(from)) return false;
+        if (!IsKnown(to)) return false;
+
+        return to switch
+        {
+            ReadyToSend => from is Draft,
+            Sent => from is Draft or ReadyToSend or Revised or RevisionRequired
+                or CustomerFeedback or Viewed or Sent,
+            Viewed => from is Sent,
+            CustomerFeedback => from is Sent or Viewed or CustomerFeedback,
+            RevisionRequired => from is Sent or Viewed or CustomerFeedback
+                or Revised or Accepted or RevisionRequired,
+            Revised => from is Sent or Viewed or CustomerFeedback or RevisionRequired
+                or Accepted or Revised,
+            Accepted => from is Sent or Viewed or CustomerFeedback or RevisionRequired
+                or Revised or Accepted,
+            Rejected => from is Sent or Viewed or CustomerFeedback or RevisionRequired
+                or Revised or ReadyToSend,
+            Converted => from is Accepted or Sent or Revised,
+            Expired => !IsTerminal(from),
+            Draft => false,
+            _ => false,
+        };
+    }
+
+    public static string ResolveStatusAfterContentSave(string currentStatus, string? saveMode)
+    {
+        if (string.Equals(saveMode, "draft", StringComparison.OrdinalIgnoreCase)
+            && IsIssuedOrLater(currentStatus)
+            && currentStatus is not Revised)
+        {
+            return RevisionRequired;
+        }
+
+        if (string.Equals(saveMode, "save", StringComparison.OrdinalIgnoreCase))
+        {
+            if (currentStatus == Draft)
+                return ReadyToSend;
+
+            if (IsIssuedOrLater(currentStatus) && currentStatus != Revised)
+                return Revised;
+        }
+
+        return currentStatus;
+    }
 }
 
 public static class SalesOrderStatuses

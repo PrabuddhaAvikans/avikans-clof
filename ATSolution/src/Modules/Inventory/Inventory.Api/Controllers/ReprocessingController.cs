@@ -28,14 +28,14 @@ public sealed class ReprocessingController : ControllerBase
         return Ok(await _reprocessingService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("scrap-lots")]
+    [HttpGet(ApiRoutes.Inventory.ScrapLots)]
     public async Task<ActionResult<IReadOnlyList<ReusableScrapLotDto>>> ListReusableScrapLots(
         CancellationToken cancellationToken)
     {
         return Ok(await _reprocessingService.ListReusableScrapLotsAsync(cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<ReprocessingBatchDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var batch = await _reprocessingService.GetByIdAsync(id, cancellationToken);
@@ -51,13 +51,13 @@ public sealed class ReprocessingController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = batch.Id }, batch);
     }
 
-    [HttpPost("{id:guid}/start")]
+    [HttpPost(ApiRoutes.Inventory.Start)]
     public async Task<ActionResult<ReprocessingBatchDto>> Start(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _reprocessingService.StartAsync(id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/complete")]
+    [HttpPost(ApiRoutes.Inventory.Complete)]
     public async Task<ActionResult<ReprocessingBatchDto>> Complete(
         Guid id,
         [FromBody] CompleteReprocessingRequestDto request,
@@ -74,7 +74,7 @@ public sealed class ReprocessingController : ControllerBase
         return Ok(batch);
     }
 
-    [HttpPost("{id:guid}/cancel")]
+    [HttpPost(ApiRoutes.Inventory.Cancel)]
     public async Task<ActionResult<ReprocessingBatchDto>> Cancel(
         Guid id,
         [FromBody] CancelReprocessingRequestDto? request,

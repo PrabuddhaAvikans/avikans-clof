@@ -28,7 +28,7 @@ public sealed class SalesOrdersController : ControllerBase
         return Ok(await _salesOrderService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<SalesOrderDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var order = await _salesOrderService.GetByIdAsync(id, cancellationToken);
@@ -44,7 +44,7 @@ public sealed class SalesOrdersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<SalesOrderDto>> Update(
         Guid id,
         [FromBody] UpdateSalesOrderCommand request,
@@ -53,20 +53,20 @@ public sealed class SalesOrdersController : ControllerBase
         return Ok(await _salesOrderService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _salesOrderService.DeleteAsync(id, cancellationToken);
         return Ok(ApiResponse.Succeeded("Sales order deleted successfully."));
     }
 
-    [HttpPost("{id:guid}/confirm")]
+    [HttpPost(ApiRoutes.Sales.Confirm)]
     public async Task<ActionResult<SalesOrderDto>> Confirm(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _salesOrderService.ConfirmAsync(id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/cancel")]
+    [HttpPost(ApiRoutes.Sales.Cancel)]
     public async Task<ActionResult<SalesOrderDto>> Cancel(
         Guid id,
         [FromBody] CancelRequestDto? request,
@@ -77,7 +77,7 @@ public sealed class SalesOrdersController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{id:guid}/assign")]
+    [HttpPost(ApiRoutes.Sales.Assign)]
     public async Task<ActionResult<SalesOrderDto>> Assign(
         Guid id,
         [FromBody] AssignRequestDto request,

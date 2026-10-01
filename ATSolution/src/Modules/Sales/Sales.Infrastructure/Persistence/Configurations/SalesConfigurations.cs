@@ -48,6 +48,8 @@ internal sealed class QuotationLineConfiguration : IEntityTypeConfiguration<Quot
     {
         builder.ToTable(SalesPersistenceConstants.QuotationLinesTableName, SalesPersistenceConstants.SchemaName);
         builder.HasKey(x => x.Id);
+        // Client assigns Guid in QuotationLine.Create — never treat as store-generated.
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.ProductSku).HasMaxLength(100).IsRequired();
         builder.Property(x => x.ProductName).HasMaxLength(300).IsRequired();
         builder.Property(x => x.ProductVersionLabel).HasMaxLength(100);
@@ -68,6 +70,8 @@ internal sealed class QuotationContactConfiguration : IEntityTypeConfiguration<Q
     {
         builder.ToTable(SalesPersistenceConstants.QuotationContactsTableName, SalesPersistenceConstants.SchemaName);
         builder.HasKey(x => x.Id);
+        // Client assigns Guid in QuotationContact.Create — never treat as store-generated.
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.Type).HasMaxLength(50).IsRequired();
         builder.Property(x => x.Summary).HasMaxLength(500).IsRequired();
         builder.Property(x => x.Detail).HasMaxLength(4000);
@@ -121,6 +125,7 @@ internal sealed class SalesOrderLineConfiguration : IEntityTypeConfiguration<Sal
     {
         builder.ToTable(SalesPersistenceConstants.SalesOrderLinesTableName, SalesPersistenceConstants.SchemaName);
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.ProductSku).HasMaxLength(100).IsRequired();
         builder.Property(x => x.ProductName).HasMaxLength(300).IsRequired();
         builder.Property(x => x.ProductVersionLabel).HasMaxLength(100);

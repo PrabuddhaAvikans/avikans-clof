@@ -1,10 +1,12 @@
 using System.Text.Json;
 using ATSolution.Application;
+using ATSolution.Application.Abstractions.Periods;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Application.Exceptions;
 using ATSolution.SharedKernel.Constants;
 using ATSolution.SharedKernel.Models;
+using Catalog.Domain.Products;
 using Customers.Domain.Customers;
 using Inventory.Domain.Common;
 using Inventory.Domain.Movements;
@@ -22,17 +24,23 @@ namespace Sales.Application.Services;
 public sealed class SalesOrderService : ISalesOrderService
 {
     private readonly ISalesOrderRepository _salesOrders;
+    private readonly IRepository<Product, Guid> _products;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
+    private readonly IBusinessPeriodGuard _periodGuard;
 
     public SalesOrderService(
         ISalesOrderRepository salesOrders,
+        IRepository<Product, Guid> products,
         IUnitOfWork unitOfWork,
-        IApplicationValidator validator)
+        IApplicationValidator validator,
+        IBusinessPeriodGuard periodGuard)
     {
         _salesOrders = salesOrders;
+        _products = products;
         _unitOfWork = unitOfWork;
         _validator = validator;
+        _periodGuard = periodGuard;
     }
 
     public async Task<PaginatedResponse<SalesOrderDto>> ListAsync(
@@ -56,6 +64,7 @@ public sealed class SalesOrderService : ISalesOrderService
         CancellationToken cancellationToken = default)
     {
         await _validator.ValidateAsync(command, cancellationToken);
+        await _periodGuard.EnsureWritableAsync(DateTimeOffset.UtcNow, cancellationToken);
 
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
@@ -92,8 +101,8 @@ public sealed class SalesOrderService : ISalesOrderService
                 shipping is null ? null : JsonColumn.Serialize(shipping),
                 command.RequestedDeliveryDate,
                 command.Notes,
-                command.WorkflowSnapshot.HasValue
-                    ? command.WorkflowSnapshot.Value.GetRawText()
+                command.WorkflowSnapshot is not null
+                    ? command.WorkflowSnapshot.ToJsonString()
                     : JsonColumn.Serialize(new { capturedAt = DateTimeOffset.UtcNow, version = 1 }),
                 command.CreatedBy ?? SalesDefaults.SystemActor,
                 command.CreatedByName ?? SalesDefaults.SystemActorName);
@@ -101,7 +110,7 @@ public sealed class SalesOrderService : ISalesOrderService
             var sort = 0;
             foreach (var line in command.LineItems)
             {
-                var customizationJson = line.Customization?.GetRawText();
+                var customizationJson = line.CustomizationJson;
                 if (!string.IsNullOrWhiteSpace(customizationJson))
                 {
                     customizationJson = LockCustomizationJson(customizationJson);
@@ -120,7 +129,7 @@ public sealed class SalesOrderService : ISalesOrderService
                     line.DiscountPercent,
                     line.TaxPercent,
                     SalesTotals.ComputeLineTotal(line.Quantity, line.UnitPrice, line.DiscountPercent, line.TaxPercent),
-                    line.IsCustomized ?? line.Customization.HasValue,
+                    line.IsCustomized ?? line.Customization is not null,
                     line.RequiresManufacturing ?? false,
                     customizationJson,
                     sort++));
@@ -129,7 +138,8 @@ public sealed class SalesOrderService : ISalesOrderService
             await _salesOrders.AddOrderAsync(order, ct);
 
             var costingNumber = await _salesOrders.NextNumberAsync(DocumentSequenceTypes.CostingRequest, ct);
-            var built = CostingBuilder.BuildFromSalesOrder(order, costingNumber, null);
+            var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
+            var built = CostingBuilder.BuildFromSalesOrder(order, costingNumber, null, resolve);
             var costing = CostingRequest.Create(
                 built.RequestNumber,
                 order.Id,
@@ -204,9 +214,9 @@ public sealed class SalesOrderService : ISalesOrderService
                         line.DiscountPercent,
                         line.TaxPercent,
                         SalesTotals.ComputeLineTotal(line.Quantity, line.UnitPrice, line.DiscountPercent, line.TaxPercent),
-                        line.IsCustomized ?? line.Customization.HasValue,
+                        line.IsCustomized ?? line.Customization is not null,
                         line.RequiresManufacturing ?? false,
-                        line.Customization?.GetRawText(),
+                        line.CustomizationJson,
                         sort++));
                 }
             }
@@ -234,7 +244,8 @@ public sealed class SalesOrderService : ISalesOrderService
                 {
                     var number = existing?.Number
                         ?? await _salesOrders.NextNumberAsync(DocumentSequenceTypes.CostingRequest, ct);
-                    var built = CostingBuilder.BuildFromSalesOrder(order, number, existing);
+                    var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
+                    var built = CostingBuilder.BuildFromSalesOrder(order, number, existing, resolve);
                     if (existing is null)
                     {
                         existing = CostingRequest.Create(

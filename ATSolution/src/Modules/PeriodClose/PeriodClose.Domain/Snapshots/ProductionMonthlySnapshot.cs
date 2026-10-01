@@ -41,4 +41,46 @@ public class ProductionMonthlySnapshot : Entity<Guid>
             RecordedAt = recordedAt,
         };
     }
+
+    public static ProductionMonthlySnapshot Capture(
+        Guid monthlyPeriodId,
+        int year,
+        int month,
+        string productionOrderId,
+        string productionOrderNumber,
+        string operationId,
+        string operationName,
+        decimal totalQty,
+        decimal completedQty,
+        decimal workInProgressQty,
+        decimal progressPercentage,
+        decimal materialConsumed,
+        decimal laborHours,
+        decimal estimatedCost,
+        decimal actualCostToDate,
+        decimal wipCost,
+        DateTimeOffset recordedAt)
+    {
+        return new ProductionMonthlySnapshot
+        {
+            Id = Guid.NewGuid(),
+            MonthlyPeriodId = monthlyPeriodId,
+            Year = year,
+            Month = month,
+            ProductionOrderId = productionOrderId,
+            ProductionOrderNumber = productionOrderNumber,
+            OperationId = operationId,
+            OperationName = operationName,
+            TotalQty = totalQty,
+            CompletedQty = completedQty,
+            WorkInProgressQty = workInProgressQty,
+            ProgressPercentage = progressPercentage,
+            MaterialConsumed = materialConsumed,
+            LaborHours = laborHours,
+            EstimatedCost = estimatedCost,
+            ActualCostToDate = actualCostToDate,
+            WipCost = wipCost,
+            RecordedAt = recordedAt,
+        };
+    }
 }

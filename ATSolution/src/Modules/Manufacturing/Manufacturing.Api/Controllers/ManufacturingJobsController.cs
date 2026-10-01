@@ -29,7 +29,7 @@ public sealed class ManufacturingJobsController : ControllerBase
         return Ok(await _manufacturingService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<ManufacturingJobDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var job = await _manufacturingService.GetByIdAsync(id, cancellationToken);
@@ -45,7 +45,7 @@ public sealed class ManufacturingJobsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = job.Id }, job);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<ManufacturingJobDto>> Update(
         Guid id,
         [FromBody] UpdateManufacturingJobCommand request,
@@ -54,26 +54,26 @@ public sealed class ManufacturingJobsController : ControllerBase
         return Ok(await _manufacturingService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _manufacturingService.DeleteAsync(id, cancellationToken);
         return Ok(ApiResponse.Succeeded("Manufacturing job deleted successfully."));
     }
 
-    [HttpPost("{id:guid}/reserve-materials")]
+    [HttpPost(ApiRoutes.Manufacturing.ReserveMaterials)]
     public async Task<ActionResult<ManufacturingJobDto>> ReserveMaterials(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _manufacturingService.ReserveMaterialsAsync(id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/start")]
+    [HttpPost(ApiRoutes.Manufacturing.Start)]
     public async Task<ActionResult<ManufacturingJobDto>> Start(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _manufacturingService.StartJobAsync(id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/complete")]
+    [HttpPost(ApiRoutes.Manufacturing.Complete)]
     public async Task<ActionResult<ManufacturingJobDto>> Complete(
         Guid id,
         [FromBody] ProductionCompletionInputDto? completion,
@@ -82,7 +82,7 @@ public sealed class ManufacturingJobsController : ControllerBase
         return Ok(await _manufacturingService.CompleteJobAsync(id, completion, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/hold")]
+    [HttpPost(ApiRoutes.Manufacturing.Hold)]
     public async Task<ActionResult<ManufacturingJobDto>> Hold(
         Guid id,
         [FromBody] HoldJobRequestDto? request,
@@ -91,7 +91,7 @@ public sealed class ManufacturingJobsController : ControllerBase
         return Ok(await _manufacturingService.HoldJobAsync(id, request?.Reason, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/task-actions")]
+    [HttpPost(ApiRoutes.Manufacturing.TaskActions)]
     public async Task<ActionResult<ManufacturingJobDto>> ApplyTaskAction(
         Guid id,
         [FromBody] ManufacturingTaskActionDto action,
@@ -100,7 +100,7 @@ public sealed class ManufacturingJobsController : ControllerBase
         return Ok(await _manufacturingService.ApplyTaskActionAsync(id, action, ResolveActor(), cancellationToken));
     }
 
-    [HttpPost("{id:guid}/complete-tasks")]
+    [HttpPost(ApiRoutes.Manufacturing.CompleteTasks)]
     public async Task<ActionResult<ManufacturingJobDto>> CompleteTasks(
         Guid id,
         [FromBody] BulkCompleteTasksInputDto input,

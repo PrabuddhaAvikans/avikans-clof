@@ -1,0 +1,46 @@
+---
+description: Application layer Query/DTO/Command contract conventions
+globs: ATSolution/src/Modules/**/*.Application/**/*.cs
+alwaysApply: false
+---
+
+# Application contracts
+
+Match existing module patterns. Prefer Identity-style one-type-per-file over large `*Models.cs` bags.
+
+## File layout
+
+- **One public type per file**, named after the type (`AuditLogListQuery.cs`, `AuditLogEntryDto.cs`, `AppendAuditLogCommand.cs`, `CreateBrandCommandValidator.cs`).
+- Do not put multiple queries/DTOs/commands/validators/interfaces in one bag file (`*Models.cs`, `*CommandValidators.cs`, multi-interface files).
+- Keep them under the feature folder (e.g. `Audit.Application/AuditLogs/`); validators under `{Feature}/Validators/`.
+- Prefer a feature service + `I{Feature}Service`; do not add MediatR handlers unless the module already uses them.
+
+## Queries
+
+- List/filter endpoints use `sealed class {Feature}ListQuery : PaginatedRequest` with extra filter properties.
+- Do **not** duplicate the same filters on a second query type (e.g. no separate `*SummaryQuery` that copies list filters). Reuse `{Feature}ListQuery` for summary/stats endpoints; ignore pagination when unused.
+- Query types use settable properties for ASP.NET `[FromQuery]` binding.
+
+## DTOs and commands
+
+- Use `sealed record` for DTOs and commands.
+- Use `DateTimeOffset` for timestamps (not ISO `string`). JSON serialization already emits ISO-8601.
+- Name reads `*Dto`, writes `Create*Command` / `Update*Command` / action-specific `*Command`.
+
+## Example
+
+```csharp
+// ✅ GOOD — AuditLogListQuery.cs (alone)
+public sealed class AuditLogListQuery : PaginatedRequest
+{
+    public string? Entity { get; set; }
+    public DateTimeOffset? From { get; set; }
+}
+
+// ✅ GOOD — AuditLogEntryDto.cs (alone)
+public sealed record AuditLogEntryDto(Guid Id, DateTimeOffset Timestamp, string Action);
+
+// ❌ BAD — multiple types in one Models.cs, duplicated filters, string timestamps
+public sealed class AuditLogSummaryQuery { public string? Entity { get; set; } }
+public sealed record AuditLogEntryDto(Guid Id, string Timestamp, string Action);
+```

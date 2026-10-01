@@ -1,3 +1,4 @@
+using ATSolution.Application.Abstractions.Audit;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.SharedKernel.Models;
@@ -10,7 +11,7 @@ using System.Text.Json.Serialization;
 
 namespace Audit.Application.Services;
 
-public sealed class AuditService : IAuditService
+public sealed class AuditService : IAuditService, IAuditEventWriter
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -39,7 +40,7 @@ public sealed class AuditService : IAuditService
     {
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Max(1, query.PageSize);
-        var logs = ApplyFilters(_logs.Query().AsNoTracking(), query.Entity, query.Action, query.Severity, query.UserId, query.From, query.To);
+        var logs = ApplyFilters(_logs.Query().AsNoTracking(), query);
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
@@ -65,10 +66,10 @@ public sealed class AuditService : IAuditService
     }
 
     public async Task<AuditLogSummaryDto> SummaryAsync(
-        AuditLogSummaryQuery query,
+        AuditLogListQuery query,
         CancellationToken cancellationToken = default)
     {
-        var logs = ApplyFilters(_logs.Query().AsNoTracking(), query.Entity, query.Action, query.Severity, query.UserId, query.From, query.To);
+        var logs = ApplyFilters(_logs.Query().AsNoTracking(), query);
         var todayStart = new DateTimeOffset(DateTimeOffset.UtcNow.Year, DateTimeOffset.UtcNow.Month, DateTimeOffset.UtcNow.Day, 0, 0, 0, TimeSpan.Zero);
 
         var total = await logs.CountAsync(cancellationToken);
@@ -109,29 +110,59 @@ public sealed class AuditService : IAuditService
         return Map(entry);
     }
 
+    public async Task WriteAsync(AuditEventWriteRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var changes = request.Changes?
+            .Select(c => new AuditChangeDto(c.Field, c.From, c.To))
+            .ToList();
+
+        await AppendAsync(
+            new AppendAuditLogCommand(
+                request.UserId,
+                request.UserName,
+                request.Action,
+                request.Entity,
+                request.EntityId,
+                request.Details,
+                request.Severity,
+                request.EntityLabel,
+                request.IpAddress,
+                request.UserAgent,
+                changes,
+                request.Timestamp),
+            cancellationToken);
+    }
+
     private static IQueryable<AuditLogEntry> ApplyFilters(
         IQueryable<AuditLogEntry> logs,
-        string? entity,
-        string? action,
-        string? severity,
-        string? userId,
-        DateTimeOffset? from,
-        DateTimeOffset? to)
+        AuditLogListQuery query)
     {
-        if (!string.IsNullOrWhiteSpace(entity))
-            logs = logs.Where(l => l.Entity == entity);
-        if (!string.IsNullOrWhiteSpace(action))
-            logs = logs.Where(l => l.Action == action);
-        if (!string.IsNullOrWhiteSpace(severity))
-            logs = logs.Where(l => l.Severity == severity);
-        if (!string.IsNullOrWhiteSpace(userId))
-            logs = logs.Where(l => l.UserId == userId);
-        if (from.HasValue)
-            logs = logs.Where(l => l.Timestamp >= from.Value);
-        if (to.HasValue)
-            logs = logs.Where(l => l.Timestamp <= to.Value);
+        if (!string.IsNullOrWhiteSpace(query.Entity))
+            logs = logs.Where(l => l.Entity == query.Entity);
+        if (!string.IsNullOrWhiteSpace(query.Action))
+            logs = logs.Where(l => l.Action == query.Action);
+        if (!string.IsNullOrWhiteSpace(query.Severity))
+            logs = logs.Where(l => l.Severity == query.Severity);
+        if (!string.IsNullOrWhiteSpace(query.UserId))
+            logs = logs.Where(l => l.UserId == query.UserId);
+        if (query.From.HasValue)
+        {
+            var fromStart = StartOfDay(query.From.Value);
+            logs = logs.Where(l => l.Timestamp >= fromStart);
+        }
+        if (query.To.HasValue)
+        {
+            // Inclusive calendar day: keep events before the next day's start.
+            var toExclusive = StartOfDay(query.To.Value).AddDays(1);
+            logs = logs.Where(l => l.Timestamp < toExclusive);
+        }
         return logs;
     }
+
+    private static DateTimeOffset StartOfDay(DateTimeOffset value) =>
+        new(value.Year, value.Month, value.Day, 0, 0, 0, value.Offset);
 
     private static AuditLogEntryDto Map(AuditLogEntry entry)
     {
@@ -150,7 +181,7 @@ public sealed class AuditService : IAuditService
 
         return new AuditLogEntryDto(
             entry.Id,
-            entry.Timestamp.ToString("O"),
+            entry.Timestamp,
             entry.UserId,
             entry.UserName,
             entry.Action,

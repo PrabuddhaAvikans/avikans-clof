@@ -52,4 +52,56 @@ public class DailyClosingSummary : Entity<Guid>
             OutstandingAmount = 0,
         };
     }
+
+    public void Apply(
+        int ordersCreated,
+        int productionJobs,
+        decimal completedProductionQty,
+        decimal partialProductionQty,
+        int invoices,
+        decimal invoiceTotal,
+        int payments,
+        decimal paymentTotal,
+        int deliveries,
+        int materialIssues,
+        int materialReturns,
+        int inventoryMovementCount,
+        decimal quotationValue,
+        decimal salesOrderValue,
+        decimal creditNoteTotal,
+        decimal cashPayments,
+        decimal cardPayments,
+        decimal bankPayments,
+        decimal advancePayments,
+        decimal refunds,
+        decimal openingReceivable,
+        decimal closingReceivable,
+        decimal outstandingAmount,
+        string transactionRefsJson)
+    {
+        OrdersCreated = ordersCreated;
+        ProductionJobs = productionJobs;
+        CompletedProductionQty = completedProductionQty;
+        PartialProductionQty = partialProductionQty;
+        Invoices = invoices;
+        InvoiceTotal = invoiceTotal;
+        Payments = payments;
+        PaymentTotal = paymentTotal;
+        Deliveries = deliveries;
+        MaterialIssues = materialIssues;
+        MaterialReturns = materialReturns;
+        InventoryMovementCount = inventoryMovementCount;
+        QuotationValue = quotationValue;
+        SalesOrderValue = salesOrderValue;
+        CreditNoteTotal = creditNoteTotal;
+        CashPayments = cashPayments;
+        CardPayments = cardPayments;
+        BankPayments = bankPayments;
+        AdvancePayments = advancePayments;
+        Refunds = refunds;
+        OpeningReceivable = openingReceivable;
+        ClosingReceivable = closingReceivable;
+        OutstandingAmount = outstandingAmount;
+        TransactionRefsJson = string.IsNullOrWhiteSpace(transactionRefsJson) ? "{}" : transactionRefsJson;
+    }
 }

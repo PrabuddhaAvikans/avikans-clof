@@ -314,7 +314,7 @@ public sealed class ReportService : IReportService
         return new ReportDatasetDto(
             reportId,
             definition.Title,
-            DateTimeOffset.UtcNow.ToString("O"),
+            DateTimeOffset.UtcNow,
             kpis,
             rows,
             definition.Columns);

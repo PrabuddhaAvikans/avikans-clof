@@ -10,9 +10,10 @@ Before any feature, bug fix, refactor, or UI change, inspect the project first. 
 ## Before coding
 
 1. Review structure under `ATSolution/src`: SharedKernel, Core (Domain / Application / Infrastructure), feature modules (Domain / Application / Infrastructure / Api), and Host.
-2. Reuse existing modules, repositories, validators, exception handling, constants, and the client flow page → feature hook → service interface → mock service.
-3. For UI work, reuse tokens in `ATSolution/src/Host/Client/src/index.css` and components in `components/ui` and `components/layout`. Do not add new colors or one-off components.
-4. Find the related files, then make the smallest change that stays backward compatible.
+2. Reuse existing modules, repositories, validators, exception handling, constants, and the client flow page → feature hook → Redux epic → `apiClient` / mappers (mock services only where still present).
+3. For Application contracts (queries/DTOs/commands), follow `application-contracts.mdc`: one public type per file, one `{Feature}ListQuery : PaginatedRequest`, no duplicated filter query types, `sealed record` DTOs/commands, `DateTimeOffset` for timestamps.
+4. For UI work, reuse tokens in `ATSolution/src/Host/Client/src/index.css` and components in `components/ui` and `components/layout`. Do not add new colors or one-off components.
+5. Find the related files, then make the smallest change that stays backward compatible.
 
 ## After coding
 

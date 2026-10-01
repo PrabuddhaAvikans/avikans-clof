@@ -18,13 +18,13 @@ public sealed class WorkflowsController : ControllerBase
         _workflowService = workflowService;
     }
 
-    [HttpGet("catalog")]
+    [HttpGet(ApiRoutes.Configuration.Catalog)]
     public async Task<ActionResult<WorkflowCatalogDto>> GetCatalog(CancellationToken cancellationToken)
     {
         return Ok(await _workflowService.GetCatalogAsync(cancellationToken));
     }
 
-    [HttpPost("definitions")]
+    [HttpPost(ApiRoutes.Configuration.Definitions)]
     public async Task<ActionResult<WorkflowDefinitionDto>> UpsertDefinition(
         [FromBody] UpsertWorkflowDefinitionCommand command,
         CancellationToken cancellationToken)
@@ -33,19 +33,46 @@ public sealed class WorkflowsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("versions/{id:guid}/publish")]
+    [HttpPost(ApiRoutes.Configuration.VersionDraft)]
+    public async Task<ActionResult<WorkflowCatalogDto>> CreateDraft(Guid id, CancellationToken cancellationToken)
+    {
+        return Ok(await _workflowService.CreateDraftFromVersionAsync(id, cancellationToken));
+    }
+
+    [HttpPost(ApiRoutes.Configuration.ApplyVersion)]
+    public async Task<ActionResult<WorkflowCatalogDto>> ApplyDraft(
+        Guid id,
+        [FromBody] ApplyWorkflowDraftCommand command,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await _workflowService.ApplyDraftAsync(id, command, cancellationToken));
+    }
+
+    [HttpPost(ApiRoutes.Configuration.PublishVersion)]
     public async Task<ActionResult<WorkflowVersionDto>> PublishVersion(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _workflowService.PublishVersionAsync(id, cancellationToken));
     }
 
-    [HttpGet("instances")]
+    [HttpPost(ApiRoutes.Configuration.ActivateVersion)]
+    public async Task<ActionResult<WorkflowCatalogDto>> ActivateVersion(Guid id, CancellationToken cancellationToken)
+    {
+        return Ok(await _workflowService.ActivateVersionAsync(id, cancellationToken));
+    }
+
+    [HttpPost(ApiRoutes.Configuration.ResetCatalog)]
+    public async Task<ActionResult<WorkflowCatalogDto>> ResetCatalog(CancellationToken cancellationToken)
+    {
+        return Ok(await _workflowService.ResetCatalogAsync(cancellationToken));
+    }
+
+    [HttpGet(ApiRoutes.Configuration.Instances)]
     public async Task<ActionResult<IReadOnlyList<WorkflowInstanceDto>>> ListInstances(CancellationToken cancellationToken)
     {
         return Ok(await _workflowService.ListInstancesAsync(cancellationToken));
     }
 
-    [HttpGet("instances/{id:guid}")]
+    [HttpGet(ApiRoutes.Configuration.InstanceById)]
     public async Task<ActionResult<WorkflowInstanceDto>> GetInstance(Guid id, CancellationToken cancellationToken)
     {
         var instance = await _workflowService.GetInstanceAsync(id, cancellationToken);

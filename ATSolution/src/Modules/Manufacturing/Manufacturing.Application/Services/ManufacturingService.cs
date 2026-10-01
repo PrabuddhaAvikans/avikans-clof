@@ -1,4 +1,5 @@
 using ATSolution.Application;
+using ATSolution.Application.Abstractions.Periods;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Application.Exceptions;
@@ -16,6 +17,7 @@ using Manufacturing.Domain.Common;
 using Manufacturing.Domain.Jobs;
 using Manufacturing.Domain.Sequences;
 using Manufacturing.Domain.Tasks;
+using Manufacturing.Domain.Work;
 using Microsoft.EntityFrameworkCore;
 using Sales.Domain.SalesOrders;
 
@@ -32,8 +34,10 @@ public sealed class ManufacturingService : IManufacturingService
     private readonly IRepository<InventoryItem, Guid> _inventoryItems;
     private readonly IRepository<StockMovement, Guid> _stockMovements;
     private readonly IRepository<DocumentSequence, Guid> _sequences;
+    private readonly IRepository<EmployeeWorkSession, Guid> _sessions;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
+    private readonly IBusinessPeriodGuard _periodGuard;
 
     public ManufacturingService(
         IRepository<ManufacturingJob, Guid> jobs,
@@ -43,8 +47,10 @@ public sealed class ManufacturingService : IManufacturingService
         IRepository<InventoryItem, Guid> inventoryItems,
         IRepository<StockMovement, Guid> stockMovements,
         IRepository<DocumentSequence, Guid> sequences,
+        IRepository<EmployeeWorkSession, Guid> sessions,
         IUnitOfWork unitOfWork,
-        IApplicationValidator validator)
+        IApplicationValidator validator,
+        IBusinessPeriodGuard periodGuard)
     {
         _jobs = jobs;
         _salesOrders = salesOrders;
@@ -53,8 +59,10 @@ public sealed class ManufacturingService : IManufacturingService
         _inventoryItems = inventoryItems;
         _stockMovements = stockMovements;
         _sequences = sequences;
+        _sessions = sessions;
         _unitOfWork = unitOfWork;
         _validator = validator;
+        _periodGuard = periodGuard;
     }
 
     public async Task<PaginatedResponse<ManufacturingJobDto>> ListAsync(
@@ -326,6 +334,7 @@ public sealed class ManufacturingService : IManufacturingService
 
     public async Task<ManufacturingJobDto> StartJobAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        await _periodGuard.EnsureWritableAsync(DateTimeOffset.UtcNow, cancellationToken);
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             var job = await LoadJobAsync(id, ct)
@@ -422,6 +431,7 @@ public sealed class ManufacturingService : IManufacturingService
         TaskActionActorDto actor,
         CancellationToken cancellationToken = default)
     {
+        await _periodGuard.EnsureWritableAsync(DateTimeOffset.UtcNow, cancellationToken);
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             var job = await LoadJobAsync(jobId, ct)
@@ -429,6 +439,7 @@ public sealed class ManufacturingService : IManufacturingService
 
             var inspection = JsonColumn.Deserialize<QualityInspectionDto?>(job.QualityInspectionJson, null);
             TaskActionProcessor.Apply(job, action, actor, inspection);
+            await WorkSessionSync.ApplyAsync(_sessions, job, action, actor, ct);
             await _unitOfWork.SaveChangesAsync(ct);
             return ManufacturingMappers.MapJob(job);
         }, cancellationToken);
@@ -440,6 +451,7 @@ public sealed class ManufacturingService : IManufacturingService
         TaskActionActorDto actor,
         CancellationToken cancellationToken = default)
     {
+        await _periodGuard.EnsureWritableAsync(DateTimeOffset.UtcNow, cancellationToken);
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             var job = await LoadJobAsync(jobId, ct)
@@ -470,6 +482,18 @@ public sealed class ManufacturingService : IManufacturingService
                     },
                     actor,
                     JsonColumn.Deserialize<QualityInspectionDto?>(job.QualityInspectionJson, null));
+                await WorkSessionSync.ApplyAsync(
+                    _sessions,
+                    job,
+                    new ManufacturingTaskActionDto
+                    {
+                        Type = "complete",
+                        TaskId = entry.TaskId,
+                        Contributors = entry.Contributors,
+                        Notes = entry.Notes ?? input.Notes,
+                    },
+                    actor,
+                    ct);
             }
 
             await _unitOfWork.SaveChangesAsync(ct);

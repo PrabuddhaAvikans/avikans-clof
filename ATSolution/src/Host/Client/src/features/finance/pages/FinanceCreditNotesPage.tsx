@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -7,48 +7,44 @@ import { PageContent } from "@/components/feedback/PageStates";
 import { CreditNoteListPanel } from "@/features/finance/components/CreditNoteListPanel";
 import { CreditNoteDetailPanel } from "@/features/finance/components/CreditNoteDetailPanel";
 import { ApplyCreditNoteModal } from "@/features/finance/components/ApplyCreditNoteModal";
+import {
+  useApplyCreditNote,
+  useCreditNotes,
+} from "@/features/finance/hooks/useCreditNotes";
+import { useInvoices } from "@/features/finance/hooks/useInvoices";
 import { workspaceGrid, workspaceGridCol, workspacePanelFill } from "@/lib/panelLayout";
-import type { CreditNote } from "@/types/credit-note";
-import type { Invoice } from "@/types/invoice";
 import { type CreditNoteStatusValue } from "@/types/status";
-import { httpCreditNoteService } from "@/services/http/httpCreditNoteService";
-import { httpInvoiceService } from "@/services/http/httpInvoiceService";
 
 export function FinanceCreditNotesPage() {
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: creditData,
+    isLoading: creditLoading,
+    error: creditError,
+    refetch: refetchCredits,
+  } = useCreditNotes({ page: 1, pageSize: 200 });
+  const {
+    data: invoiceData,
+    isLoading: invoiceLoading,
+    error: invoiceError,
+    refetch: refetchInvoices,
+  } = useInvoices({ page: 1, pageSize: 200 });
+  const applyCreditNote = useApplyCreditNote();
+
+  const creditNotes = creditData?.items ?? [];
+  const invoices = invoiceData?.items ?? [];
+  const isLoading = creditLoading || invoiceLoading;
+  const error = creditError?.message ?? invoiceError?.message ?? null;
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<CreditNoteStatusValue | "">("");
-
   const [applyOpen, setApplyOpen] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [creditPage, invoicePage] = await Promise.all([
-        httpCreditNoteService.list({ page: 1, pageSize: 200 }),
-        httpInvoiceService.list({ page: 1, pageSize: 200 }),
-      ]);
-      setCreditNotes(creditPage.items);
-      setInvoices(invoicePage.items);
-      setSelectedId((current) => current ?? creditPage.items[0]?.id ?? null);
-      setError(null);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load credit notes.");
-      setCreditNotes([]);
-      setInvoices([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    if (!selectedId && creditNotes.length > 0) {
+      setSelectedId(creditNotes[0].id);
+    }
+  }, [creditNotes, selectedId]);
 
   const selectedCreditNote = useMemo(() => {
     return creditNotes.find((cn) => cn.id === selectedId) ?? null;
@@ -69,16 +65,16 @@ export function FinanceCreditNotesPage() {
     if (applyAmount <= 0) return;
 
     try {
-      const updated = await httpCreditNoteService.apply(args.creditNoteId, {
-        invoiceId: args.invoiceId,
-        amount: applyAmount,
-        note: args.note,
+      await applyCreditNote.mutateAsync({
+        id: args.creditNoteId,
+        data: {
+          invoiceId: args.invoiceId,
+          amount: applyAmount,
+          note: args.note,
+        },
       });
-      setCreditNotes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      const refreshedInvoice = await httpInvoiceService.getById(args.invoiceId);
-      setInvoices((prev) =>
-        prev.map((inv) => (inv.id === refreshedInvoice.id ? refreshedInvoice : inv)),
-      );
+      refetchCredits();
+      refetchInvoices();
       toast.success(`Applied ${applyAmount.toFixed(2)} to invoice ${invoice.invoiceNumber}.`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to apply credit note.");

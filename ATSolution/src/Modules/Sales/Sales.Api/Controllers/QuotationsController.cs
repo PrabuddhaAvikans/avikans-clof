@@ -29,7 +29,7 @@ public sealed class QuotationsController : ControllerBase
         return Ok(await _quotationService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<QuotationDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var quotation = await _quotationService.GetByIdAsync(id, cancellationToken);
@@ -45,7 +45,7 @@ public sealed class QuotationsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = quotation.Id }, quotation);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<QuotationDto>> Update(
         Guid id,
         [FromBody] UpdateQuotationCommand request,
@@ -54,20 +54,20 @@ public sealed class QuotationsController : ControllerBase
         return Ok(await _quotationService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _quotationService.DeleteAsync(id, cancellationToken);
         return Ok(ApiResponse.Succeeded("Quotation deleted successfully."));
     }
 
-    [HttpPost("{id:guid}/send")]
+    [HttpPost(ApiRoutes.Sales.Send)]
     public async Task<ActionResult<QuotationDto>> Send(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _quotationService.SendAsync(id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/convert-to-sales-order")]
+    [HttpPost(ApiRoutes.Sales.ConvertToSalesOrder)]
     public async Task<ActionResult<SalesOrderDto>> ConvertToSalesOrder(
         Guid id,
         CancellationToken cancellationToken)
@@ -75,7 +75,7 @@ public sealed class QuotationsController : ControllerBase
         return Ok(await _quotationService.ConvertToSalesOrderAsync(id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/contacts")]
+    [HttpPost(ApiRoutes.Sales.Contacts)]
     public async Task<ActionResult<QuotationDto>> AddContactEntry(
         Guid id,
         [FromBody] AddQuotationContactRequestDto request,
@@ -93,7 +93,7 @@ public sealed class QuotationsController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{quotationId:guid}/lines/{lineItemId:guid}/approve-customization")]
+    [HttpPost(ApiRoutes.Sales.ApproveCustomization)]
     public async Task<ActionResult<QuotationDto>> ApproveLineCustomization(
         Guid quotationId,
         Guid lineItemId,
@@ -107,7 +107,7 @@ public sealed class QuotationsController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{quotationId:guid}/lines/{lineItemId:guid}/promote-customization")]
+    [HttpPost(ApiRoutes.Sales.PromoteCustomization)]
     public async Task<ActionResult<PromoteCustomizationResultDto>> PromoteCustomization(
         Guid quotationId,
         Guid lineItemId,

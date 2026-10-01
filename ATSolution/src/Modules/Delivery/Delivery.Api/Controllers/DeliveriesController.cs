@@ -58,7 +58,7 @@ public sealed class DeliveriesController : ControllerBase
 
 
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
 
     public async Task<ActionResult<DeliveryDto>> GetById(Guid id, CancellationToken cancellationToken)
 
@@ -90,7 +90,7 @@ public sealed class DeliveriesController : ControllerBase
 
 
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
 
     public async Task<ActionResult<DeliveryDto>> Update(
 
@@ -108,7 +108,7 @@ public sealed class DeliveriesController : ControllerBase
 
 
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
 
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
 
@@ -122,7 +122,7 @@ public sealed class DeliveriesController : ControllerBase
 
 
 
-    [HttpPost("{id:guid}/status")]
+    [HttpPost(ApiRoutes.Delivery.Status)]
 
     public async Task<ActionResult<DeliveryDto>> UpdateStatus(
 
@@ -144,7 +144,7 @@ public sealed class DeliveriesController : ControllerBase
 
 
 
-    [HttpPost("{id:guid}/dispatch")]
+    [HttpPost(ApiRoutes.Delivery.Dispatch)]
 
     public async Task<ActionResult<DeliveryDto>> Dispatch(Guid id, CancellationToken cancellationToken)
 
@@ -156,7 +156,7 @@ public sealed class DeliveriesController : ControllerBase
 
 
 
-    [HttpPost("{id:guid}/proof-of-delivery")]
+    [HttpPost(ApiRoutes.Delivery.ProofOfDelivery)]
 
     public async Task<ActionResult<DeliveryDto>> RecordProofOfDelivery(
 

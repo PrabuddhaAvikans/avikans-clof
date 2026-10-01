@@ -28,7 +28,7 @@ public sealed class CreditNotesController : ControllerBase
         return Ok(await _creditNoteService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<CreditNoteDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var creditNote = await _creditNoteService.GetByIdAsync(id, cancellationToken);
@@ -44,7 +44,7 @@ public sealed class CreditNotesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = creditNote.Id }, creditNote);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<CreditNoteDto>> Update(
         Guid id,
         [FromBody] UpdateCreditNoteCommand request,
@@ -53,7 +53,7 @@ public sealed class CreditNotesController : ControllerBase
         return Ok(await _creditNoteService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/issue")]
+    [HttpPost(ApiRoutes.Finance.Issue)]
     public async Task<ActionResult<CreditNoteDto>> Issue(
         Guid id,
         [FromBody] IssueCreditNoteRequest? request,
@@ -64,13 +64,13 @@ public sealed class CreditNotesController : ControllerBase
             cancellationToken));
     }
 
-    [HttpPost("{id:guid}/void")]
+    [HttpPost(ApiRoutes.Finance.Void)]
     public async Task<ActionResult<CreditNoteDto>> Void(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _creditNoteService.VoidAsync(new VoidCreditNoteCommand(id), cancellationToken));
     }
 
-    [HttpPost("{id:guid}/apply")]
+    [HttpPost(ApiRoutes.Finance.Apply)]
     public async Task<ActionResult<CreditNoteDto>> Apply(
         Guid id,
         [FromBody] ApplyCreditNoteRequest request,

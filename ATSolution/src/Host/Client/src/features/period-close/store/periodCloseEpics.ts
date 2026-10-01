@@ -1,118 +1,171 @@
 import { combineEpics } from "redux-observable";
-import { createAsyncEpic } from "@/app/store/async/createAsyncEpic";
-import { periodCloseActions } from "@/features/period-close/store/periodCloseSlice";
-import { periodCloseService } from "@/services";
+import { createApiEpic } from "@/app/store/async/createApiEpic";
+import { periodCloseActions as actions } from "@/features/period-close/store/periodCloseSlice";
+import { buildQuery, http } from "@/services/apiClient";
+import { mapPaginatedResponse } from "@/services/mappers/common";
+import { mapUnknown } from "@/services/mappers/periodCloseMappers";
+import type {
+  BusinessPeriod,
+  CloseDayResult,
+  CloseMonthResult,
+  DayCloseWorkspace,
+  MonthlyCloseWorkspace,
+  MonthlyPeriod,
+  PeriodAdjustment,
+  PeriodCloseSettings,
+} from "@/types/period-close";
 
-const fetchDayListEpic = createAsyncEpic({
-  request: periodCloseActions.fetchDayListRequest,
-  success: periodCloseActions.fetchDayListSuccess,
-  failure: periodCloseActions.fetchDayListFailure,
-  handler: (filters) => periodCloseService.listDayPeriods(filters),
+const BASE = "/api/period-close";
+
+const fetchDayListEpic = createApiEpic({
+  request: actions.fetchDayListRequest,
+  success: actions.fetchDayListSuccess,
+  failure: actions.fetchDayListFailure,
+  execute: async (filters) =>
+    mapPaginatedResponse(
+      await http.get(`${BASE}/days${buildQuery(filters)}`),
+      (item) => mapUnknown<BusinessPeriod>(item),
+    ),
 });
 
-const fetchMonthListEpic = createAsyncEpic({
-  request: periodCloseActions.fetchMonthListRequest,
-  success: periodCloseActions.fetchMonthListSuccess,
-  failure: periodCloseActions.fetchMonthListFailure,
-  handler: (filters) => periodCloseService.listMonthlyPeriods(filters),
+const fetchMonthListEpic = createApiEpic({
+  request: actions.fetchMonthListRequest,
+  success: actions.fetchMonthListSuccess,
+  failure: actions.fetchMonthListFailure,
+  execute: async (filters) =>
+    mapPaginatedResponse(
+      await http.get(`${BASE}/months${buildQuery(filters)}`),
+      (item) => mapUnknown<MonthlyPeriod>(item),
+    ),
 });
 
-const fetchCurrentDayEpic = createAsyncEpic({
-  request: periodCloseActions.fetchCurrentDayRequest,
-  success: periodCloseActions.fetchCurrentDaySuccess,
-  failure: periodCloseActions.fetchCurrentDayFailure,
-  handler: (branchId) => periodCloseService.getCurrentDay(branchId),
+const fetchCurrentDayEpic = createApiEpic({
+  request: actions.fetchCurrentDayRequest,
+  success: actions.fetchCurrentDaySuccess,
+  failure: actions.fetchCurrentDayFailure,
+  execute: async (branchId) =>
+    mapUnknown<DayCloseWorkspace>(
+      await http.get(`${BASE}/days/current${buildQuery({ branchId })}`),
+    ),
 });
 
-const fetchDayWorkspaceEpic = createAsyncEpic({
-  request: periodCloseActions.fetchDayWorkspaceRequest,
-  success: periodCloseActions.fetchDayWorkspaceSuccess,
-  failure: periodCloseActions.fetchDayWorkspaceFailure,
-  handler: (id) => periodCloseService.getDayWorkspace(id),
+const fetchDayWorkspaceEpic = createApiEpic({
+  request: actions.fetchDayWorkspaceRequest,
+  success: actions.fetchDayWorkspaceSuccess,
+  failure: actions.fetchDayWorkspaceFailure,
+  execute: async (id) =>
+    mapUnknown<DayCloseWorkspace>(await http.get(`${BASE}/days/${id}`)),
 });
 
-const fetchCurrentMonthEpic = createAsyncEpic({
-  request: periodCloseActions.fetchCurrentMonthRequest,
-  success: periodCloseActions.fetchCurrentMonthSuccess,
-  failure: periodCloseActions.fetchCurrentMonthFailure,
-  handler: (branchId) => periodCloseService.getCurrentMonth(branchId),
+const fetchCurrentMonthEpic = createApiEpic({
+  request: actions.fetchCurrentMonthRequest,
+  success: actions.fetchCurrentMonthSuccess,
+  failure: actions.fetchCurrentMonthFailure,
+  execute: async (branchId) =>
+    mapUnknown<MonthlyCloseWorkspace>(
+      await http.get(`${BASE}/months/current${buildQuery({ branchId })}`),
+    ),
 });
 
-const fetchMonthWorkspaceEpic = createAsyncEpic({
-  request: periodCloseActions.fetchMonthWorkspaceRequest,
-  success: periodCloseActions.fetchMonthWorkspaceSuccess,
-  failure: periodCloseActions.fetchMonthWorkspaceFailure,
-  handler: (id) => periodCloseService.getMonthWorkspace(id),
+const fetchMonthWorkspaceEpic = createApiEpic({
+  request: actions.fetchMonthWorkspaceRequest,
+  success: actions.fetchMonthWorkspaceSuccess,
+  failure: actions.fetchMonthWorkspaceFailure,
+  execute: async (id) =>
+    mapUnknown<MonthlyCloseWorkspace>(await http.get(`${BASE}/months/${id}`)),
 });
 
-const fetchSettingsEpic = createAsyncEpic({
-  request: periodCloseActions.fetchSettingsRequest,
-  success: periodCloseActions.fetchSettingsSuccess,
-  failure: periodCloseActions.fetchSettingsFailure,
-  handler: (branchId) => periodCloseService.getSettings(branchId),
+const fetchSettingsEpic = createApiEpic({
+  request: actions.fetchSettingsRequest,
+  success: actions.fetchSettingsSuccess,
+  failure: actions.fetchSettingsFailure,
+  execute: async (branchId) =>
+    mapUnknown<PeriodCloseSettings>(
+      await http.get(`${BASE}/settings${buildQuery({ branchId })}`),
+    ),
 });
 
-const fetchAdjustmentsEpic = createAsyncEpic({
-  request: periodCloseActions.fetchAdjustmentsRequest,
-  success: periodCloseActions.fetchAdjustmentsSuccess,
-  failure: periodCloseActions.fetchAdjustmentsFailure,
-  handler: (branchId) => periodCloseService.listAdjustments(branchId),
+const fetchAdjustmentsEpic = createApiEpic({
+  request: actions.fetchAdjustmentsRequest,
+  success: actions.fetchAdjustmentsSuccess,
+  failure: actions.fetchAdjustmentsFailure,
+  execute: async (branchId) =>
+    mapUnknown<PeriodAdjustment[]>(
+      await http.get(`${BASE}/adjustments${buildQuery({ branchId })}`),
+    ),
 });
 
-const runDayValidationEpic = createAsyncEpic({
-  request: periodCloseActions.runDayValidationRequest,
-  success: periodCloseActions.runDayValidationSuccess,
-  failure: periodCloseActions.runDayValidationFailure,
-  handler: (id) => periodCloseService.runDayValidation(id),
-  mode: "merge",
+const runDayValidationEpic = createApiEpic({
+  request: actions.runDayValidationRequest,
+  success: actions.runDayValidationSuccess,
+  failure: actions.runDayValidationFailure,
+  concurrency: "merge",
+  execute: async (id) =>
+    mapUnknown<DayCloseWorkspace>(
+      await http.post(`${BASE}/days/${id}/validate`, {}),
+    ),
 });
 
-const closeDayEpic = createAsyncEpic({
-  request: periodCloseActions.closeDayRequest,
-  success: periodCloseActions.closeDaySuccess,
-  failure: periodCloseActions.closeDayFailure,
-  handler: ({ id, options }) => periodCloseService.closeDay(id, options),
-  mode: "merge",
+const closeDayEpic = createApiEpic({
+  request: actions.closeDayRequest,
+  success: actions.closeDaySuccess,
+  failure: actions.closeDayFailure,
+  concurrency: "merge",
+  execute: async ({ id, options }) =>
+    mapUnknown<CloseDayResult>(
+      await http.post(`${BASE}/days/${id}/close`, options ?? {}),
+    ),
 });
 
-const reopenDayEpic = createAsyncEpic({
-  request: periodCloseActions.reopenDayRequest,
-  success: periodCloseActions.reopenDaySuccess,
-  failure: periodCloseActions.reopenDayFailure,
-  handler: ({ id, input }) => periodCloseService.reopenDay(id, input),
-  mode: "merge",
+const reopenDayEpic = createApiEpic({
+  request: actions.reopenDayRequest,
+  success: actions.reopenDaySuccess,
+  failure: actions.reopenDayFailure,
+  concurrency: "merge",
+  execute: async ({ id, input }) =>
+    mapUnknown<BusinessPeriod>(
+      await http.post(`${BASE}/days/${id}/reopen`, input),
+    ),
 });
 
-const runMonthValidationEpic = createAsyncEpic({
-  request: periodCloseActions.runMonthValidationRequest,
-  success: periodCloseActions.runMonthValidationSuccess,
-  failure: periodCloseActions.runMonthValidationFailure,
-  handler: (id) => periodCloseService.runMonthValidation(id),
-  mode: "merge",
+const runMonthValidationEpic = createApiEpic({
+  request: actions.runMonthValidationRequest,
+  success: actions.runMonthValidationSuccess,
+  failure: actions.runMonthValidationFailure,
+  concurrency: "merge",
+  execute: async (id) =>
+    mapUnknown<MonthlyCloseWorkspace>(
+      await http.post(`${BASE}/months/${id}/validate`),
+    ),
 });
 
-const closeMonthEpic = createAsyncEpic({
-  request: periodCloseActions.closeMonthRequest,
-  success: periodCloseActions.closeMonthSuccess,
-  failure: periodCloseActions.closeMonthFailure,
-  handler: (id) => periodCloseService.closeMonth(id),
-  mode: "merge",
+const closeMonthEpic = createApiEpic({
+  request: actions.closeMonthRequest,
+  success: actions.closeMonthSuccess,
+  failure: actions.closeMonthFailure,
+  concurrency: "merge",
+  execute: async (id) =>
+    mapUnknown<CloseMonthResult>(await http.post(`${BASE}/months/${id}/close`)),
 });
 
-const reopenMonthEpic = createAsyncEpic({
-  request: periodCloseActions.reopenMonthRequest,
-  success: periodCloseActions.reopenMonthSuccess,
-  failure: periodCloseActions.reopenMonthFailure,
-  handler: ({ id, input }) => periodCloseService.reopenMonth(id, input),
-  mode: "merge",
+const reopenMonthEpic = createApiEpic({
+  request: actions.reopenMonthRequest,
+  success: actions.reopenMonthSuccess,
+  failure: actions.reopenMonthFailure,
+  concurrency: "merge",
+  execute: async ({ id, input }) =>
+    mapUnknown<MonthlyPeriod>(
+      await http.post(`${BASE}/months/${id}/reopen`, input),
+    ),
 });
 
-const createAdjustmentEpic = createAsyncEpic({
-  request: periodCloseActions.createAdjustmentRequest,
-  success: periodCloseActions.createAdjustmentSuccess,
-  failure: periodCloseActions.createAdjustmentFailure,
-  handler: (input) => periodCloseService.createAdjustment(input),
-  mode: "merge",
+const createAdjustmentEpic = createApiEpic({
+  request: actions.createAdjustmentRequest,
+  success: actions.createAdjustmentSuccess,
+  failure: actions.createAdjustmentFailure,
+  concurrency: "merge",
+  execute: async (input) =>
+    mapUnknown<PeriodAdjustment>(await http.post(`${BASE}/adjustments`, input)),
 });
 
 export const periodCloseEpic = combineEpics(

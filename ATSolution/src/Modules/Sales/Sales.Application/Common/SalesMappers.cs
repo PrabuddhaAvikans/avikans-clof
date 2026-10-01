@@ -1,6 +1,6 @@
-using Sales.Application.Common;
 using Sales.Application.Quotations;
 using Sales.Application.SalesOrders;
+using Sales.Domain.Common;
 using Sales.Domain.Quotations;
 using Sales.Domain.SalesOrders;
 
@@ -19,20 +19,37 @@ public static class SalesTotals
         IEnumerable<(decimal Quantity, decimal UnitPrice, decimal DiscountPercent, decimal TaxPercent)> lines,
         decimal discountAmount)
     {
-        decimal subtotal = 0;
-        decimal tax = 0;
+        var nets = new List<(decimal Net, decimal TaxPercent)>();
+        decimal subtotalRaw = 0;
         foreach (var line in lines)
         {
-            var baseAmount = line.Quantity * line.UnitPrice;
-            var afterDiscount = baseAmount * (1 - line.DiscountPercent / 100m);
-            subtotal += afterDiscount;
-            tax += afterDiscount * (line.TaxPercent / 100m);
+            var net = line.Quantity * line.UnitPrice * (1 - line.DiscountPercent / 100m);
+            nets.Add((net, line.TaxPercent));
+            subtotalRaw += net;
         }
 
-        subtotal = Math.Round(subtotal, 2, MidpointRounding.AwayFromZero);
-        tax = Math.Round(tax, 2, MidpointRounding.AwayFromZero);
-        var total = Math.Round(Math.Max(0, subtotal + tax - discountAmount), 2, MidpointRounding.AwayFromZero);
+        var subtotal = Math.Round(subtotalRaw, 2, MidpointRounding.AwayFromZero);
+        var discount = Math.Min(Math.Max(discountAmount, 0), subtotal);
+        decimal taxableTax = 0;
+        if (subtotalRaw > 0)
+        {
+            foreach (var line in nets)
+            {
+                var share = line.Net / subtotalRaw;
+                var lineTaxable = line.Net - (discount * share);
+                taxableTax += lineTaxable * (line.TaxPercent / 100m);
+            }
+        }
+
+        var tax = Math.Round(taxableTax, 2, MidpointRounding.AwayFromZero);
+        var total = Math.Round(Math.Max(0, subtotal - discount + tax), 2, MidpointRounding.AwayFromZero);
         return (subtotal, tax, total);
+    }
+
+    public static decimal MarginPercent(decimal sellingPrice, decimal productionCost)
+    {
+        if (sellingPrice <= 0) return 0;
+        return Math.Round((sellingPrice - productionCost) / sellingPrice * 100m, 2, MidpointRounding.AwayFromZero);
     }
 }
 
@@ -106,8 +123,38 @@ public static class SalesMappers
             quotation.SentAtUtc,
             quotation.ViewedAtUtc,
             quotation.AcceptedAtUtc,
+            ResolveRejectionReason(quotation),
+            ResolveRejectedAt(quotation),
             quotation.CreatedOnUtc,
             quotation.ModifiedOnUtc);
+
+    private static string? ResolveRejectionReason(Quotation quotation)
+    {
+        if (quotation.Status != QuotationStatuses.Rejected)
+            return null;
+
+        return quotation.Contacts
+            .Where(contact =>
+                string.Equals(contact.Outcome, "Rejected", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(contact.Summary, "Quotation rejected", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(contact => contact.ContactedAtUtc)
+            .Select(contact => contact.Detail ?? contact.Summary)
+            .FirstOrDefault(reason => !string.IsNullOrWhiteSpace(reason));
+    }
+
+    private static DateTimeOffset? ResolveRejectedAt(Quotation quotation)
+    {
+        if (quotation.Status != QuotationStatuses.Rejected)
+            return null;
+
+        return quotation.Contacts
+            .Where(contact =>
+                string.Equals(contact.Outcome, "Rejected", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(contact.Summary, "Quotation rejected", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(contact => contact.ContactedAtUtc)
+            .Select(contact => (DateTimeOffset?)contact.ContactedAtUtc)
+            .FirstOrDefault();
+    }
 
     public static SalesOrderLineDto MapLine(SalesOrderLine line) =>
         new(

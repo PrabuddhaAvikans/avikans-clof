@@ -27,7 +27,7 @@ public sealed class UnitsOfMeasureController : ControllerBase
         return Ok(await _unitOfMeasureService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<UnitOfMeasureDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var unit = await _unitOfMeasureService.GetByIdAsync(id, cancellationToken);
@@ -43,7 +43,7 @@ public sealed class UnitsOfMeasureController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = unit.Id }, unit);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<UnitOfMeasureDto>> Update(
         Guid id,
         [FromBody] UpdateUnitOfMeasureCommand request,
@@ -52,7 +52,7 @@ public sealed class UnitsOfMeasureController : ControllerBase
         return Ok(await _unitOfMeasureService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _unitOfMeasureService.DeleteAsync(id, cancellationToken);

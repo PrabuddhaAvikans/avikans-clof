@@ -20,7 +20,7 @@ public sealed class SeedController : ControllerBase
     }
 
     /// <summary>Returns whether mock data is present and current entity counts.</summary>
-    [HttpGet("status")]
+    [HttpGet(ApiRoutes.Admin.Status)]
     public async Task<ActionResult<SeedStatusDto>> GetStatus(CancellationToken cancellationToken)
     {
         return Ok(await _seeder.GetStatusAsync(cancellationToken));

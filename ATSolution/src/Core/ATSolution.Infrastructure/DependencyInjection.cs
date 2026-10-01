@@ -6,6 +6,7 @@ using ATSolution.Infrastructure.Persistence.Repositories;
 using ATSolution.Infrastructure.Validation;
 using ATSolution.SharedKernel.Constants;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,10 +16,17 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfigurationManager configuration)
     {
-        services.AddDbContext<SqlDbContext>(options =>
-           options.UseSqlServer(
-               configuration.GetConnectionString(ConnectionStringNames.SqlConnectionString),
-               options => options.EnableRetryOnFailure()));
+        services.AddDbContext<SqlDbContext>((sp, options) =>
+        {
+            options.UseSqlServer(
+                configuration.GetConnectionString(ConnectionStringNames.SqlConnectionString),
+                sql => sql.EnableRetryOnFailure());
+
+            foreach (var interceptor in sp.GetServices<ISaveChangesInterceptor>())
+            {
+                options.AddInterceptors(interceptor);
+            }
+        });
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<SqlDbContext>());

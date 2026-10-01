@@ -20,13 +20,13 @@ import {
 } from "@/components/forms";
 import { Button } from "@/components/ui/Button";
 import { useAuthSession } from "@/features/auth/hooks/useAuthSession";
+import { useLogin } from "@/features/auth/hooks/useLogin";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import {
   loginFormSchema,
   loginInitialValues,
   type LoginFormValues,
 } from "@/features/auth/schemas/loginSchema";
-import { authService } from "@/services";
 import {
   DEMO_LOGIN_EMAIL,
   DEMO_LOGIN_PASSWORD,
@@ -73,6 +73,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signInUser } = useAuthSession();
+  const login = useLogin();
   const { appSubtitle } = useSystemSettings();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -170,7 +171,7 @@ export function LoginPage() {
               className="space-y-5"
               onSubmit={async (values, helpers) => {
                 try {
-                  const user = await authService.login({
+                  const user = await login.mutateAsync({
                     email: values.email,
                     password: values.password,
                   });

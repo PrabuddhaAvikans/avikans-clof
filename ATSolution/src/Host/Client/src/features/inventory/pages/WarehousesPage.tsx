@@ -9,20 +9,20 @@ import { PageContent } from "@/components/feedback/PageStates";
 import { DataTable } from "@/components/tables/DataTable";
 import { Button, ConfirmationDialog, IconButton, StatusBadge } from "@/components/ui";
 import { WarehouseFormModal } from "@/features/inventory/components/WarehouseFormModal";
+import { useDeleteWarehouse } from "@/features/inventory/hooks/useWarehousesApi";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import {
   formatWarehouseLabel,
   WAREHOUSES_UPDATED_EVENT,
   type Warehouse,
 } from "@/lib/warehouses";
-import { httpWarehouseService } from "@/services/http/httpWarehouseService";
 
 export function WarehousesPage() {
   const warehouses = useWarehouses();
+  const deleteWarehouse = useDeleteWarehouse();
   const [createOpen, setCreateOpen] = useState(false);
   const [editWarehouse, setEditWarehouse] = useState<Warehouse | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const columns = useMemo<ColumnDef<Warehouse, unknown>[]>(
     () => [
@@ -76,16 +76,13 @@ export function WarehousesPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget?.id) return;
-    setIsDeleting(true);
     try {
-      await httpWarehouseService.delete(deleteTarget.id);
+      await deleteWarehouse.mutateAsync(deleteTarget.id);
       window.dispatchEvent(new Event(WAREHOUSES_UPDATED_EVENT));
       setDeleteTarget(null);
       toast.success(`Deleted ${deleteTarget.name}.`);
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Could not delete warehouse.");
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -152,7 +149,7 @@ export function WarehousesPage() {
         }
         confirmLabel="Delete"
         variant="danger"
-        loading={isDeleting}
+        loading={deleteWarehouse.isPending}
       />
     </PageContainer>
   );

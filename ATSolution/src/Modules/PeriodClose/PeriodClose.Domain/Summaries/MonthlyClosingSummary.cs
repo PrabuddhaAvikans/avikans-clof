@@ -46,4 +46,42 @@ public class MonthlyClosingSummary : Entity<Guid>
             CreatedAt = createdAt,
         };
     }
+
+    public void Apply(
+        decimal salesTotal,
+        decimal purchaseTotal,
+        decimal paymentTotal,
+        decimal expenseTotal,
+        decimal inventoryValue,
+        decimal wipValue,
+        decimal costOfGoodsSold,
+        decimal grossProfit,
+        decimal rawMaterials,
+        decimal labour,
+        decimal production,
+        decimal waste,
+        decimal reusableWaste,
+        decimal overhead,
+        decimal creditNotes,
+        decimal netMargin,
+        string transactionRefsJson)
+    {
+        SalesTotal = salesTotal;
+        PurchaseTotal = purchaseTotal;
+        PaymentTotal = paymentTotal;
+        ExpenseTotal = expenseTotal;
+        InventoryValue = inventoryValue;
+        WipValue = wipValue;
+        CostOfGoodsSold = costOfGoodsSold;
+        GrossProfit = grossProfit;
+        RawMaterials = rawMaterials;
+        Labour = labour;
+        Production = production;
+        Waste = waste;
+        ReusableWaste = reusableWaste;
+        Overhead = overhead;
+        CreditNotes = creditNotes;
+        NetMargin = netMargin;
+        TransactionRefsJson = string.IsNullOrWhiteSpace(transactionRefsJson) ? "{}" : transactionRefsJson;
+    }
 }

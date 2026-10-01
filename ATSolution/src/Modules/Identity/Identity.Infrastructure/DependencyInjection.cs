@@ -1,4 +1,5 @@
-﻿using ATSolution.Application.Abstractions.Persistence;
+﻿using ATSolution.Application.Abstractions.Identity;
+using ATSolution.Application.Abstractions.Persistence;
 using Identity.Application.Abstractions;
 using Identity.Infrastructure.Persistence;
 using Identity.Infrastructure.Persistence.Repositories;
@@ -17,6 +18,8 @@ public static class DependencyInjection
             IEntityConfigurationAssembly,
             IdentityConfigurationAssembly>();
 
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, HttpCurrentUser>();
         services.AddSingleton<IPasswordHasher, Sha256PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IIdentityRepository, IdentityRepository>();

@@ -1,0 +1,26 @@
+namespace Finance.Application.Invoices;
+
+public sealed record InvoiceDto(
+    Guid Id,
+    string InvoiceNumber,
+    Guid CustomerId,
+    string CustomerName,
+    string CustomerEmail,
+    Guid? SalesOrderId,
+    string? SalesOrderNumber,
+    string Status,
+    DateTimeOffset IssueDate,
+    DateTimeOffset DueDate,
+    IReadOnlyList<InvoiceLineItemDto> LineItems,
+    decimal Subtotal,
+    decimal TaxAmount,
+    decimal TotalAmount,
+    decimal AmountPaid,
+    decimal AmountCredited,
+    decimal OutstandingAmount,
+    string Currency,
+    string? Notes,
+    string CreatedBy,
+    string CreatedByName,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);

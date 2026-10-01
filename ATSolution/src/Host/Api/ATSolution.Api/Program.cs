@@ -1,5 +1,6 @@
 using ATSolution.Api.Exceptions;
 using ATSolution.Api.Extensions;
+using ATSolution.Api.OpenApi;
 using ATSolution.Api.Seeding;
 using ATSolution.Application;
 using ATSolution.Infrastructure;
@@ -24,6 +25,7 @@ builder.Services.AddHostedService<CommercialMockDataHostedService>();
 
 builder.Services.AddOpenApi(options =>
 {
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
     options.AddSchemaTransformer((schema, context, cancellationToken) =>
     {
         if (context.JsonTypeInfo.Type == typeof(LoginRequestDto))

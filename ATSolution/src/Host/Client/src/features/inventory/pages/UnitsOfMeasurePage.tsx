@@ -9,6 +9,7 @@ import { PageContent } from "@/components/feedback/PageStates";
 import { DataTable } from "@/components/tables/DataTable";
 import { Button, ConfirmationDialog, IconButton, StatusBadge } from "@/components/ui";
 import { AddUnitOfMeasureModal } from "@/features/inventory/components/AddUnitOfMeasureModal";
+import { useDeleteUnitOfMeasure } from "@/features/inventory/hooks/useUnitsOfMeasureApi";
 import { useUnitsOfMeasure } from "@/hooks/useUnitsOfMeasure";
 import {
   formatUnitLabel,
@@ -16,13 +17,12 @@ import {
   UNITS_OF_MEASURE_UPDATED_EVENT,
   type UnitOfMeasure,
 } from "@/lib/unitsOfMeasure";
-import { httpUnitOfMeasureService } from "@/services/http/httpUnitOfMeasureService";
 
 export function UnitsOfMeasurePage() {
   const units = useUnitsOfMeasure();
+  const deleteUnit = useDeleteUnitOfMeasure();
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UnitOfMeasure | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const columns = useMemo<ColumnDef<UnitOfMeasure, unknown>[]>(
     () => [
@@ -70,16 +70,13 @@ export function UnitsOfMeasurePage() {
 
   const handleDelete = async () => {
     if (!deleteTarget?.id) return;
-    setIsDeleting(true);
     try {
-      await httpUnitOfMeasureService.delete(deleteTarget.id);
+      await deleteUnit.mutateAsync(deleteTarget.id);
       window.dispatchEvent(new Event(UNITS_OF_MEASURE_UPDATED_EVENT));
       setDeleteTarget(null);
       toast.success(`Deleted ${deleteTarget.code}.`);
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Could not delete unit of measure.");
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -140,7 +137,7 @@ export function UnitsOfMeasurePage() {
         }
         confirmLabel="Delete"
         variant="danger"
-        loading={isDeleting}
+        loading={deleteUnit.isPending}
       />
     </PageContainer>
   );

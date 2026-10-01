@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toErrorMessage } from "@/app/store/async/types";
 import { toast } from "@/components/feedback/toast";
 import { ROUTES } from "@/app/config/routes";
 import { PageHeader } from "@/components/feedback/PageHeader";
+import { PageContent } from "@/components/feedback/PageStates";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/Button";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
@@ -12,6 +14,12 @@ import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Stepper, type StepItem } from "@/components/ui/Stepper";
 import { useRoles, useUsers } from "@/features/admin/hooks/useUsers";
+import {
+  useActivateWorkflowVersion,
+  useApplyWorkflowDraft,
+  useCreateWorkflowDraft,
+  useResetWorkflowCatalog,
+} from "@/features/admin/hooks/useWorkflowsApi";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useWorkflowCatalog } from "@/hooks/useWorkflowConfig";
 import {
@@ -24,17 +32,16 @@ import {
 } from "@/lib/panelLayout";
 import {
   COSTING_APPROVAL_WORKFLOW_ID,
-  activateWorkflowVersion,
-  applyWorkflowDraft,
-  createDraftFromVersion,
   createWorkflowStep,
-  getDraftVersion,
-  loadWorkflowCatalog,
-  resetWorkflowCatalog,
+  saveWorkflowCatalog,
 } from "@/lib/workflow";
 import { cn } from "@/lib/utils";
 import type { Role, User } from "@/types/user";
-import type { WorkflowStepDefinition, WorkflowVersion } from "@/types/workflow";
+import type {
+  WorkflowCatalog,
+  WorkflowStepDefinition,
+  WorkflowVersion,
+} from "@/types/workflow";
 
 function versionBadge(version: WorkflowVersion): {
   variant: "success" | "warning" | "neutral";
@@ -54,29 +61,105 @@ function previewSteps(version: WorkflowVersion): StepItem[] {
   }));
 }
 
+function resolveStep(
+  step: WorkflowStepDefinition,
+  roles: Role[],
+  users: User[],
+): WorkflowStepDefinition {
+  const roleNameKey = (step.approvalRoleName || step.stepName || "").trim().toLowerCase();
+  const role =
+    roles.find((item) => item.id === step.approvalRoleId) ??
+    (roleNameKey
+      ? roles.find((item) => item.name.trim().toLowerCase() === roleNameKey)
+      : undefined);
+
+  const roleId = role?.id ?? step.approvalRoleId ?? "";
+  const roleName = role?.name ?? step.approvalRoleName ?? "";
+
+  const assigneeNameKey = (step.assigneeName || "").trim().toLowerCase();
+  const assignee =
+    users.find((item) => item.id === step.assigneeUserId) ??
+    (assigneeNameKey
+      ? users.find(
+          (item) =>
+            item.displayName.trim().toLowerCase() === assigneeNameKey &&
+            (!roleId || item.roleId === roleId),
+        )
+      : undefined);
+
+  return {
+    ...step,
+    approvalRoleId: roleId,
+    approvalRoleName: roleName,
+    stepName: step.stepName?.trim() || roleName,
+    assigneeUserId: assignee?.id ?? step.assigneeUserId ?? "",
+    assigneeName: assignee?.displayName ?? step.assigneeName ?? "",
+  };
+}
+
+function stepsNeedResolve(
+  steps: WorkflowStepDefinition[],
+  roles: Role[],
+  users: User[],
+): boolean {
+  return steps.some((step) => {
+    const resolved = resolveStep(step, roles, users);
+    return (
+      resolved.approvalRoleId !== (step.approvalRoleId ?? "") ||
+      resolved.approvalRoleName !== (step.approvalRoleName ?? "") ||
+      (resolved.assigneeUserId ?? "") !== (step.assigneeUserId ?? "") ||
+      (resolved.assigneeName ?? "") !== (step.assigneeName ?? "")
+    );
+  });
+}
+
+function roleSelectOptions(roles: Role[], step: WorkflowStepDefinition) {
+  const options = roles.map((role) => ({ value: role.id, label: role.name }));
+  if (
+    step.approvalRoleId &&
+    step.approvalRoleName &&
+    !options.some((option) => option.value === step.approvalRoleId)
+  ) {
+    options.push({ value: step.approvalRoleId, label: step.approvalRoleName });
+  }
+  return options;
+}
+
 function assigneeOptionsForRole(roleId: string, users: User[], step: WorkflowStepDefinition) {
   const options = users
-    .filter((user) => user.roleId === roleId)
+    .filter((user) => !roleId || user.roleId === roleId)
     .map((user) => ({
       value: user.id,
       label: `${user.displayName} · ${user.jobTitle || user.roleName}`,
     }));
   if (step.assigneeUserId && !options.some((option) => option.value === step.assigneeUserId)) {
     const selected = users.find((user) => user.id === step.assigneeUserId);
-    if (selected) {
-      options.push({
-        value: selected.id,
-        label: `${selected.displayName} · ${selected.jobTitle || selected.roleName}`,
-      });
-    }
+    options.push({
+      value: step.assigneeUserId,
+      label: selected
+        ? `${selected.displayName} · ${selected.jobTitle || selected.roleName}`
+        : step.assigneeName || step.assigneeUserId,
+    });
   }
   return options;
+}
+
+function draftIn(catalog: WorkflowCatalog, definitionId?: string): WorkflowVersion | null {
+  return (
+    catalog.versions.find(
+      (item) => item.status === "draft" && item.workflowDefinitionId === definitionId,
+    ) ?? null
+  );
 }
 
 export function WorkflowsPage() {
   const { hasPermission } = usePermissions();
   const canEdit = hasPermission("settings:edit");
-  const { catalog, reload } = useWorkflowCatalog();
+  const { catalog, isLoading, isError, error, refetch } = useWorkflowCatalog();
+  const createDraft = useCreateWorkflowDraft();
+  const applyDraft = useApplyWorkflowDraft();
+  const activateVersion = useActivateWorkflowVersion();
+  const resetCatalog = useResetWorkflowCatalog();
   const { data: rolesData } = useRoles({ page: 1, pageSize: 100, status: "active" });
   const { data: usersData } = useUsers({ page: 1, pageSize: 100, status: "active" });
 
@@ -84,52 +167,68 @@ export function WorkflowsPage() {
   const users = usersData?.items ?? [];
   const definition =
     catalog.definitions.find((item) => item.id === COSTING_APPROVAL_WORKFLOW_ID) ??
+    catalog.definitions.find((item) => item.module === "costing") ??
     catalog.definitions[0];
   const versions = [...catalog.versions]
     .filter((item) => item.workflowDefinitionId === definition?.id)
     .sort((left, right) => right.versionNumber - left.versionNumber);
 
-  const [selectedId, setSelectedId] = useState<string>(
-    () => getDraftVersion()?.id ?? versions.find((item) => item.isDefault)?.id ?? versions[0]?.id ?? "",
-  );
-  const [draft, setDraft] = useState<WorkflowVersion | null>(getDraftVersion);
+  const [selectedId, setSelectedId] = useState("");
+  const [draft, setDraft] = useState<WorkflowVersion | null>(null);
   const [applyOpen, setApplyOpen] = useState(false);
   const [activateOpen, setActivateOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const busy =
+    createDraft.isPending ||
+    applyDraft.isPending ||
+    activateVersion.isPending ||
+    resetCatalog.isPending;
 
+  const activeId = versions.some((item) => item.id === selectedId)
+    ? selectedId
+    : (versions.find((item) => item.status === "draft")?.id ??
+      versions.find((item) => item.isDefault)?.id ??
+      versions[0]?.id ??
+      "");
   const selected =
-    (selectedId === draft?.id ? draft : versions.find((item) => item.id === selectedId)) ??
-    draft ??
+    (draft && draft.id === activeId ? draft : versions.find((item) => item.id === activeId)) ??
     versions[0];
   const isEditing = selected?.status === "draft";
   const canActivate = Boolean(selected && !isEditing && !selected.isDefault);
+  const editable = isEditing ? selected : null;
 
-  const roleOptions = useMemo(
-    () => roles.map((role: Role) => ({ value: role.id, label: role.name })),
-    [roles],
-  );
+  const displaySteps = useMemo(() => {
+    if (!selected) return [];
+    return selected.steps.map((step) => resolveStep(step, roles, users));
+  }, [selected, roles, users]);
 
-  const refreshLocal = (nextSelectedId?: string) => {
-    const next = loadWorkflowCatalog();
-    const nextDraft =
-      next.versions.find(
-        (item) =>
-          item.status === "draft" && item.workflowDefinitionId === COSTING_APPROVAL_WORKFLOW_ID,
-      ) ?? null;
-    setDraft(nextDraft ? structuredClone(nextDraft) : null);
+  useEffect(() => {
+    if (!draft || roles.length === 0) return;
+    if (!stepsNeedResolve(draft.steps, roles, users)) return;
+    setDraft({
+      ...draft,
+      steps: draft.steps.map((step) => resolveStep(step, roles, users)),
+    });
+  }, [draft, roles, users]);
+
+  const rememberCatalog = (next: WorkflowCatalog, nextSelectedId?: string) => {
+    saveWorkflowCatalog(next);
+    const nextDraft = draftIn(next, definition?.id);
+    setDraft(nextDraft && nextDraft.id === nextSelectedId ? structuredClone(nextDraft) : null);
     if (nextSelectedId) setSelectedId(nextSelectedId);
-    reload();
   };
 
   const updateDraft = (patch: Partial<WorkflowVersion>) => {
-    if (!draft || !isEditing) return;
-    setDraft({ ...draft, ...patch });
+    if (!editable) return;
+    const next = { ...editable, ...patch, status: "draft" as const, isDefault: false };
+    setDraft(next);
+    setSelectedId(next.id);
   };
 
   const updateStep = (stepId: string, patch: Partial<WorkflowStepDefinition>) => {
-    if (!draft) return;
+    if (!editable) return;
     updateDraft({
-      steps: draft.steps.map((step) => (step.id === stepId ? { ...step, ...patch } : step)),
+      steps: editable.steps.map((step) => (step.id === stepId ? { ...step, ...patch } : step)),
     });
   };
 
@@ -155,65 +254,106 @@ export function WorkflowsPage() {
   };
 
   const moveStep = (index: number, direction: -1 | 1) => {
-    if (!draft) return;
+    if (!editable) return;
     const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= draft.steps.length) return;
-    const steps = [...draft.steps];
+    if (nextIndex < 0 || nextIndex >= editable.steps.length) return;
+    const steps = [...editable.steps];
     const [item] = steps.splice(index, 1);
     steps.splice(nextIndex, 0, item);
     updateDraft({ steps: steps.map((step, stepIndex) => ({ ...step, stepOrder: stepIndex + 1 })) });
   };
 
   const handleActivate = () => {
-    const version = versions.find((item) => item.id === selectedId) ?? selected;
+    const version = versions.find((item) => item.id === activeId) ?? selected;
     if (!version || version.status === "draft") return;
-    try {
-      activateWorkflowVersion(version.id);
-      setActivateOpen(false);
-      toast.success(`Activated v${version.versionNumber} for new orders. Running orders are unchanged.`);
-      refreshLocal(version.id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not activate this flow");
-    }
+    setActivateOpen(false);
+    void activateVersion
+      .mutateAsync(version.id)
+      .then((next) => {
+        rememberCatalog(next, version.id);
+        toast.success(`Activated v${version.versionNumber} for new orders. Running orders are unchanged.`);
+      })
+      .catch((activateError: unknown) => {
+        toast.error(toErrorMessage(activateError) || "Could not activate this flow");
+      });
   };
 
   const handleEditFlow = () => {
     if (selected?.status === "draft") {
-      setDraft(structuredClone(selected));
+      setDraft({
+        ...structuredClone(selected),
+        steps: selected.steps.map((step) => resolveStep(step, roles, users)),
+      });
       setSelectedId(selected.id);
       toast.success("Edit the steps, then Apply.");
       return;
     }
     const sourceId = selected?.id ?? versions.find((item) => item.isDefault)?.id;
     if (!sourceId) return;
-    try {
-      const created = createDraftFromVersion(sourceId);
-      setDraft(created);
-      setSelectedId(created.id);
-      toast.success("Edit the flow, then Apply. Running orders keep their current version.");
-      reload();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not start editing");
-    }
+    void createDraft
+      .mutateAsync(sourceId)
+      .then((next) => {
+        const created = draftIn(next, definition?.id);
+        if (!created) {
+          toast.error("Could not start editing");
+          return;
+        }
+        saveWorkflowCatalog(next);
+        setDraft({
+          ...structuredClone(created),
+          steps: created.steps.map((step) => resolveStep(step, roles, users)),
+        });
+        setSelectedId(created.id);
+        toast.success("Edit the flow, then Apply. Running orders keep their current version.");
+      })
+      .catch((editError: unknown) => {
+        toast.error(toErrorMessage(editError) || "Could not start editing");
+      });
   };
 
   const handleApply = () => {
-    if (!draft) return;
-    try {
-      applyWorkflowDraft(draft);
-      setApplyOpen(false);
-      toast.success(`Applied v${draft.versionNumber} to new orders. In-progress orders are unchanged.`);
-      refreshLocal(draft.id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not apply the flow");
+    if (!editable) return;
+    const steps = editable.steps.map((step) => resolveStep(step, roles, users));
+    if (steps.length === 0) {
+      toast.error("A workflow version needs at least one approval step.");
+      return;
     }
+    if (steps.some((item) => !item.approvalRoleId || !item.approvalRoleName.trim())) {
+      toast.error("Each step needs a role from role management.");
+      return;
+    }
+    const versionNumber = editable.versionNumber;
+    const versionId = editable.id;
+    setApplyOpen(false);
+    void applyDraft
+      .mutateAsync({ id: versionId, steps })
+      .then((next) => {
+        rememberCatalog(next, versionId);
+        toast.success(`Applied v${versionNumber} to new orders. In-progress orders are unchanged.`);
+      })
+      .catch((applyError: unknown) => {
+        toast.error(toErrorMessage(applyError) || "Could not apply the flow");
+      });
   };
 
   const handleReset = () => {
-    resetWorkflowCatalog();
     setResetOpen(false);
-    toast.success("Restored the initial costing approval flow.");
-    refreshLocal();
+    void resetCatalog
+      .mutateAsync()
+      .then((next) => {
+        const definitionId =
+          next.definitions.find((item) => item.module === "costing")?.id ?? next.definitions[0]?.id;
+        const active =
+          next.versions.find((item) => item.workflowDefinitionId === definitionId && item.isDefault) ??
+          next.versions[0];
+        saveWorkflowCatalog(next);
+        setDraft(null);
+        setSelectedId(active?.id ?? "");
+        toast.success("Restored the initial costing approval flow.");
+      })
+      .catch((resetError: unknown) => {
+        toast.error(toErrorMessage(resetError) || "Could not restore the flow");
+      });
   };
 
   return (
@@ -231,6 +371,7 @@ export function WorkflowsPage() {
               <Button
                 variant="outline"
                 leftIcon={<RotateCcw className="h-4 w-4" />}
+                disabled={busy}
                 onClick={() => setResetOpen(true)}
               >
                 Reset defaults
@@ -238,6 +379,7 @@ export function WorkflowsPage() {
               <Button
                 variant="outline"
                 leftIcon={<Pencil className="h-4 w-4" />}
+                disabled={busy}
                 onClick={handleEditFlow}
               >
                 Edit flow
@@ -245,14 +387,14 @@ export function WorkflowsPage() {
               <Button
                 variant="outline"
                 leftIcon={<Check className="h-4 w-4" />}
-                disabled={!canActivate}
+                disabled={busy || !canActivate}
                 onClick={() => setActivateOpen(true)}
               >
                 Activate
               </Button>
               <Button
                 leftIcon={<Check className="h-4 w-4" />}
-                disabled={!isEditing}
+                disabled={busy || !isEditing}
                 onClick={() => setApplyOpen(true)}
               >
                 Apply
@@ -262,6 +404,14 @@ export function WorkflowsPage() {
         }
       />
 
+      <PageContent
+        isLoading={isLoading}
+        error={isError ? (error?.message ?? "Could not load workflows.") : null}
+        onRetry={refetch}
+        isEmpty={!isLoading && versions.length === 0}
+        emptyTitle="No workflow versions"
+        emptyDescription="Reset defaults to restore the costing approval flow."
+      >
       <div className={workspaceGrid}>
         <div className={cn(workspaceGridCol, "lg:col-span-3")}>
           <div className={workspaceListPanelShell}>
@@ -290,8 +440,11 @@ export function WorkflowsPage() {
                           type="button"
                           onClick={() => {
                             setSelectedId(version.id);
-                            if (version.status === "draft") {
-                              setDraft(structuredClone(version));
+                            if (version.status === "draft" && draft?.id !== version.id) {
+                              setDraft({
+                                ...structuredClone(version),
+                                steps: version.steps.map((step) => resolveStep(step, roles, users)),
+                              });
                             }
                           }}
                           className="min-w-0 flex-1 text-left"
@@ -311,6 +464,7 @@ export function WorkflowsPage() {
                           <Button
                             size="sm"
                             variant="outline"
+                            disabled={busy}
                             onClick={() => {
                               setSelectedId(version.id);
                               setActivateOpen(true);
@@ -378,7 +532,7 @@ export function WorkflowsPage() {
                 </div>
 
                 <ol className="space-y-2">
-                  {selected.steps.map((step, index) => (
+                  {displaySteps.map((step, index) => (
                     <li key={step.id} className="rounded-md border border-border bg-muted/20 p-3">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -399,7 +553,7 @@ export function WorkflowsPage() {
                               variant="ghost"
                               icon={<ArrowDown className="h-4 w-4" />}
                               aria-label="Move down"
-                              disabled={index === selected.steps.length - 1}
+                              disabled={index === displaySteps.length - 1}
                               onClick={() => moveStep(index, 1)}
                             />
                             <IconButton
@@ -407,7 +561,7 @@ export function WorkflowsPage() {
                               variant="ghost"
                               icon={<Trash2 className="h-4 w-4" />}
                               aria-label="Remove step"
-                              disabled={selected.steps.length <= 1}
+                              disabled={displaySteps.length <= 1}
                               onClick={() =>
                                 updateDraft({
                                   steps: selected.steps.filter((item) => item.id !== step.id),
@@ -422,7 +576,7 @@ export function WorkflowsPage() {
                           label="Role"
                           required
                           value={step.approvalRoleId}
-                          options={roleOptions}
+                          options={roleSelectOptions(roles, step)}
                           disabled={!canEdit || !isEditing}
                           placeholder="Select a role"
                           hint="From Administration → Roles"
@@ -455,11 +609,17 @@ export function WorkflowsPage() {
               </p>
             </div>
             <div className={workspacePanelBody}>
-              {selected ? <Stepper steps={previewSteps(selected)} orientation="vertical" /> : null}
+              {selected ? (
+                <Stepper
+                  steps={previewSteps({ ...selected, steps: displaySteps })}
+                  orientation="vertical"
+                />
+              ) : null}
             </div>
           </div>
         </div>
       </div>
+      </PageContent>
 
       <ConfirmationDialog
         open={applyOpen}

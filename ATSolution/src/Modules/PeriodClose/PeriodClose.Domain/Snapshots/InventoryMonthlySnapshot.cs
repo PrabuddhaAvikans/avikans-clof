@@ -42,4 +42,48 @@ public class InventoryMonthlySnapshot : Entity<Guid>
             RecordedAt = recordedAt,
         };
     }
+
+    public static InventoryMonthlySnapshot Capture(
+        Guid monthlyPeriodId,
+        int year,
+        int month,
+        string inventoryItemId,
+        string sku,
+        string name,
+        string unit,
+        decimal openingQty,
+        decimal openingValue,
+        decimal receivedQty,
+        decimal receivedValue,
+        decimal consumedQty,
+        decimal consumedValue,
+        decimal adjustmentQty,
+        decimal adjustmentValue,
+        decimal closingQty,
+        decimal closingValue,
+        DateTimeOffset recordedAt)
+    {
+        return new InventoryMonthlySnapshot
+        {
+            Id = Guid.NewGuid(),
+            MonthlyPeriodId = monthlyPeriodId,
+            Year = year,
+            Month = month,
+            InventoryItemId = inventoryItemId,
+            Sku = sku,
+            Name = name,
+            Unit = unit,
+            OpeningQty = openingQty,
+            OpeningValue = openingValue,
+            ReceivedQty = receivedQty,
+            ReceivedValue = receivedValue,
+            ConsumedQty = consumedQty,
+            ConsumedValue = consumedValue,
+            AdjustmentQty = adjustmentQty,
+            AdjustmentValue = adjustmentValue,
+            ClosingQty = closingQty,
+            ClosingValue = closingValue,
+            RecordedAt = recordedAt,
+        };
+    }
 }

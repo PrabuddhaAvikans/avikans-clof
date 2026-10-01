@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   PERMISSION_MODULES,
   PERMISSIONS_BY_MODULE,
@@ -11,40 +11,18 @@ import { FilterPanel } from "@/components/ui/FilterPanel";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PERMISSION_MODULE_LABELS } from "@/features/admin/lib/permissionLabels";
+import { usePermissionCatalog } from "@/features/admin/hooks/usePermissionsCatalog";
 import { useRoles } from "@/features/admin/hooks/useUsers";
-import {
-  catalogToPermissionsByModule,
-  type PermissionCatalogDto,
-} from "@/services/http/httpPermissionService";
-import { permissionService } from "@/services";
+import { catalogToPermissionsByModule } from "@/services/mappers/permissionMappers";
 
 export function PermissionsPage() {
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [catalog, setCatalog] = useState<PermissionCatalogDto | null>(null);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const { data: catalog, error: catalogQueryError } = usePermissionCatalog();
+  const catalogError = catalogQueryError
+    ? catalogQueryError.message
+    : null;
   const { data: roles } = useRoles({ page: 1, pageSize: 50, status: "active" });
-
-  useEffect(() => {
-    let cancelled = false;
-    permissionService
-      .getCatalog()
-      .then((next) => {
-        if (!cancelled) {
-          setCatalog(next);
-          setCatalogError(null);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setCatalogError(error instanceof Error ? error.message : "Failed to load permissions catalog.");
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const permissionsByModule = useMemo(() => {
     if (catalog) return catalogToPermissionsByModule(catalog);
     return PERMISSIONS_BY_MODULE;

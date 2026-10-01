@@ -14,11 +14,8 @@ public sealed class AuditModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAutoMapper(
-            _ => { },
-            typeof(AuditMappingProfile).Assembly);
+        services.AddAutoMapper(_ => { },typeof(AuditMappingProfile).Assembly);
 
-        services.AddAuditApplication()
-            .AddAuditInfrastructure();
+        services.AddAuditApplication().AddAuditInfrastructure();
     }
 }

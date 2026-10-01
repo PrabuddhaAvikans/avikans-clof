@@ -22,16 +22,39 @@ public sealed class CommercialMockDataHostedService : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        using var scope = _scopeFactory.CreateScope();
+        var seeder = scope.ServiceProvider.GetRequiredService<ICommercialDataSeeder>();
+
         if (!_configuration.GetValue("Seeding:SeedMockData", false))
         {
-            _logger.LogInformation("Commercial mock seeding skipped (Seeding:SeedMockData is false).");
+            try
+            {
+                var auditSeeded = await seeder.EnsureAuditLogsAsync(cancellationToken);
+                var workflowsSeeded = await seeder.EnsureWorkflowCatalogAsync(cancellationToken);
+                if (auditSeeded)
+                {
+                    _logger.LogInformation("Audit logs were seeded because the table was empty.");
+                }
+
+                if (workflowsSeeded)
+                {
+                    _logger.LogInformation("Costing approval workflow was seeded from mock roles and users.");
+                }
+
+                if (!auditSeeded && !workflowsSeeded)
+                {
+                    _logger.LogInformation("Commercial mock seeding skipped (Seeding:SeedMockData is false).");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Audit log ensure-on-startup failed.");
+            }
+
             return;
         }
 
         var force = _configuration.GetValue("Seeding:ForceReseed", false);
-
-        using var scope = _scopeFactory.CreateScope();
-        var seeder = scope.ServiceProvider.GetRequiredService<ICommercialDataSeeder>();
 
         try
         {

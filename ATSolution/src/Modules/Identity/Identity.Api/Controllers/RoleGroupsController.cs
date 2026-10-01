@@ -29,7 +29,7 @@ public sealed class RoleGroupsController : ControllerBase
         return Ok(await _roleGroupService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<RoleGroupDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var group = await _roleGroupService.GetByIdAsync(id, cancellationToken);
@@ -52,7 +52,7 @@ public sealed class RoleGroupsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = group.Id }, group);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<RoleGroupDto>> Update(
         Guid id,
         [FromBody] UpdateRoleGroupRequestDto request,
@@ -70,7 +70,7 @@ public sealed class RoleGroupsController : ControllerBase
         return Ok(group);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _roleGroupService.DeleteAsync(id, cancellationToken);

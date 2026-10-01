@@ -22,13 +22,13 @@ public sealed class ProductionTrackingController : ControllerBase
         _productionTrackingService = productionTrackingService;
     }
 
-    [HttpGet("snapshot")]
+    [HttpGet(ApiRoutes.Manufacturing.Snapshot)]
     public async Task<ActionResult<ProductionTrackingSnapshotDto>> GetSnapshot(CancellationToken cancellationToken)
     {
         return Ok(await _productionTrackingService.GetSnapshotAsync(cancellationToken));
     }
 
-    [HttpGet("jobs")]
+    [HttpGet(ApiRoutes.Manufacturing.TrackingJobs)]
     public async Task<ActionResult<PaginatedResponse<ProductionJobDto>>> ListJobs(
         [FromQuery] ProductionTrackingFilters query,
         CancellationToken cancellationToken)
@@ -36,14 +36,14 @@ public sealed class ProductionTrackingController : ControllerBase
         return Ok(await _productionTrackingService.ListJobsAsync(query, cancellationToken));
     }
 
-    [HttpGet("jobs/{id:guid}")]
+    [HttpGet(ApiRoutes.Manufacturing.TrackingJobById)]
     public async Task<ActionResult<ProductionJobDto>> GetJobById(Guid id, CancellationToken cancellationToken)
     {
         var job = await _productionTrackingService.GetJobByIdAsync(id, cancellationToken);
         return job is null ? NotFound() : Ok(job);
     }
 
-    [HttpPost("start")]
+    [HttpPost(ApiRoutes.Manufacturing.TrackingStart)]
     public async Task<ActionResult<ApiResponse>> StartProduction(
         [FromBody] StartProductionRequestDto request,
         CancellationToken cancellationToken)
@@ -52,7 +52,7 @@ public sealed class ProductionTrackingController : ControllerBase
         return Ok(ApiResponse.Succeeded("Production started."));
     }
 
-    [HttpPost("jobs/{id:guid}/update-stage")]
+    [HttpPost(ApiRoutes.Manufacturing.UpdateStage)]
     public async Task<ActionResult<ProductionJobDto>> UpdateStage(
         Guid id,
         [FromBody] UpdateStageRequestDto? request,
@@ -61,7 +61,7 @@ public sealed class ProductionTrackingController : ControllerBase
         return Ok(await _productionTrackingService.UpdateStageAsync(id, request?.Comment, ResolveActor(), cancellationToken));
     }
 
-    [HttpPost("jobs/{id:guid}/hold")]
+    [HttpPost(ApiRoutes.Manufacturing.TrackingHold)]
     public async Task<ActionResult<ProductionJobDto>> Hold(
         Guid id,
         [FromBody] HoldProductionRequestDto? request,
@@ -70,7 +70,7 @@ public sealed class ProductionTrackingController : ControllerBase
         return Ok(await _productionTrackingService.HoldJobAsync(id, request?.Reason, ResolveActor(), cancellationToken));
     }
 
-    [HttpPost("jobs/{id:guid}/release-to-qc")]
+    [HttpPost(ApiRoutes.Manufacturing.ReleaseToQc)]
     public async Task<ActionResult<ProductionJobDto>> ReleaseToQc(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _productionTrackingService.ReleaseToQcAsync(id, ResolveActor(), cancellationToken));

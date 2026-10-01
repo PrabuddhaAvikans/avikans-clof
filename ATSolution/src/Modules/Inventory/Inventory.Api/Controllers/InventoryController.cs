@@ -28,20 +28,20 @@ public sealed class InventoryController : ControllerBase
         return Ok(await _inventoryService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("low-stock")]
+    [HttpGet(ApiRoutes.Inventory.LowStock)]
     public async Task<ActionResult<IReadOnlyList<InventoryItemDto>>> GetLowStock(CancellationToken cancellationToken)
     {
         return Ok(await _inventoryService.GetLowStockAsync(cancellationToken));
     }
 
-    [HttpGet("by-sku/{sku}")]
+    [HttpGet(ApiRoutes.Inventory.BySku)]
     public async Task<ActionResult<InventoryItemDto>> FindBySku(string sku, CancellationToken cancellationToken)
     {
         var item = await _inventoryService.FindBySkuAsync(sku, cancellationToken);
         return item is null ? NotFound() : Ok(item);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<InventoryItemDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var item = await _inventoryService.GetByIdAsync(id, cancellationToken);
@@ -57,7 +57,7 @@ public sealed class InventoryController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<InventoryItemDto>> Update(
         Guid id,
         [FromBody] UpdateInventoryItemRequestDto request,
@@ -94,14 +94,14 @@ public sealed class InventoryController : ControllerBase
         return Ok(item);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _inventoryService.DeleteAsync(id, cancellationToken);
         return Ok(ApiResponse.Succeeded("Inventory item deleted successfully."));
     }
 
-    [HttpGet("{id:guid}/price-history")]
+    [HttpGet(ApiRoutes.Inventory.PriceHistory)]
     public async Task<ActionResult<IReadOnlyList<InventoryPriceHistoryDto>>> GetPriceHistory(
         Guid id,
         CancellationToken cancellationToken)
@@ -109,7 +109,7 @@ public sealed class InventoryController : ControllerBase
         return Ok(await _inventoryService.GetPriceHistoryAsync(id, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/movements")]
+    [HttpPost(ApiRoutes.Inventory.ItemMovements)]
     public async Task<ActionResult<StockMovementDto>> RecordMovement(
         Guid id,
         [FromBody] RecordMovementRequestDto request,

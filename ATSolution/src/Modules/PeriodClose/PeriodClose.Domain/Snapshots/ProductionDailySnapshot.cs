@@ -40,4 +40,48 @@ public class ProductionDailySnapshot : Entity<Guid>
             RecordedAt = recordedAt,
         };
     }
+
+    public static ProductionDailySnapshot Capture(
+        Guid businessPeriodId,
+        string businessDate,
+        string productionOrderId,
+        string productionOrderNumber,
+        string operationId,
+        string operationName,
+        string? workerId,
+        string? workerName,
+        decimal totalQty,
+        decimal completedQty,
+        decimal partialQty,
+        decimal progressPercentage,
+        int workedMinutes,
+        decimal producedQty,
+        decimal rejectedQty,
+        string? jobStatus,
+        string? taskStatus,
+        DateTimeOffset recordedAt)
+    {
+        return new ProductionDailySnapshot
+        {
+            Id = Guid.NewGuid(),
+            BusinessPeriodId = businessPeriodId,
+            BusinessDate = businessDate,
+            ProductionOrderId = productionOrderId,
+            ProductionOrderNumber = productionOrderNumber,
+            OperationId = operationId,
+            OperationName = operationName,
+            WorkerId = workerId,
+            WorkerName = workerName,
+            TotalQty = totalQty,
+            CompletedQty = completedQty,
+            PartialQty = partialQty,
+            ProgressPercentage = progressPercentage,
+            WorkedMinutes = workedMinutes,
+            ProducedQty = producedQty,
+            RejectedQty = rejectedQty,
+            JobStatus = jobStatus,
+            TaskStatus = taskStatus,
+            RecordedAt = recordedAt,
+        };
+    }
 }

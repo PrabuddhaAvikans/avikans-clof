@@ -17,6 +17,8 @@ public sealed class SalesMappingProfile : Profile
             .ForMember(d => d.BillingAddress, o => o.Ignore())
             .ForMember(d => d.ShippingAddress, o => o.Ignore())
             .ForMember(d => d.TermsAndConditions, o => o.MapFrom(s => s.Terms))
+            .ForMember(d => d.RejectionReason, o => o.Ignore())
+            .ForMember(d => d.RejectedAt, o => o.Ignore())
             .ForMember(d => d.CreatedAt, o => o.MapFrom(s => s.CreatedOnUtc))
             .ForMember(d => d.UpdatedAt, o => o.MapFrom(s => s.ModifiedOnUtc));
     }

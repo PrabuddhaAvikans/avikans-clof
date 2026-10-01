@@ -1,0 +1,26 @@
+namespace PeriodClose.Application.PeriodClose;
+
+public sealed record MonthlyClosingSummaryDto(
+    Guid Id,
+    Guid MonthlyPeriodId,
+    int Year,
+    int Month,
+    string BranchId,
+    decimal SalesTotal,
+    decimal PurchaseTotal,
+    decimal PaymentTotal,
+    decimal ExpenseTotal,
+    decimal InventoryValue,
+    decimal WipValue,
+    decimal CostOfGoodsSold,
+    decimal GrossProfit,
+    decimal RawMaterials,
+    decimal Labour,
+    decimal Production,
+    decimal Waste,
+    decimal ReusableWaste,
+    decimal Overhead,
+    decimal CreditNotes,
+    decimal NetMargin,
+    MonthlyTransactionRefsDto TransactionRefs,
+    DateTimeOffset CreatedAt);

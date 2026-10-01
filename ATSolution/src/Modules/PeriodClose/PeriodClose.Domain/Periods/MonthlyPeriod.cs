@@ -60,6 +60,14 @@ public class MonthlyPeriod : Entity<Guid>
         ClosedByName = null;
     }
 
+    /// <summary>Puts a failed close back to the writable status it had before closing started.</summary>
+    public void RestoreWritable(string previousStatus)
+    {
+        Status = previousStatus == PeriodStatuses.Reopened
+            ? PeriodStatuses.Reopened
+            : PeriodStatuses.Open;
+    }
+
     public void Close(string closedBy, string closedByName, DateTimeOffset closedAt)
     {
         Status = PeriodStatuses.Closed;

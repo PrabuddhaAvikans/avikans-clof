@@ -27,7 +27,7 @@ public sealed class WarehousesController : ControllerBase
         return Ok(await _warehouseService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<WarehouseDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var warehouse = await _warehouseService.GetByIdAsync(id, cancellationToken);
@@ -43,7 +43,7 @@ public sealed class WarehousesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = warehouse.Id }, warehouse);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<WarehouseDto>> Update(
         Guid id,
         [FromBody] UpdateWarehouseCommand request,
@@ -52,7 +52,7 @@ public sealed class WarehousesController : ControllerBase
         return Ok(await _warehouseService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _warehouseService.DeleteAsync(id, cancellationToken);

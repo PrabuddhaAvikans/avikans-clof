@@ -28,7 +28,7 @@ public sealed class RolesController : ControllerBase
         return Ok(await _roleService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<RoleDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var role = await _roleService.GetByIdAsync(id, cancellationToken);
@@ -51,7 +51,7 @@ public sealed class RolesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<RoleDto>> Update(
         Guid id,
         [FromBody] UpdateRoleRequestDto request,
@@ -69,7 +69,7 @@ public sealed class RolesController : ControllerBase
         return Ok(role);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _roleService.DeleteAsync(id, cancellationToken);

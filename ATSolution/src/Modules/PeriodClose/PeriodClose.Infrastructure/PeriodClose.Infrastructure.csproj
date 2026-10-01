@@ -3,6 +3,11 @@
   <ItemGroup>
     <ProjectReference Include="..\PeriodClose.Application\PeriodClose.Application.csproj" />
     <ProjectReference Include="..\PeriodClose.Domain\PeriodClose.Domain.csproj" />
+    <ProjectReference Include="..\..\Manufacturing\Manufacturing.Domain\Manufacturing.Domain.csproj" />
+    <ProjectReference Include="..\..\Sales\Sales.Domain\Sales.Domain.csproj" />
+    <ProjectReference Include="..\..\Finance\Finance.Domain\Finance.Domain.csproj" />
+    <ProjectReference Include="..\..\Delivery\Delivery.Domain\Delivery.Domain.csproj" />
+    <ProjectReference Include="..\..\Inventory\Inventory.Domain\Inventory.Domain.csproj" />
     <ProjectReference Include="..\..\..\Core\ATSolution.Application\ATSolution.Application.csproj" />
     <ProjectReference Include="..\..\..\Core\ATSolution.Infrastructure\ATSolution.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\SharedKernel\ATSolution.SharedKernel\ATSolution.SharedKernel.csproj" />

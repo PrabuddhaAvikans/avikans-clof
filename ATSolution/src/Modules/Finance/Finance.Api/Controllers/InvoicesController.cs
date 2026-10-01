@@ -28,7 +28,7 @@ public sealed class InvoicesController : ControllerBase
         return Ok(await _invoiceService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<InvoiceDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var invoice = await _invoiceService.GetByIdAsync(id, cancellationToken);
@@ -44,7 +44,7 @@ public sealed class InvoicesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = invoice.Id }, invoice);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<InvoiceDto>> Update(
         Guid id,
         [FromBody] UpdateInvoiceCommand request,
@@ -53,19 +53,19 @@ public sealed class InvoicesController : ControllerBase
         return Ok(await _invoiceService.UpdateAsync(request with { Id = id }, cancellationToken));
     }
 
-    [HttpPost("{id:guid}/issue")]
+    [HttpPost(ApiRoutes.Finance.Issue)]
     public async Task<ActionResult<InvoiceDto>> Issue(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _invoiceService.IssueAsync(new IssueInvoiceCommand(id), cancellationToken));
     }
 
-    [HttpPost("{id:guid}/void")]
+    [HttpPost(ApiRoutes.Finance.Void)]
     public async Task<ActionResult<InvoiceDto>> Void(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _invoiceService.VoidAsync(new VoidInvoiceCommand(id), cancellationToken));
     }
 
-    [HttpPost("{id:guid}/payments")]
+    [HttpPost(ApiRoutes.Finance.Payments)]
     public async Task<ActionResult<InvoiceDto>> RecordPayment(
         Guid id,
         [FromBody] RecordPaymentRequest request,

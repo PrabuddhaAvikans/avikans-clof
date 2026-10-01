@@ -120,7 +120,7 @@ public sealed class DashboardService : IDashboardService
         var emptyNotifications = Array.Empty<DashboardNotificationPreviewDto>();
 
         return new DashboardSummaryDto(
-            GeneratedAt: now.ToString("O"),
+            GeneratedAt: now,
             PeriodLabel: now.ToString("MMMM yyyy"),
             TotalCustomers: totalCustomers,
             ActiveQuotations: activeQuotations,

@@ -12,12 +12,12 @@ internal static class CostingBuilder
     public static CostingBuildResult BuildFromSalesOrder(
         SalesOrder order,
         string requestNumber,
-        CostingRequest? existing)
+        CostingRequest? existing,
+        Func<Guid?, Guid?, CatalogCostSnapshot?>? resolveCatalog = null)
     {
         var productLines = new List<object>();
         var materials = new List<object>();
         var coatingItems = new List<object>();
-        var lineItems = new List<object>();
         decimal materialCost = 0;
         decimal labourCost = 0;
         decimal machineCost = 0;
@@ -27,66 +27,33 @@ internal static class CostingBuilder
         foreach (var line in order.Lines.OrderBy(l => l.SortOrder))
         {
             var customization = JsonColumn.ParseElement(line.CustomizationJson);
+            var catalog = resolveCatalog?.Invoke(line.ProductId, line.ProductVersionId);
             var sourceType = line.IsCustomized ? "customized" : "standard";
-            decimal estimatedCost = 0;
-            decimal lineMaterial = 0;
-            decimal lineLabour = 0;
-            decimal lineMachine = 0;
-            decimal lineCoating = 0;
-            decimal lineOverhead = 0;
-
-            if (customization.HasValue)
+            var parts = ReadLineCosts(customization, catalog);
+            var unitEstimate = parts.Sum > 0
+                ? parts.Sum
+                : catalog?.CostPrice ?? 0m;
+            if (parts.Sum <= 0 && unitEstimate > 0)
             {
-                if (customization.Value.TryGetProperty("estimation", out var estimation)
-                    && estimation.TryGetProperty("costBreakdown", out var breakdown))
-                {
-                    lineMaterial = ReadDecimal(breakdown, "materialCost");
-                    lineLabour = ReadDecimal(breakdown, "labourCost");
-                    lineMachine = ReadDecimal(breakdown, "machineCost");
-                    lineCoating = ReadDecimal(breakdown, "coatingFinishingCost");
-                    lineOverhead = ReadDecimal(breakdown, "overheadCost");
-                    estimatedCost = lineMaterial + lineLabour + lineMachine + lineCoating + lineOverhead;
-                }
-
-                if (customization.Value.TryGetProperty("customizedBom", out var bom)
-                    && bom.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var bomItem in bom.EnumerateArray())
-                    {
-                        var qty = ReadDecimal(bomItem, "quantity") * line.Quantity;
-                        var waste = ReadDecimal(bomItem, "wastePercent");
-                        var unitCost = ReadDecimal(bomItem, "unitCost");
-                        var required = Math.Round(qty * (1 + waste / 100m), 4, MidpointRounding.AwayFromZero);
-                        var total = Math.Round(required * unitCost, 2, MidpointRounding.AwayFromZero);
-                        materials.Add(new
-                        {
-                            id = Guid.NewGuid(),
-                            inventoryItemId = ReadGuid(bomItem, "inventoryItemId"),
-                            inventoryItemName = ReadString(bomItem, "inventoryItemName"),
-                            sku = ReadString(bomItem, "sku"),
-                            quantity = qty,
-                            unit = ReadString(bomItem, "unit") ?? "ea",
-                            wastePercent = waste,
-                            requiredQuantity = required,
-                            unitCost,
-                            totalCost = total,
-                            isRequired = bomItem.TryGetProperty("isRequired", out var req) && req.ValueKind == JsonValueKind.True,
-                            notes = bomItem.TryGetProperty("notes", out var notes) ? notes.GetString() : null,
-                            salesOrderLineItemId = line.Id,
-                            sourceType,
-                            sourceProductName = line.ProductName,
-                            productVersionLabel = line.ProductVersionLabel,
-                        });
-                    }
-                }
+                parts = parts with { Material = unitEstimate };
             }
 
-            materialCost += lineMaterial * line.Quantity;
-            labourCost += lineLabour * line.Quantity;
-            machineCost += lineMachine * line.Quantity;
-            coatingCost += lineCoating * line.Quantity;
-            overheadCost += lineOverhead * line.Quantity;
+            var materialExt = RoundMoney(parts.Material * line.Quantity);
+            var labourExt = RoundMoney(parts.Labour * line.Quantity);
+            var machineExt = RoundMoney(parts.Machine * line.Quantity);
+            var coatingExt = RoundMoney(parts.Coating * line.Quantity);
+            var overheadExt = RoundMoney((parts.Overhead + parts.Other) * line.Quantity);
+            var estimatedExt = materialExt + labourExt + machineExt + coatingExt + overheadExt;
 
+            materialCost += materialExt;
+            labourCost += labourExt;
+            machineCost += machineExt;
+            coatingCost += coatingExt;
+            overheadCost += overheadExt;
+
+            AppendMaterials(materials, customization, catalog, line, sourceType);
+
+            var specs = ReadSpecifications(customization, catalog);
             productLines.Add(new
             {
                 id = Guid.NewGuid(),
@@ -99,16 +66,18 @@ internal static class CostingBuilder
                 quantity = line.Quantity,
                 sourceType,
                 unitPrice = line.UnitPrice,
-                estimatedCost = estimatedCost > 0 ? estimatedCost : line.UnitPrice * 0.7m,
-                materialCost = lineMaterial,
-                labourCost = lineLabour,
-                machineCost = lineMachine,
-                coatingCost = lineCoating,
-                overheadCost = lineOverhead,
-                customizationId = customization.HasValue && customization.Value.TryGetProperty("id", out var cid)
+                sellingAmount = line.LineTotal,
+                costsAreExtended = true,
+                estimatedCost = estimatedExt,
+                materialCost = materialExt,
+                labourCost = labourExt,
+                machineCost = machineExt,
+                coatingCost = coatingExt,
+                overheadCost = overheadExt,
+                customizationId = customization.HasValue && TryGet(customization.Value, "id", out var cid)
                     ? cid.GetString()
                     : null,
-                customizationStatus = customization.HasValue && customization.Value.TryGetProperty("status", out var st)
+                customizationStatus = customization.HasValue && TryGet(customization.Value, "status", out var st)
                     ? st.GetString()
                     : null,
             });
@@ -118,11 +87,11 @@ internal static class CostingBuilder
                 id = Guid.NewGuid(),
                 productId = line.ProductId,
                 productName = line.ProductName,
-                finish = "Powder Coating",
-                process = "Batch spray",
+                finish = ReadString(specs, "coatingFinish") ?? ReadString(specs, "finish") ?? "Powder Coating",
+                process = ReadString(specs, "coatingProcess") ?? "Batch spray",
                 quantity = line.Quantity,
-                unitCost = lineCoating,
-                lineTotal = Math.Round(lineCoating * line.Quantity, 2, MidpointRounding.AwayFromZero),
+                unitCost = parts.Coating,
+                lineTotal = coatingExt,
                 salesOrderLineItemId = line.Id,
                 sourceType,
                 productVersionLabel = line.ProductVersionLabel,
@@ -130,67 +99,11 @@ internal static class CostingBuilder
             });
         }
 
-        var totalEstimate = Math.Round(materialCost + labourCost + machineCost + coatingCost + overheadCost, 2, MidpointRounding.AwayFromZero);
-        if (totalEstimate <= 0)
-        {
-            totalEstimate = Math.Round(order.TotalAmount * 0.7m, 2, MidpointRounding.AwayFromZero);
-        }
-
-        void AddCategory(string category, decimal amount)
-        {
-            if (amount <= 0) return;
-            lineItems.Add(new
-            {
-                id = Guid.NewGuid(),
-                description = category,
-                category,
-                baseCost = Math.Round(amount, 2, MidpointRounding.AwayFromZero),
-                percentOfCost = 0m,
-            });
-        }
-
-        AddCategory("Materials (Components)", materialCost);
-        AddCategory("Labour", labourCost);
-        AddCategory("Machine", machineCost);
-        AddCategory("Coating / Finishing", coatingCost);
-        AddCategory("Overhead", overheadCost);
-
-        if (lineItems.Count == 0)
-        {
-            lineItems.Add(new
-            {
-                id = Guid.NewGuid(),
-                description = "Estimated production cost",
-                category = "Production",
-                baseCost = totalEstimate,
-                percentOfCost = 100m,
-            });
-        }
-        else
-        {
-            lineItems = lineItems.Select(item =>
-            {
-                var json = JsonSerializer.SerializeToElement(item, JsonColumn.Options);
-                var baseCost = json.GetProperty("baseCost").GetDecimal();
-                return (object)new
-                {
-                    id = json.GetProperty("id").GetGuid(),
-                    description = json.GetProperty("description").GetString(),
-                    category = json.GetProperty("category").GetString(),
-                    baseCost,
-                    percentOfCost = totalEstimate > 0
-                        ? Math.Round(baseCost / totalEstimate * 100m, 2, MidpointRounding.AwayFromZero)
-                        : 0m,
-                };
-            }).ToList();
-        }
-
+        var totalEstimate = RoundMoney(materialCost + labourCost + machineCost + coatingCost + overheadCost);
+        var lineItems = BuildCategories(materialCost, labourCost, machineCost, coatingCost, overheadCost, totalEstimate);
         var proposedPrice = order.TotalAmount;
-        var marginPercent = proposedPrice > 0
-            ? Math.Round((proposedPrice - totalEstimate) / proposedPrice * 100m, 2, MidpointRounding.AwayFromZero)
-            : 0m;
+        var marginPercent = SalesTotals.MarginPercent(proposedPrice, totalEstimate);
 
-        var hasBom = materials.Count > 0 || productLines.Count > 0;
         var existingProductLinesEmpty = existing is null
             || string.IsNullOrWhiteSpace(existing.EstimationProductLinesJson)
             || existing.EstimationProductLinesJson.Trim() is "[]";
@@ -202,11 +115,19 @@ internal static class CostingBuilder
                 && (existing.CoatingStatus == CoatingStatuses.Pending || existingProductLinesEmpty));
 
         var coatingStatus = autoSubmit
-            ? (hasBom ? CoatingStatuses.Submitted : CoatingStatuses.Skipped)
+            ? (totalEstimate > 0 ? CoatingStatuses.Submitted : CoatingStatuses.Pending)
             : existing!.CoatingStatus;
         var status = autoSubmit
-            ? CostingRequestStatuses.InReview
+            ? (totalEstimate > 0 ? CostingRequestStatuses.InReview : CostingRequestStatuses.Pending)
             : existing!.Status;
+        if (totalEstimate <= 0)
+        {
+            coatingStatus = CoatingStatuses.Pending;
+            if (status is CostingRequestStatuses.InReview)
+            {
+                status = CostingRequestStatuses.Pending;
+            }
+        }
 
         var history = autoSubmit || existing is null
             ? new List<object>
@@ -214,10 +135,14 @@ internal static class CostingBuilder
                 new
                 {
                     id = Guid.NewGuid(),
-                    action = autoSubmit ? "Estimation generated from sales order" : "Costing created",
+                    action = totalEstimate > 0
+                        ? "Estimation generated from the product cost sheet"
+                        : "Costing created without a product cost sheet",
                     userName = order.CreatedByName,
                     timestamp = DateTimeOffset.UtcNow,
-                    comment = (string?)null,
+                    comment = totalEstimate > 0
+                        ? (string?)null
+                        : "Enter material and coating costs before approval. Selling price is not used as a production cost.",
                 },
             }
             : JsonColumn.Deserialize(existing.HistoryJson, new List<object>());
@@ -259,6 +184,198 @@ internal static class CostingBuilder
             status,
             coatingStatus,
             configSnapshot);
+    }
+
+    public static bool IsSellingPricePlaceholder(CostingRequest entity)
+    {
+        if (entity.Status is CostingRequestStatuses.Approved or CostingRequestStatuses.Rejected)
+        {
+            return false;
+        }
+
+        if (entity.ProposedPrice <= 0 || entity.TotalEstimate <= 0)
+        {
+            return false;
+        }
+
+        var fallback = RoundMoney(entity.ProposedPrice * 0.7m);
+        if (entity.TotalEstimate != fallback)
+        {
+            return false;
+        }
+
+        var element = JsonColumn.ParseElement(entity.LineItemsJson);
+        if (element is null || element.Value.ValueKind != JsonValueKind.Array || element.Value.GetArrayLength() != 1)
+        {
+            return false;
+        }
+
+        return string.Equals(ReadString(element.Value[0], "category"), "Production", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static SubmittedEstimation ApplySubmission(
+        CostingRequest entity,
+        IReadOnlyList<CoatingSubmitItemDto> items,
+        IReadOnlyList<EstimationMaterialInputDto>? materials)
+    {
+        var coatingItems = items.Select(item =>
+        {
+            var lineTotal = RoundMoney(item.UnitCost * item.Quantity);
+            return new
+            {
+                id = item.Id ?? Guid.NewGuid(),
+                productId = item.ProductId,
+                productName = item.ProductName,
+                finish = item.Finish,
+                process = item.Process,
+                quantity = item.Quantity,
+                unitCost = item.UnitCost,
+                lineTotal,
+                salesOrderLineItemId = item.SalesOrderLineItemId,
+                sourceType = item.SourceType,
+                productVersionLabel = item.ProductVersionLabel,
+                productSku = item.ProductSku,
+            };
+        }).ToList();
+
+        string materialsJson = entity.EstimationMaterialsJson;
+        Dictionary<Guid, decimal>? materialByLine = null;
+        if (materials is { Count: > 0 })
+        {
+            var materialRows = materials.Select(mat =>
+            {
+                var required = Math.Round(mat.Quantity * (1 + mat.WastePercent / 100m), 4, MidpointRounding.AwayFromZero);
+                var totalCost = RoundMoney(required * mat.UnitCost);
+                return new
+                {
+                    id = mat.Id ?? Guid.NewGuid(),
+                    inventoryItemId = mat.InventoryItemId,
+                    inventoryItemName = mat.InventoryItemName,
+                    sku = mat.Sku,
+                    quantity = mat.Quantity,
+                    unit = mat.Unit,
+                    wastePercent = mat.WastePercent,
+                    requiredQuantity = required,
+                    unitCost = mat.UnitCost,
+                    totalCost,
+                    isRequired = mat.IsRequired,
+                    alternativeItemId = mat.AlternativeItemId,
+                    alternativeItemName = mat.AlternativeItemName,
+                    notes = mat.Notes,
+                    salesOrderLineItemId = mat.SalesOrderLineItemId,
+                    sourceType = mat.SourceType,
+                    sourceProductName = mat.SourceProductName,
+                    productVersionLabel = mat.ProductVersionLabel,
+                };
+            }).ToList();
+            materialsJson = JsonColumn.Serialize(materialRows);
+            materialByLine = materialRows
+                .Where(row => row.salesOrderLineItemId.HasValue)
+                .GroupBy(row => row.salesOrderLineItemId!.Value)
+                .ToDictionary(group => group.Key, group => group.Sum(row => row.totalCost));
+        }
+
+        var coatingByLine = coatingItems
+            .Where(item => item.salesOrderLineItemId.HasValue)
+            .GroupBy(item => item.salesOrderLineItemId!.Value)
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.lineTotal));
+
+        var productElements = JsonColumn.ParseElement(entity.EstimationProductLinesJson);
+        var updatedLines = new List<object>();
+        decimal materialCost = 0;
+        decimal labourCost = 0;
+        decimal machineCost = 0;
+        decimal coatingCost = 0;
+        decimal overheadCost = 0;
+
+        if (productElements is { ValueKind: JsonValueKind.Array })
+        {
+            foreach (var line in productElements.Value.EnumerateArray())
+            {
+                var quantity = ReadDecimal(line, "quantity");
+                var material = ReadDecimal(line, "materialCost");
+                var labour = ReadDecimal(line, "labourCost");
+                var machine = ReadDecimal(line, "machineCost");
+                var coating = ReadDecimal(line, "coatingCost");
+                var overhead = ReadDecimal(line, "overheadCost");
+                var estimated = ReadDecimal(line, "estimatedCost");
+                var alreadyExtended = TryGet(line, "costsAreExtended", out var extendedFlag)
+                    && extendedFlag.ValueKind == JsonValueKind.True;
+                var componentSum = material + labour + machine + coating + overhead;
+                if (!alreadyExtended && quantity > 1 && componentSum > 0 && Math.Abs(componentSum - estimated) < 0.05m)
+                {
+                    material = RoundMoney(material * quantity);
+                    labour = RoundMoney(labour * quantity);
+                    machine = RoundMoney(machine * quantity);
+                    coating = RoundMoney(coating * quantity);
+                    overhead = RoundMoney(overhead * quantity);
+                }
+
+                var lineId = ReadGuid(line, "salesOrderLineItemId");
+                if (materialByLine is not null && materialByLine.TryGetValue(lineId, out var submittedMaterial))
+                {
+                    material = submittedMaterial;
+                }
+
+                if (coatingByLine.TryGetValue(lineId, out var submittedCoating))
+                {
+                    coating = submittedCoating;
+                }
+
+                estimated = material + labour + machine + coating + overhead;
+                materialCost += material;
+                labourCost += labour;
+                machineCost += machine;
+                coatingCost += coating;
+                overheadCost += overhead;
+
+                updatedLines.Add(new
+                {
+                    id = TryGet(line, "id", out var id) && id.ValueKind == JsonValueKind.String && Guid.TryParse(id.GetString(), out var parsed)
+                        ? parsed
+                        : Guid.NewGuid(),
+                    salesOrderLineItemId = lineId,
+                    productId = ReadNullableGuid(line, "productId"),
+                    productSku = ReadString(line, "productSku"),
+                    productName = ReadString(line, "productName"),
+                    productVersionId = ReadNullableGuid(line, "productVersionId"),
+                    productVersionLabel = ReadString(line, "productVersionLabel"),
+                    quantity,
+                    sourceType = ReadString(line, "sourceType") ?? "standard",
+                    unitPrice = ReadDecimal(line, "unitPrice"),
+                    sellingAmount = ReadDecimal(line, "sellingAmount") > 0
+                        ? ReadDecimal(line, "sellingAmount")
+                        : RoundMoney(ReadDecimal(line, "unitPrice") * quantity),
+                    costsAreExtended = true,
+                    estimatedCost = estimated,
+                    materialCost = material,
+                    labourCost = labour,
+                    machineCost = machine,
+                    coatingCost = coating,
+                    overheadCost = overhead,
+                    customizationId = ReadString(line, "customizationId"),
+                    customizationStatus = ReadString(line, "customizationStatus"),
+                });
+            }
+        }
+
+        if (updatedLines.Count == 0)
+        {
+            materialCost = materialByLine?.Values.Sum() ?? 0;
+            coatingCost = coatingItems.Sum(item => item.lineTotal);
+        }
+
+        var totalEstimate = RoundMoney(materialCost + labourCost + machineCost + coatingCost + overheadCost);
+        var lineItems = BuildCategories(materialCost, labourCost, machineCost, coatingCost, overheadCost, totalEstimate);
+        var marginPercent = SalesTotals.MarginPercent(entity.ProposedPrice, totalEstimate);
+
+        return new SubmittedEstimation(
+            JsonColumn.Serialize(coatingItems),
+            materialsJson,
+            JsonColumn.Serialize(lineItems),
+            updatedLines.Count > 0 ? JsonColumn.Serialize(updatedLines) : entity.EstimationProductLinesJson,
+            totalEstimate,
+            marginPercent);
     }
 
     public static CostingRequestDto Map(CostingRequest entity)
@@ -304,24 +421,205 @@ internal static class CostingBuilder
             entity.WorkflowName);
     }
 
+    private static List<object> BuildCategories(
+        decimal materialCost,
+        decimal labourCost,
+        decimal machineCost,
+        decimal coatingCost,
+        decimal overheadCost,
+        decimal totalEstimate)
+    {
+        var lineItems = new List<object>();
+        void AddCategory(string category, decimal amount)
+        {
+            if (amount <= 0) return;
+            lineItems.Add(new
+            {
+                id = Guid.NewGuid(),
+                description = category,
+                category,
+                baseCost = RoundMoney(amount),
+                percentOfCost = totalEstimate > 0
+                    ? RoundMoney(amount / totalEstimate * 100m)
+                    : 0m,
+            });
+        }
+
+        AddCategory("Materials (Components)", materialCost);
+        AddCategory("Labour", labourCost);
+        AddCategory("Machine", machineCost);
+        AddCategory("Coating / Finishing", coatingCost);
+        AddCategory("Overhead", overheadCost);
+        return lineItems;
+    }
+
+    private static void AppendMaterials(
+        List<object> materials,
+        JsonElement? customization,
+        CatalogCostSnapshot? catalog,
+        SalesOrderLine line,
+        string sourceType)
+    {
+        JsonElement? bom = null;
+        if (customization.HasValue && TryGet(customization.Value, "customizedBom", out var customizedBom)
+            && customizedBom.ValueKind == JsonValueKind.Array
+            && customizedBom.GetArrayLength() > 0)
+        {
+            bom = customizedBom;
+        }
+        else if (!string.IsNullOrWhiteSpace(catalog?.BomJson))
+        {
+            var parsed = JsonColumn.ParseElement(catalog.Value.BomJson);
+            if (parsed is { ValueKind: JsonValueKind.Array } && parsed.Value.GetArrayLength() > 0)
+            {
+                bom = parsed;
+            }
+        }
+
+        if (bom is null) return;
+
+        foreach (var bomItem in bom.Value.EnumerateArray())
+        {
+            var qty = ReadDecimal(bomItem, "quantity") * line.Quantity;
+            var waste = ReadDecimal(bomItem, "wastePercent");
+            var unitCost = ReadDecimal(bomItem, "unitCost");
+            var required = Math.Round(qty * (1 + waste / 100m), 4, MidpointRounding.AwayFromZero);
+            var total = RoundMoney(required * unitCost);
+            materials.Add(new
+            {
+                id = Guid.NewGuid(),
+                inventoryItemId = ReadGuid(bomItem, "inventoryItemId"),
+                inventoryItemName = ReadString(bomItem, "inventoryItemName"),
+                sku = ReadString(bomItem, "sku"),
+                quantity = qty,
+                unit = ReadString(bomItem, "unit") ?? "ea",
+                wastePercent = waste,
+                requiredQuantity = required,
+                unitCost,
+                totalCost = total,
+                isRequired = TryGet(bomItem, "isRequired", out var req) && req.ValueKind == JsonValueKind.True,
+                notes = TryGet(bomItem, "notes", out var notes) ? notes.GetString() : null,
+                salesOrderLineItemId = line.Id,
+                sourceType,
+                sourceProductName = line.ProductName,
+                productVersionLabel = line.ProductVersionLabel,
+            });
+        }
+    }
+
+    private static UnitCostParts ReadLineCosts(JsonElement? customization, CatalogCostSnapshot? catalog)
+    {
+        var parts = default(UnitCostParts);
+        if (customization.HasValue
+            && TryGet(customization.Value, "estimation", out var estimation)
+            && TryGet(estimation, "costBreakdown", out var breakdown))
+        {
+            parts = ReadBreakdown(breakdown);
+        }
+
+        if (parts.Sum <= 0
+            && customization.HasValue
+            && TryGet(customization.Value, "base", out var baseSnapshot)
+            && TryGet(baseSnapshot, "costBreakdown", out var baseBreakdown))
+        {
+            parts = ReadBreakdown(baseBreakdown);
+        }
+
+        if (parts.Sum <= 0 && !string.IsNullOrWhiteSpace(catalog?.CostBreakdownJson))
+        {
+            var catalogBreakdown = JsonColumn.ParseElement(catalog.Value.CostBreakdownJson);
+            if (catalogBreakdown.HasValue)
+            {
+                parts = ReadBreakdown(catalogBreakdown.Value);
+            }
+        }
+
+        return parts;
+    }
+
+    private static UnitCostParts ReadBreakdown(JsonElement breakdown)
+    {
+        return new UnitCostParts(
+            ReadDecimal(breakdown, "materialCost"),
+            ReadDecimal(breakdown, "labourCost"),
+            ReadDecimal(breakdown, "machineCost"),
+            ReadDecimal(breakdown, "coatingFinishingCost"),
+            ReadDecimal(breakdown, "overheadCost"),
+            ReadDecimal(breakdown, "otherCost") + ReadExtraLines(breakdown));
+    }
+
+    private static JsonElement ReadSpecifications(JsonElement? customization, CatalogCostSnapshot? catalog)
+    {
+        if (customization.HasValue && TryGet(customization.Value, "customizedSpecifications", out var specs))
+        {
+            return specs;
+        }
+
+        return JsonColumn.ParseElement(catalog?.SpecificationsJson) ?? default;
+    }
+
+    private static decimal ReadExtraLines(JsonElement breakdown)
+    {
+        if (!TryGet(breakdown, "extraLines", out var lines) || lines.ValueKind != JsonValueKind.Array)
+        {
+            return 0;
+        }
+
+        decimal sum = 0;
+        foreach (var line in lines.EnumerateArray())
+        {
+            sum += ReadDecimal(line, "amount");
+        }
+
+        return sum;
+    }
+
     private static JsonElement ParseArray(string? json) =>
         JsonColumn.ParseElement(json) ?? JsonSerializer.SerializeToElement(Array.Empty<object>(), JsonColumn.Options);
 
     private static bool IsOpen(string status) =>
         status is SalesOrderStatuses.Draft or SalesOrderStatuses.PendingReview or SalesOrderStatuses.Submitted;
 
+    private static decimal RoundMoney(decimal value) =>
+        Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private static bool TryGet(JsonElement element, string name, out JsonElement property)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            if (element.TryGetProperty(name, out property)) return true;
+            foreach (var candidate in element.EnumerateObject())
+            {
+                if (string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    property = candidate.Value;
+                    return true;
+                }
+            }
+        }
+
+        property = default;
+        return false;
+    }
+
     private static decimal ReadDecimal(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var prop) && prop.TryGetDecimal(out var value) ? value : 0m;
+        TryGet(element, name, out var prop) && prop.TryGetDecimal(out var value) ? value : 0m;
 
     private static string? ReadString(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var prop) ? prop.GetString() : null;
+        TryGet(element, name, out var prop) && prop.ValueKind == JsonValueKind.String ? prop.GetString() : null;
 
     private static Guid ReadGuid(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var prop)
+        TryGet(element, name, out var prop)
         && prop.ValueKind == JsonValueKind.String
         && Guid.TryParse(prop.GetString(), out var id)
             ? id
             : Guid.Empty;
+
+    private static Guid? ReadNullableGuid(JsonElement element, string name)
+    {
+        var id = ReadGuid(element, name);
+        return id == Guid.Empty ? null : id;
+    }
 
     private static string GetInitials(string name)
     {
@@ -329,6 +627,17 @@ internal static class CostingBuilder
         if (parts.Length == 0) return "SY";
         if (parts.Length == 1) return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
         return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
+    }
+
+    private readonly record struct UnitCostParts(
+        decimal Material,
+        decimal Labour,
+        decimal Machine,
+        decimal Coating,
+        decimal Overhead,
+        decimal Other)
+    {
+        public decimal Sum => Material + Labour + Machine + Coating + Overhead + Other;
     }
 }
 
@@ -347,3 +656,11 @@ internal sealed record CostingBuildResult(
     string Status,
     string CoatingStatus,
     string ConfigSnapshotJson);
+
+internal sealed record SubmittedEstimation(
+    string CoatingItemsJson,
+    string MaterialsJson,
+    string LineItemsJson,
+    string ProductLinesJson,
+    decimal TotalEstimate,
+    decimal MarginPercent);

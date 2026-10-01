@@ -1,0 +1,25 @@
+namespace Configuration.Application.Settings;
+
+public sealed record UpdateSystemSettingsCommand(
+    string? CompanyName = null,
+    string? Tagline = null,
+    string? Email = null,
+    string? Phone = null,
+    string? Website = null,
+    string? Address = null,
+    string? TaxRegistration = null,
+    string? LogoUrl = null,
+    string? AppSubtitle = null,
+    string? Country = null,
+    decimal? TaxRate = null,
+    int? QuotationValidityDays = null,
+    int? PaymentTermsDays = null,
+    string? PaymentTerms = null,
+    bool? PricesIncludeTax = null,
+    bool? AutoExpireQuotations = null,
+    string? QuotationPrefix = null,
+    string? SalesOrderPrefix = null,
+    string? JobPrefix = null,
+    string? DeliveryPrefix = null,
+    bool? AllowConcurrentWork = null,
+    int? MaxConcurrentTasks = null);

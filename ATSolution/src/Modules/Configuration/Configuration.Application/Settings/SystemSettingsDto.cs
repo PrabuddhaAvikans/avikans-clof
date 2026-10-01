@@ -1,0 +1,25 @@
+namespace Configuration.Application.Settings;
+
+public sealed record SystemSettingsDto(
+    string CompanyName,
+    string Tagline,
+    string Email,
+    string Phone,
+    string Website,
+    string Address,
+    string TaxRegistration,
+    string LogoUrl,
+    string AppSubtitle,
+    string Country,
+    decimal TaxRate,
+    int QuotationValidityDays,
+    int PaymentTermsDays,
+    string PaymentTerms,
+    bool PricesIncludeTax,
+    bool AutoExpireQuotations,
+    string QuotationPrefix,
+    string SalesOrderPrefix,
+    string JobPrefix,
+    string DeliveryPrefix,
+    bool AllowConcurrentWork,
+    int MaxConcurrentTasks);

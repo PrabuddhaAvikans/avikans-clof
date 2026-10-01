@@ -1,0 +1,27 @@
+namespace Delivery.Application.Deliveries;
+
+public sealed record DeliveryDto(
+    Guid Id,
+    string DeliveryNumber,
+    Guid SalesOrderId,
+    string SalesOrderNumber,
+    Guid CustomerId,
+    string CustomerName,
+    string Status,
+    string Priority,
+    IReadOnlyList<DeliveryItemDto> Items,
+    AddressDto ShippingAddress,
+    string? Carrier,
+    string? TrackingNumber,
+    Guid? DriverId,
+    string? DriverName,
+    string? VehicleNumber,
+    DateTimeOffset ScheduledDate,
+    DateTimeOffset? DispatchedAt,
+    DateTimeOffset? DeliveredAt,
+    ProofOfDeliveryDto? ProofOfDelivery,
+    string? Notes,
+    string CreatedBy,
+    string CreatedByName,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);

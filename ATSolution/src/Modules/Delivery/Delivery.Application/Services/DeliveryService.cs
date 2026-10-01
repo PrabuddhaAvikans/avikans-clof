@@ -1,4 +1,5 @@
 using ATSolution.Application;
+using ATSolution.Application.Abstractions.Periods;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Application.Exceptions;
@@ -23,6 +24,7 @@ public sealed class DeliveryService : IDeliveryService
     private readonly IRepository<DocumentSequence, Guid> _sequences;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
+    private readonly IBusinessPeriodGuard _periodGuard;
 
     public DeliveryService(
         IRepository<DeliveryEntity, Guid> deliveries,
@@ -30,7 +32,8 @@ public sealed class DeliveryService : IDeliveryService
         IRepository<User, Guid> users,
         IRepository<DocumentSequence, Guid> sequences,
         IUnitOfWork unitOfWork,
-        IApplicationValidator validator)
+        IApplicationValidator validator,
+        IBusinessPeriodGuard periodGuard)
     {
         _deliveries = deliveries;
         _salesOrders = salesOrders;
@@ -38,6 +41,7 @@ public sealed class DeliveryService : IDeliveryService
         _sequences = sequences;
         _unitOfWork = unitOfWork;
         _validator = validator;
+        _periodGuard = periodGuard;
     }
 
     public async Task<PaginatedResponse<DeliveryDto>> ListAsync(
@@ -89,6 +93,7 @@ public sealed class DeliveryService : IDeliveryService
         CancellationToken cancellationToken = default)
     {
         await _validator.ValidateAsync(command, cancellationToken);
+        await _periodGuard.EnsureWritableAsync(command.ScheduledDate == default ? DateTimeOffset.UtcNow : command.ScheduledDate, cancellationToken);
 
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {

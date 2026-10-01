@@ -22,7 +22,7 @@ public sealed class PermissionsController : ControllerBase
     public ActionResult<PermissionCatalogDto> GetCatalog() =>
         Ok(_permissionCatalog.GetCatalog());
 
-    [HttpGet("by-module")]
+    [HttpGet(ApiRoutes.Identity.ByModule)]
     public ActionResult<IReadOnlyList<PermissionModuleGroupDto>> GetByModule() =>
         Ok(_permissionCatalog.GetByModule());
 }

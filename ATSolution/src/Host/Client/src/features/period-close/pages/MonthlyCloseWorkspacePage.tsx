@@ -165,7 +165,7 @@ export function MonthlyCloseWorkspacePage() {
                 size="sm"
                 leftIcon={<Lock className="h-4 w-4" />}
                 onClick={() => setConfirmCloseOpen(true)}
-                disabled={blockingCount > 0}
+                disabled={blockingCount > 0 || workspace?.canClose === false}
               >
                 Close month
               </Button>
@@ -202,7 +202,7 @@ export function MonthlyCloseWorkspacePage() {
                 <span className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-800">
                   {blockingCount} blocking issue{blockingCount === 1 ? "" : "s"}
                 </span>
-              ) : isOpenLike ? (
+              ) : isOpenLike && workspace?.canClose ? (
                 <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
                   Ready to close
                 </span>
@@ -211,7 +211,7 @@ export function MonthlyCloseWorkspacePage() {
                 <span>
                   Days closed {workspace.closedDayCount} · Remaining {workspace.openDayCount}
                 </span>
-                <span>Opened by {period.openedByName}</span>
+                <span>Opened by {period.startedByName}</span>
                 {period.closedByName && period.closedAt && (
                   <span>
                     Closed by {period.closedByName} · {formatDateTime(period.closedAt)}

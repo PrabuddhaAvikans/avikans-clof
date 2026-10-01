@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ATSolution.Application;
+using ATSolution.Application.Abstractions.Periods;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Application.Exceptions;
@@ -29,19 +30,22 @@ public sealed class InventoryService : IInventoryService
     private readonly IRepository<StockMovement, Guid> _movements;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
+    private readonly IBusinessPeriodGuard _periodGuard;
 
     public InventoryService(
         IRepository<InventoryItem, Guid> items,
         IRepository<InventoryPriceHistory, Guid> priceHistory,
         IRepository<StockMovement, Guid> movements,
         IUnitOfWork unitOfWork,
-        IApplicationValidator validator)
+        IApplicationValidator validator,
+        IBusinessPeriodGuard periodGuard)
     {
         _items = items;
         _priceHistory = priceHistory;
         _movements = movements;
         _unitOfWork = unitOfWork;
         _validator = validator;
+        _periodGuard = periodGuard;
     }
 
     public async Task<PaginatedResponse<InventoryItemDto>> ListAsync(
@@ -286,6 +290,7 @@ public sealed class InventoryService : IInventoryService
         RecordStockMovementCommand command,
         CancellationToken cancellationToken = default)
     {
+        await _periodGuard.EnsureWritableAsync(DateTimeOffset.UtcNow, cancellationToken);
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             var item = await _items.Query()

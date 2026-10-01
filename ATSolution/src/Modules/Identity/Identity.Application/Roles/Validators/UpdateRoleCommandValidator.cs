@@ -1,0 +1,21 @@
+using ATSolution.SharedKernel.Constants;
+using FluentValidation;
+using Identity.Application.Roles;
+using Identity.Domain.Roles;
+
+namespace Identity.Application.Roles.Validators;
+
+public sealed class UpdateRoleCommandValidator : AbstractValidator<UpdateRoleCommand>
+{
+    public UpdateRoleCommandValidator()
+    {
+        RuleFor(command => command.Id).NotEmpty();
+        RuleFor(command => command.Name!)
+            .NotEmpty()
+            .MaximumLength(UserFieldLengths.RoleName)
+            .When(command => command.Name is not null);
+        RuleFor(command => command.Status!)
+            .Must(status => status is EntityStatuses.Active or EntityStatuses.Inactive)
+            .When(command => command.Status is not null);
+    }
+}

@@ -1,4 +1,5 @@
 using ATSolution.Application;
+using ATSolution.Application.Abstractions.Periods;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
 using ATSolution.Application.Exceptions;
@@ -20,17 +21,20 @@ public sealed class InvoiceService : IInvoiceService
     private readonly IRepository<DocumentSequence, Guid> _sequences;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
+    private readonly IBusinessPeriodGuard _periodGuard;
 
     public InvoiceService(
         IRepository<Invoice, Guid> invoices,
         IRepository<DocumentSequence, Guid> sequences,
         IUnitOfWork unitOfWork,
-        IApplicationValidator validator)
+        IApplicationValidator validator,
+        IBusinessPeriodGuard periodGuard)
     {
         _invoices = invoices;
         _sequences = sequences;
         _unitOfWork = unitOfWork;
         _validator = validator;
+        _periodGuard = periodGuard;
     }
 
     public async Task<PaginatedResponse<InvoiceDto>> ListAsync(
@@ -79,6 +83,7 @@ public sealed class InvoiceService : IInvoiceService
         CancellationToken cancellationToken = default)
     {
         await _validator.ValidateAsync(command, cancellationToken);
+        await _periodGuard.EnsureWritableAsync(command.IssueDate == default ? DateTimeOffset.UtcNow : command.IssueDate, cancellationToken);
 
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
@@ -203,6 +208,7 @@ public sealed class InvoiceService : IInvoiceService
         CancellationToken cancellationToken = default)
     {
         await _validator.ValidateAsync(command, cancellationToken);
+        await _periodGuard.EnsureWritableAsync(DateTimeOffset.UtcNow, cancellationToken);
 
         var invoice = await LoadAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException($"Invoice '{command.Id}' was not found.");

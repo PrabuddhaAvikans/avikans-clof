@@ -7,11 +7,14 @@ import {
   type WarehouseFormValues,
 } from "@/features/inventory/schemas/inventorySchema";
 import {
+  useCreateWarehouse,
+  useUpdateWarehouse,
+} from "@/features/inventory/hooks/useWarehousesApi";
+import {
   suggestWarehouseCode,
   WAREHOUSES_UPDATED_EVENT,
   type Warehouse,
 } from "@/lib/warehouses";
-import { httpWarehouseService } from "@/services/http/httpWarehouseService";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -34,6 +37,8 @@ export function WarehouseFormModal({
   warehouse = null,
 }: WarehouseFormModalProps) {
   const isEditing = Boolean(warehouse);
+  const createWarehouse = useCreateWarehouse();
+  const updateWarehouse = useUpdateWarehouse();
 
   const initialValues = useMemo<WarehouseFormValues>(
     () => ({
@@ -56,8 +61,8 @@ export function WarehouseFormModal({
     try {
       const saved =
         isEditing && warehouse?.id
-          ? await httpWarehouseService.update(warehouse.id, payload)
-          : await httpWarehouseService.create(payload);
+          ? await updateWarehouse.mutateAsync({ id: warehouse.id, data: payload })
+          : await createWarehouse.mutateAsync(payload);
 
       window.dispatchEvent(new Event(WAREHOUSES_UPDATED_EVENT));
       onSaved(saved.name);

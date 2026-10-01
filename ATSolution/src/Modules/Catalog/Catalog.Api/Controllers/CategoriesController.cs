@@ -28,13 +28,13 @@ public sealed class CategoriesController : ControllerBase
         return Ok(await _categoryService.ListAsync(query, cancellationToken));
     }
 
-    [HttpGet("tree")]
+    [HttpGet(ApiRoutes.Catalog.Tree)]
     public async Task<ActionResult<IReadOnlyList<CategoryDto>>> GetTree(CancellationToken cancellationToken)
     {
         return Ok(await _categoryService.GetTreeAsync(cancellationToken));
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet(ApiRoutes.ById)]
     public async Task<ActionResult<CategoryDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var category = await _categoryService.GetByIdAsync(id, cancellationToken);
@@ -50,7 +50,7 @@ public sealed class CategoriesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = category.Id }, category);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut(ApiRoutes.ById)]
     public async Task<ActionResult<CategoryDto>> Update(
         Guid id,
         [FromBody] UpdateCategoryRequestDto request,
@@ -71,7 +71,7 @@ public sealed class CategoriesController : ControllerBase
         return Ok(category);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete(ApiRoutes.ById)]
     public async Task<ActionResult<ApiResponse>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _categoryService.DeleteAsync(id, cancellationToken);

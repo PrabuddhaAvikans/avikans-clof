@@ -1,36 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import {
   loadWarehouses,
   WAREHOUSES_UPDATED_EVENT,
   type Warehouse,
 } from "@/lib/warehouses";
-import { httpWarehouseService } from "@/services/http/httpWarehouseService";
+import { useWarehousesList } from "@/features/inventory/hooks/useWarehousesApi";
 
 export function useWarehouses(): Warehouse[] {
-  const [warehouses, setWarehouses] = useState(loadWarehouses);
-
-  const refresh = useCallback(() => {
-    void httpWarehouseService
-      .list({ page: 1, pageSize: 200 })
-      .then((page) => {
-        if (page.items.length > 0) {
-          setWarehouses(page.items);
-          return;
-        }
-        setWarehouses(loadWarehouses());
-      })
-      .catch(() => setWarehouses(loadWarehouses()));
-  }, []);
+  const { data, refetch } = useWarehousesList({ page: 1, pageSize: 200 });
 
   useEffect(() => {
-    refresh();
+    const refresh = () => refetch();
     window.addEventListener(WAREHOUSES_UPDATED_EVENT, refresh);
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(WAREHOUSES_UPDATED_EVENT, refresh);
       window.removeEventListener("storage", refresh);
     };
-  }, [refresh]);
+  }, [refetch]);
 
-  return warehouses;
+  return useMemo(() => {
+    if (data?.items.length) return data.items;
+    return loadWarehouses();
+  }, [data]);
 }

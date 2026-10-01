@@ -6,12 +6,14 @@ using System.Text.RegularExpressions;
 using ATSolution.Infrastructure.Persistence.Data;
 using ATSolution.Domain.Entities.Common;
 using ATSolution.SharedKernel.Constants;
+using Audit.Domain.AuditLogs;
 using Catalog.Domain.Brands;
+using Configuration.Application.Workflows;
+using Configuration.Domain.Workflows;
 using Catalog.Domain.Categories;
 using Catalog.Domain.Common;
 using Catalog.Domain.Products;
 using Customers.Domain.Customers;
-using Delivery.Domain.Deliveries;
 using DeliveryEntity = Delivery.Domain.Deliveries.Delivery;
 using Identity.Application.Abstractions;
 using Identity.Domain.Roles;
@@ -27,6 +29,7 @@ using Sales.Domain.Common;
 using Sales.Domain.Costing;
 using Sales.Domain.Quotations;
 using Sales.Domain.SalesOrders;
+using AuditDi = Audit.Infrastructure.DependencyInjection;
 using CatalogDi = Catalog.Infrastructure.DependencyInjection;
 using CustomersDi = Customers.Infrastructure.DependencyInjection;
 using DeliveryDi = Delivery.Infrastructure.DependencyInjection;
@@ -60,7 +63,7 @@ public sealed class CommercialMockDataSeeder : ICommercialDataSeeder
     };
 
     private static readonly Regex MockIdRegex = new(
-        @"^(cat|brd|cus|prd|inv|usr|rol|rg|quo|so|cr|mj|del|qli|sli|cli|tsk|sm|iph|att|qatt|qrev|qch|di|pod|bom|attr|img|cp)-",
+        @"^(cat|brd|cus|prd|inv|usr|rol|rg|quo|so|cr|mj|del|qli|sli|cli|tsk|sm|iph|att|qatt|qrev|qch|di|pod|bom|attr|img|cp|aud)-",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Regex ExtendedMockIdRegex = new(
@@ -84,6 +87,7 @@ public sealed class CommercialMockDataSeeder : ICommercialDataSeeder
         ["costing.json"] = typeof(SalesDi).Assembly,
         ["manufacturing.json"] = typeof(ManufacturingDi).Assembly,
         ["deliveries.json"] = typeof(DeliveryDi).Assembly,
+        ["audit-logs.json"] = typeof(AuditDi).Assembly,
     };
 
     private readonly SqlDbContext _dbContext;
@@ -134,12 +138,15 @@ public sealed class CommercialMockDataSeeder : ICommercialDataSeeder
         var status = await GetStatusAsync(cancellationToken);
         if (status.IsSeeded && !force)
         {
-            var skippedMessage =
-                $"Commercial mock seeding skipped — catalog category slug '{IndoorSlug}' already exists.";
+            var auditEnsured = await EnsureAuditLogsAsync(cancellationToken);
+            var workflowsEnsured = await EnsureWorkflowCatalogAsync(cancellationToken);
+            var skippedMessage = auditEnsured || workflowsEnsured
+                ? $"Commercial mock seeding skipped — catalog category slug '{IndoorSlug}' already exists. Missing audit logs or the costing workflow were filled in."
+                : $"Commercial mock seeding skipped — catalog category slug '{IndoorSlug}' already exists.";
             _logger.LogInformation("{Message}", skippedMessage);
             return new SeedResultDto(
-                Ran: false,
-                Skipped: true,
+                Ran: auditEnsured || workflowsEnsured,
+                Skipped: !auditEnsured && !workflowsEnsured,
                 Message: skippedMessage,
                 Status: status);
         }
@@ -147,6 +154,7 @@ public sealed class CommercialMockDataSeeder : ICommercialDataSeeder
         _logger.LogInformation("Seeding commercial mock data from module SeedData resources.");
 
         var roleMap = await SeedIdentityAsync(_dbContext, _passwordHasher, cancellationToken);
+        await EnsureWorkflowCatalogAsync(cancellationToken);
         await SeedWarehousesAndUnitsAsync(_dbContext, cancellationToken);
         await SeedCategoriesAsync(_dbContext, cancellationToken);
         await SeedBrandsAsync(_dbContext, cancellationToken);
@@ -158,6 +166,7 @@ public sealed class CommercialMockDataSeeder : ICommercialDataSeeder
         await SeedCostingAsync(_dbContext, cancellationToken);
         await SeedManufacturingAsync(_dbContext, cancellationToken);
         await SeedDeliveriesAsync(_dbContext, cancellationToken);
+        await SeedAuditLogsAsync(_dbContext, cancellationToken);
         await BumpDocumentSequencesAsync(_dbContext, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -1348,6 +1357,219 @@ public sealed class CommercialMockDataSeeder : ICommercialDataSeeder
         await dbContext.SaveChangesAsync(ct);
     }
 
+    public async Task<bool> EnsureWorkflowCatalogAsync(CancellationToken cancellationToken = default)
+    {
+        var roles = await _dbContext.Set<Role>().AsNoTracking().ToListAsync(cancellationToken);
+        var users = await _dbContext.Set<User>().AsNoTracking().ToListAsync(cancellationToken);
+
+        var productionRole = roles.FirstOrDefault(role => role.Name.Equals("Production Manager", StringComparison.OrdinalIgnoreCase));
+        var salesRole = roles.FirstOrDefault(role => role.Name.Equals("Sales Manager", StringComparison.OrdinalIgnoreCase));
+        var adminRole = roles.FirstOrDefault(role => role.Name.Equals("Administrator", StringComparison.OrdinalIgnoreCase));
+        if (productionRole is null || salesRole is null || adminRole is null)
+        {
+            return false;
+        }
+
+        var steps = new[]
+        {
+            MockWorkflowStep(1, "wfs-v1-1", productionRole, users, "nuwan.wickramasinghe@avikans.com"),
+            MockWorkflowStep(2, "wfs-v1-2", salesRole, users, "chamari.perera@avikans.com"),
+            MockWorkflowStep(3, "wfs-v1-3", adminRole, users, "prabuddha@avikans.com"),
+        };
+        var stepsJson = JsonSerializer.Serialize(steps, JsonOptions);
+
+        var definition = await _dbContext.Set<WorkflowDefinition>()
+            .FirstOrDefaultAsync(item => item.Module == WorkflowModules.Costing, cancellationToken);
+
+        if (definition is null)
+        {
+            definition = WorkflowDefinition.Create(
+                "Costing Approval",
+                "Sequential costing approval. Apply a flow for new orders; running orders keep their version.",
+                WorkflowModules.Costing,
+                isActive: true);
+            AssignId(definition, SeedIds.ToGuid("wf-costing"));
+
+            var version = WorkflowVersion.Create(
+                definition.Id,
+                versionNumber: 1,
+                WorkflowVersionStatuses.Draft,
+                isDefault: false,
+                stepsJson);
+            AssignId(version, SeedIds.ToGuid("wfv-costing-1"));
+            version.Publish();
+            version.SetDefault(true);
+
+            await _dbContext.Set<WorkflowDefinition>().AddAsync(definition, cancellationToken);
+            await _dbContext.Set<WorkflowVersion>().AddAsync(version, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+
+        var versions = await _dbContext.Set<WorkflowVersion>()
+            .Where(item => item.WorkflowDefinitionId == definition.Id)
+            .ToListAsync(cancellationToken);
+        var current = versions.FirstOrDefault(item => item.IsDefault)
+            ?? versions.OrderBy(item => item.VersionNumber).FirstOrDefault();
+
+        if (current is null)
+        {
+            current = WorkflowVersion.Create(
+                definition.Id,
+                versionNumber: 1,
+                WorkflowVersionStatuses.Draft,
+                isDefault: false,
+                stepsJson);
+            AssignId(current, SeedIds.ToGuid("wfv-costing-1"));
+            current.Publish();
+            current.SetDefault(true);
+            await _dbContext.Set<WorkflowVersion>().AddAsync(current, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+
+        if (WorkflowStepsHaveRoles(current.StepsJson))
+        {
+            return false;
+        }
+
+        current.UpdateSteps(stepsJson);
+        if (current.Status != WorkflowVersionStatuses.Published)
+        {
+            current.Publish();
+        }
+
+        if (!current.IsDefault)
+        {
+            current.SetDefault(true);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    private static WorkflowStepDefinitionDto MockWorkflowStep(
+        int order,
+        string stepKey,
+        Role role,
+        IReadOnlyList<User> users,
+        string assigneeEmail)
+    {
+        var assignee = users.FirstOrDefault(user =>
+            user.Email.Equals(assigneeEmail, StringComparison.OrdinalIgnoreCase));
+        var assigneeName = assignee is null
+            ? null
+            : $"{assignee.FirstName} {assignee.LastName}".Trim();
+
+        return new WorkflowStepDefinitionDto(
+            SeedIds.ToGuid(stepKey).ToString(),
+            order,
+            role.Name,
+            role.Id.ToString(),
+            role.Name,
+            assignee?.Id.ToString(),
+            string.IsNullOrWhiteSpace(assigneeName) ? null : assigneeName,
+            "sequential",
+            1);
+    }
+
+    private static bool WorkflowStepsHaveRoles(string? stepsJson)
+    {
+        if (string.IsNullOrWhiteSpace(stepsJson))
+        {
+            return false;
+        }
+
+        try
+        {
+            var steps = JsonSerializer.Deserialize<List<WorkflowStepDefinitionDto>>(stepsJson, JsonOptions);
+            return steps?.Any(step => !string.IsNullOrWhiteSpace(step.ApprovalRoleId)) == true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> EnsureAuditLogsAsync(CancellationToken cancellationToken = default)
+    {
+        if (await _dbContext.Set<AuditLogEntry>().AnyAsync(cancellationToken))
+        {
+            return false;
+        }
+
+        await SeedAuditLogsAsync(_dbContext, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    private async Task SeedAuditLogsAsync(SqlDbContext dbContext, CancellationToken ct)
+    {
+        if (await dbContext.Set<AuditLogEntry>().AnyAsync(ct))
+        {
+            return;
+        }
+
+        var seeds = await LoadAsync<AuditLogSeedDto>("audit-logs.json", ct);
+        var now = DateTimeOffset.UtcNow;
+
+        for (var index = 0; index < seeds.Count; index++)
+        {
+            var dto = seeds[index];
+            var userId = MapAuditActorId(dto.UserId);
+            var entityId = MapAuditEntityId(dto.EntityId);
+
+            // Prefer recent activity so Admin → Audit Logs "Today" metrics work on first load.
+            var timestamp = now.AddHours(-(index * 3 + 1));
+
+            var changesJson = dto.Changes is null || dto.Changes.Count == 0
+                ? null
+                : JsonSerializer.Serialize(dto.Changes, JsonOptions);
+
+            var entry = AuditLogEntry.Create(
+                timestamp,
+                userId,
+                dto.UserName,
+                dto.Action,
+                dto.Entity,
+                entityId,
+                dto.EntityLabel,
+                dto.Details,
+                string.IsNullOrWhiteSpace(dto.Severity) ? AuditSeverities.Info : dto.Severity,
+                dto.IpAddress,
+                dto.UserAgent,
+                changesJson);
+
+            AssignId(entry, SeedIds.ToGuid(dto.Id));
+            await dbContext.Set<AuditLogEntry>().AddAsync(entry, ct);
+        }
+    }
+
+    private static string MapAuditActorId(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return "system";
+        }
+
+        if (string.Equals(userId, "system", StringComparison.OrdinalIgnoreCase))
+        {
+            return "system";
+        }
+
+        return LooksLikeMockId(userId) ? SeedIds.ToGuid(userId).ToString() : userId;
+    }
+
+    private static string MapAuditEntityId(string? entityId)
+    {
+        if (string.IsNullOrWhiteSpace(entityId))
+        {
+            return "unknown";
+        }
+
+        return LooksLikeMockId(entityId) ? SeedIds.ToGuid(entityId).ToString() : entityId;
+    }
+
     private async Task BumpDocumentSequencesAsync(
         SqlDbContext dbContext,
         CancellationToken ct)
@@ -1709,6 +1931,30 @@ public sealed class CommercialMockDataSeeder : ICommercialDataSeeder
         public string PerformedBy { get; set; } = "usr-001";
         public string? PerformedByName { get; set; }
         public DateTimeOffset? PerformedAt { get; set; }
+    }
+
+    private sealed class AuditLogSeedDto
+    {
+        public string Id { get; set; } = null!;
+        public DateTimeOffset? Timestamp { get; set; }
+        public string UserId { get; set; } = "system";
+        public string UserName { get; set; } = "System";
+        public string Action { get; set; } = null!;
+        public string Entity { get; set; } = null!;
+        public string EntityId { get; set; } = null!;
+        public string? EntityLabel { get; set; }
+        public string Details { get; set; } = null!;
+        public string? Severity { get; set; }
+        public string? IpAddress { get; set; }
+        public string? UserAgent { get; set; }
+        public List<AuditChangeSeedDto>? Changes { get; set; }
+    }
+
+    private sealed class AuditChangeSeedDto
+    {
+        public string Field { get; set; } = null!;
+        public string? From { get; set; }
+        public string? To { get; set; }
     }
 
     #endregion

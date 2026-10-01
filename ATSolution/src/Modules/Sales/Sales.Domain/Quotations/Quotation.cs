@@ -125,11 +125,74 @@ public class Quotation : Entity<Guid>, IAuditableEntity
         ModifiedOnUtc = DateTimeOffset.UtcNow;
     }
 
+    public void MarkCustomerFeedback()
+    {
+        Status = QuotationStatuses.CustomerFeedback;
+        ViewedAtUtc ??= DateTimeOffset.UtcNow;
+        ModifiedOnUtc = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkRevisionRequired()
+    {
+        Status = QuotationStatuses.RevisionRequired;
+        ModifiedOnUtc = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkRevised()
+    {
+        Status = QuotationStatuses.Revised;
+        ModifiedOnUtc = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkAccepted()
+    {
+        Status = QuotationStatuses.Accepted;
+        AcceptedAtUtc = DateTimeOffset.UtcNow;
+        ModifiedOnUtc = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkRejected()
+    {
+        Status = QuotationStatuses.Rejected;
+        ModifiedOnUtc = DateTimeOffset.UtcNow;
+    }
+
     public void MarkConverted(Guid salesOrderId)
     {
         Status = QuotationStatuses.Converted;
         SalesOrderId = salesOrderId;
         ModifiedOnUtc = DateTimeOffset.UtcNow;
+    }
+
+    public void ApplyStatus(string status)
+    {
+        if (status == Status) return;
+
+        switch (status)
+        {
+            case QuotationStatuses.Sent:
+                MarkSent();
+                break;
+            case QuotationStatuses.CustomerFeedback:
+                MarkCustomerFeedback();
+                break;
+            case QuotationStatuses.RevisionRequired:
+                MarkRevisionRequired();
+                break;
+            case QuotationStatuses.Revised:
+                MarkRevised();
+                break;
+            case QuotationStatuses.Accepted:
+                MarkAccepted();
+                break;
+            case QuotationStatuses.Rejected:
+                MarkRejected();
+                break;
+            default:
+                Status = status;
+                ModifiedOnUtc = DateTimeOffset.UtcNow;
+                break;
+        }
     }
 
     public void Touch() => ModifiedOnUtc = DateTimeOffset.UtcNow;

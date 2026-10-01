@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Configuration.Application\Configuration.Application.csproj" />
     <ProjectReference Include="..\Configuration.Domain\Configuration.Domain.csproj" />
+    <ProjectReference Include="..\..\Identity\Identity.Domain\Identity.Domain.csproj" />
     <ProjectReference Include="..\..\..\Core\ATSolution.Application\ATSolution.Application.csproj" />
     <ProjectReference Include="..\..\..\Core\ATSolution.Infrastructure\ATSolution.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\SharedKernel\ATSolution.SharedKernel\ATSolution.SharedKernel.csproj" />
