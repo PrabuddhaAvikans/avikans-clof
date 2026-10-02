@@ -23,4 +23,10 @@ public sealed class DashboardController : ControllerBase
     {
         return Ok(await _dashboardService.GetSummaryAsync(cancellationToken));
     }
+
+    [HttpGet(ApiRoutes.Reporting.OrderFlow)]
+    public async Task<ActionResult<OrderFlowOverviewDto>> GetOrderFlow(CancellationToken cancellationToken)
+    {
+        return Ok(await _dashboardService.GetOrderFlowAsync(cancellationToken));
+    }
 }

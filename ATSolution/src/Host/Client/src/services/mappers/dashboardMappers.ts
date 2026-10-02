@@ -5,6 +5,11 @@ import type {
   DashboardNotificationPreview,
   DashboardSummary,
   DashboardTableRow,
+  OrderFlowOverview,
+  OrderFlowSeverity,
+  OrderFlowStage,
+  OrderFlowStageKey,
+  OrderFlowStat,
 } from "@/types/dashboard";
 
 export function mapChartPoint(raw: Record<string, unknown>): ChartDataPoint {
@@ -73,6 +78,78 @@ export function mapChartArray(raw: unknown): ChartDataPoint[] {
 
 export function mapTableArray(raw: unknown): DashboardTableRow[] {
   return ((raw as unknown[]) ?? []).map((item) => mapTableRow(item as Record<string, unknown>));
+}
+
+function mapSeverity(value: unknown): OrderFlowSeverity {
+  const severity = String(value ?? "none");
+  switch (severity) {
+    case "info":
+    case "pending":
+    case "warning":
+    case "critical":
+    case "success":
+    case "none":
+      return severity;
+    default:
+      return "none";
+  }
+}
+
+function mapStageKey(value: unknown): OrderFlowStageKey {
+  const key = String(value ?? "");
+  switch (key) {
+    case "quotation":
+    case "sales_order":
+    case "estimation":
+    case "costing":
+    case "production":
+    case "delivery":
+    case "completed":
+      return key;
+    default:
+      return "quotation";
+  }
+}
+
+export function mapOrderFlowStat(raw: Record<string, unknown>): OrderFlowStat {
+  return {
+    key: String(raw.key ?? ""),
+    label: String(raw.label ?? ""),
+    count: Number(raw.count ?? 0),
+    severity: mapSeverity(raw.severity),
+  };
+}
+
+function asStageRecord(value: unknown): Record<string, unknown> {
+  return (value as Record<string, unknown>) ?? {};
+}
+
+export function mapOrderFlowStage(raw: Record<string, unknown>): OrderFlowStage {
+  return {
+    stageKey: mapStageKey(raw.stageKey),
+    title: String(raw.title ?? ""),
+    summaryText: String(raw.summaryText ?? ""),
+    total: Number(raw.total ?? 0),
+    attentionCount: Number(raw.attentionCount ?? 0),
+    attentionSeverity: mapSeverity(raw.attentionSeverity),
+    stats: ((raw.stats as unknown[]) ?? []).map((item) =>
+      mapOrderFlowStat(item as Record<string, unknown>),
+    ),
+    messages: ((raw.messages as unknown[]) ?? []).map((message) => String(message)),
+  };
+}
+
+export function mapOrderFlow(raw: Record<string, unknown>): OrderFlowOverview {
+  return {
+    generatedAt: String(raw.generatedAt ?? new Date().toISOString()),
+    quotation: mapOrderFlowStage(asStageRecord(raw.quotation)),
+    salesOrder: mapOrderFlowStage(asStageRecord(raw.salesOrder)),
+    estimation: mapOrderFlowStage(asStageRecord(raw.estimation)),
+    costing: mapOrderFlowStage(asStageRecord(raw.costing)),
+    production: mapOrderFlowStage(asStageRecord(raw.production)),
+    delivery: mapOrderFlowStage(asStageRecord(raw.delivery)),
+    completed: mapOrderFlowStage(asStageRecord(raw.completed)),
+  };
 }
 
 export function mapSummary(raw: Record<string, unknown>): DashboardSummary {

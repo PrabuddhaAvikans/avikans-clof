@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\Manufacturing\Manufacturing.Domain\Manufacturing.Domain.csproj" />
     <ProjectReference Include="..\..\Delivery\Delivery.Domain\Delivery.Domain.csproj" />
     <ProjectReference Include="..\..\Catalog\Catalog.Domain\Catalog.Domain.csproj" />
+    <ProjectReference Include="..\..\Audit\Audit.Domain\Audit.Domain.csproj" />
     <ProjectReference Include="..\..\..\Core\ATSolution.Application\ATSolution.Application.csproj" />
     <ProjectReference Include="..\..\..\SharedKernel\ATSolution.SharedKernel\ATSolution.SharedKernel.csproj" />
   </ItemGroup>

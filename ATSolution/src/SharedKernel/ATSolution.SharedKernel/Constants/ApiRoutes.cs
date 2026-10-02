@@ -152,6 +152,7 @@ public static class ApiRoutes
         public const string Dashboard = "api/dashboard";
         public const string Reports = "api/reports";
         public const string Summary = "summary";
+        public const string OrderFlow = "order-flow";
         public const string ByReportId = "{reportId}";
     }
 
