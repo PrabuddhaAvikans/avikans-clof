@@ -216,6 +216,18 @@ public class WorkflowInstance : Entity<Guid>, IAuditableEntity
 public static class WorkflowModules
 {
     public const string Costing = "costing";
+    public const string Sales = "sales";
+}
+
+public static class WorkflowStageKeys
+{
+    public const string Quotation = "quotation";
+    public const string SalesOrder = "sales_order";
+    public const string Estimation = "estimation";
+    public const string Costing = "costing";
+    public const string Production = "production";
+    public const string Delivery = "delivery";
+    public const string Completed = "completed";
 }
 
 public static class WorkflowVersionStatuses

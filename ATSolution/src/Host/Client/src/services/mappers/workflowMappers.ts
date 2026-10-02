@@ -1,12 +1,45 @@
 import type {
+  WorkflowApprovalLevel,
   WorkflowCatalog,
   WorkflowDefinition,
   WorkflowInstance,
   WorkflowInstanceStep,
+  WorkflowModule,
+  WorkflowNodeStatus,
+  WorkflowNodeType,
   WorkflowRule,
+  WorkflowStageKey,
   WorkflowStepDefinition,
   WorkflowVersion,
 } from "@/types/workflow";
+
+const STAGE_KEYS = new Set<WorkflowStageKey>([
+  "quotation",
+  "sales_order",
+  "estimation",
+  "costing",
+  "production",
+  "delivery",
+  "completed",
+]);
+
+function mapModule(value: unknown): WorkflowModule {
+  return value === "sales" ? "sales" : "costing";
+}
+
+function mapLevel(raw: Record<string, unknown>, index: number): WorkflowApprovalLevel {
+  return {
+    id: String(raw.id ?? ""),
+    name: String(raw.name ?? `Level ${index + 1}`),
+    sequence: Number(raw.sequence ?? index + 1),
+    assignedRoleId: String(raw.assignedRoleId ?? ""),
+    assignedRoleName: raw.assignedRoleName == null ? undefined : String(raw.assignedRoleName),
+    assignedUserId: raw.assignedUserId == null ? undefined : String(raw.assignedUserId),
+    assignedUserName: raw.assignedUserName == null ? undefined : String(raw.assignedUserName),
+    description: raw.description == null ? undefined : String(raw.description),
+    isActive: raw.isActive !== false,
+  };
+}
 
 export function mapStep(raw: Record<string, unknown>): WorkflowStepDefinition {
   return {
@@ -19,6 +52,21 @@ export function mapStep(raw: Record<string, unknown>): WorkflowStepDefinition {
     assigneeName: raw.assigneeName as string | undefined,
     approvalType: (raw.approvalType as WorkflowStepDefinition["approvalType"]) ?? "sequential",
     minApprovals: Number(raw.minApprovals ?? 1),
+    nodeType: (raw.nodeType as WorkflowNodeType) ?? "approval",
+    description: raw.description == null ? undefined : String(raw.description),
+    status: (raw.status as WorkflowNodeStatus) ?? "active",
+    positionX: raw.positionX == null ? undefined : Number(raw.positionX),
+    positionY: raw.positionY == null ? undefined : Number(raw.positionY),
+    approveNextStepId:
+      raw.approveNextStepId == null ? undefined : String(raw.approveNextStepId),
+    rejectNextStepId:
+      raw.rejectNextStepId == null ? undefined : String(raw.rejectNextStepId),
+    stageKey: STAGE_KEYS.has(raw.stageKey as WorkflowStageKey)
+      ? (raw.stageKey as WorkflowStageKey)
+      : undefined,
+    approvalLevels: Array.isArray(raw.approvalLevels)
+      ? raw.approvalLevels.map((item, index) => mapLevel(item as Record<string, unknown>, index))
+      : undefined,
   };
 }
 
@@ -27,7 +75,7 @@ export function mapDefinition(raw: Record<string, unknown>): WorkflowDefinition 
     id: String(raw.id),
     name: String(raw.name ?? ""),
     description: String(raw.description ?? ""),
-    module: (raw.module as WorkflowDefinition["module"]) ?? "costing",
+    module: mapModule(raw.module),
     isActive: Boolean(raw.isActive ?? true),
   };
 }

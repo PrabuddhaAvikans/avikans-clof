@@ -70,11 +70,11 @@ public class QuotationStatusesTests
     }
 
     [Fact]
-    public void CanConvert_includes_revised_and_accepted()
+    public void CanConvert_requires_accepted()
     {
         Assert.True(QuotationStatuses.CanConvert(QuotationStatuses.Accepted));
-        Assert.True(QuotationStatuses.CanConvert(QuotationStatuses.Revised));
-        Assert.True(QuotationStatuses.CanConvert(QuotationStatuses.Sent));
+        Assert.False(QuotationStatuses.CanConvert(QuotationStatuses.Revised));
+        Assert.False(QuotationStatuses.CanConvert(QuotationStatuses.Sent));
         Assert.False(QuotationStatuses.CanConvert(QuotationStatuses.CustomerFeedback));
     }
 }

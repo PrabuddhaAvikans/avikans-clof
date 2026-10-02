@@ -168,5 +168,20 @@ public class CostingRequest : Entity<Guid>, IAuditableEntity
         ModifiedOnUtc = DateTimeOffset.UtcNow;
     }
 
+    public void BindWorkflow(
+        string? workflowDefinitionId,
+        string? workflowVersionId,
+        string? workflowInstanceId,
+        int? workflowVersionNumber,
+        string? workflowName)
+    {
+        WorkflowDefinitionId = workflowDefinitionId;
+        WorkflowVersionId = workflowVersionId;
+        WorkflowInstanceId = workflowInstanceId;
+        WorkflowVersionNumber = workflowVersionNumber;
+        WorkflowName = workflowName;
+        ModifiedOnUtc = DateTimeOffset.UtcNow;
+    }
+
     public void Touch() => ModifiedOnUtc = DateTimeOffset.UtcNow;
 }

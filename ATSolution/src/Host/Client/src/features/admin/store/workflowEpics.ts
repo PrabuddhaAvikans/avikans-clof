@@ -24,6 +24,19 @@ const createDraftEpic = createApiEpic({
     ),
 });
 
+const saveDraftEpic = createApiEpic({
+  request: actions.saveDraftRequest,
+  success: actions.saveDraftSuccess,
+  failure: actions.saveDraftFailure,
+  concurrency: "merge",
+  execute: async ({ id, steps }) =>
+    mapCatalog(
+      asRecord(
+        await http.post(`/api/workflows/versions/${id}/save`, { steps }),
+      ),
+    ),
+});
+
 const applyDraftEpic = createApiEpic({
   request: actions.applyDraftRequest,
   success: actions.applyDraftSuccess,
@@ -48,6 +61,15 @@ const activateEpic = createApiEpic({
     ),
 });
 
+const deleteVersionEpic = createApiEpic({
+  request: actions.deleteVersionRequest,
+  success: actions.deleteVersionSuccess,
+  failure: actions.deleteVersionFailure,
+  concurrency: "merge",
+  execute: async (versionId) =>
+    mapCatalog(asRecord(await http.delete(`/api/workflows/versions/${versionId}`))),
+});
+
 const resetEpic = createApiEpic({
   request: actions.resetRequest,
   success: actions.resetSuccess,
@@ -60,7 +82,9 @@ const resetEpic = createApiEpic({
 export const workflowEpic = combineEpics(
   fetchCatalogEpic,
   createDraftEpic,
+  saveDraftEpic,
   applyDraftEpic,
   activateEpic,
+  deleteVersionEpic,
   resetEpic,
 );

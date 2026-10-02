@@ -33,7 +33,7 @@ public static class QuotationStatuses
             or CustomerFeedback or Viewed or Sent;
 
     public static bool CanConvert(string status) =>
-        status is Accepted or Sent or Revised;
+        status is Accepted;
 
     public static bool CanLogContact(string status) =>
         IsKnown(status);
@@ -69,7 +69,7 @@ public static class QuotationStatuses
                 or Revised or Accepted,
             Rejected => from is Sent or Viewed or CustomerFeedback or RevisionRequired
                 or Revised or ReadyToSend,
-            Converted => from is Accepted or Sent or Revised,
+            Converted => from is Accepted,
             Expired => !IsTerminal(from),
             Draft => false,
             _ => false,
@@ -116,6 +116,24 @@ public static class SalesOrderStatuses
 
     public static bool IsDeletable(string status) =>
         status is Draft or PendingReview;
+
+    /// <summary>
+    /// Confirmed (or later operational) orders can start manufacturing.
+    /// </summary>
+    public static bool CanManufacture(string status) =>
+        status is Confirmed or InManufacturing or ReadyForDelivery or PartiallyDelivered;
+
+    /// <summary>
+    /// Confirmed (or later) orders can create deliveries.
+    /// </summary>
+    public static bool CanDeliver(string status) =>
+        status is Confirmed or InManufacturing or ReadyForDelivery or PartiallyDelivered;
+
+    /// <summary>
+    /// Block cancel after delivery progress or terminal completion.
+    /// </summary>
+    public static bool IsCancellable(string status) =>
+        status is not Cancelled and not PartiallyDelivered and not Delivered and not Completed;
 }
 
 public static class CostingRequestStatuses

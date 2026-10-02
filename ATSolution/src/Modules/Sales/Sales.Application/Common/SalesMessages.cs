@@ -12,6 +12,7 @@ public static class SalesMessages
     public const string EstimationStillPending = "Product estimation is still pending. Submit it, or regenerate BOM from the sales order.";
     public const string CoatingMustBeSubmittedOrSkipped = "Coating must be submitted or skipped before confirm.";
     public const string CostingMustBeApproved = "Costing must be approved before confirming this order.";
+    public const string OrderCannotBeCancelled = "This sales order cannot be cancelled in its current status.";
 }
 
 public static class SalesValidationFields

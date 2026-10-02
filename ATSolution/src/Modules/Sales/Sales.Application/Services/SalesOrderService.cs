@@ -425,6 +425,17 @@ public sealed class SalesOrderService : ISalesOrderService
         var order = await LoadOrderAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException(string.Format(SalesMessages.SalesOrderNotFound, command.Id));
 
+        if (!SalesOrderStatuses.IsCancellable(order.Status))
+        {
+            throw new ApplicationValidationException(
+            [
+                new ValidationError(
+                    SalesValidationFields.Status,
+                    SalesMessages.OrderCannotBeCancelled,
+                    ValidationErrorCodes.InvalidState),
+            ]);
+        }
+
         order.Cancel(command.Reason);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return SalesMappers.MapSalesOrder(order);

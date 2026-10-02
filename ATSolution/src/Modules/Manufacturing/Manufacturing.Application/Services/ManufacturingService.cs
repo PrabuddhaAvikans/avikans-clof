@@ -19,6 +19,7 @@ using Manufacturing.Domain.Sequences;
 using Manufacturing.Domain.Tasks;
 using Manufacturing.Domain.Work;
 using Microsoft.EntityFrameworkCore;
+using Sales.Domain.Common;
 using Sales.Domain.SalesOrders;
 
 namespace Manufacturing.Application.Services;
@@ -127,6 +128,12 @@ public sealed class ManufacturingService : IManufacturingService
                 .Include(o => o.Lines)
                 .FirstOrDefaultAsync(o => o.Id == command.SalesOrderId, ct)
                 ?? throw new NotFoundException($"Sales order '{command.SalesOrderId}' was not found.");
+
+            if (!SalesOrderStatuses.CanManufacture(order.Status))
+            {
+                ManufacturingErrors.InvalidState(
+                    "Confirm the sales order (after costing approval) before creating a manufacturing job.");
+            }
 
             var product = await _products.Query()
                 .Include(p => p.Versions)
@@ -343,6 +350,17 @@ public sealed class ManufacturingService : IManufacturingService
             if (job.Status is ManufacturingJobStatuses.Completed or ManufacturingJobStatuses.Cancelled)
             {
                 ManufacturingErrors.InvalidState("A completed or cancelled job cannot be started.");
+            }
+
+            var order = await _salesOrders.Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == job.SalesOrderId, ct)
+                ?? throw new NotFoundException($"Sales order '{job.SalesOrderId}' was not found.");
+
+            if (!SalesOrderStatuses.CanManufacture(order.Status))
+            {
+                ManufacturingErrors.InvalidState(
+                    "Confirm the sales order (after costing approval) before starting manufacturing.");
             }
 
             await IssueMaterialsAsync(job, ct);

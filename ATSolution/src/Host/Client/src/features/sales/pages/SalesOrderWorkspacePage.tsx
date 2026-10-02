@@ -28,7 +28,7 @@ import {
   useCreditNotes,
 } from "@/features/finance/hooks/useCreditNotes";
 import { useInvoices } from "@/features/finance/hooks/useInvoices";
-import { canConfirmSalesOrder, getConfirmBlockReason } from "@/features/sales/lib/salesOrderFlow";
+import { canConfirmSalesOrder, canCancelSalesOrder, getConfirmBlockReason } from "@/features/sales/lib/salesOrderFlow";
 import type { SalesOrderStatusValue } from "@/types/status";
 import { cn } from "@/lib/utils";
 import {
@@ -131,9 +131,7 @@ export function SalesOrderWorkspacePage() {
   const canEdit =
     activeOrder &&
     (activeOrder.status === "draft" || activeOrder.status === "pending_review");
-  const canCancel =
-    activeOrder &&
-    !["cancelled", "completed", "delivered"].includes(activeOrder.status);
+  const canCancel = canCancelSalesOrder(activeOrder);
   const canConfirm = canConfirmSalesOrder(activeOrder, orderCosting);
   const confirmBlockReason = getConfirmBlockReason(activeOrder, orderCosting);
 

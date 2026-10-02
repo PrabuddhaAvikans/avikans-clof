@@ -443,7 +443,7 @@ public sealed class QuotationService : IQuotationService
                 [
                     new ValidationError(
                         "status",
-                        "Quotation must be approved, sent, or revised before conversion.",
+                        "Quotation must be accepted before conversion to a sales order.",
                         ValidationErrorCodes.InvalidState),
                 ]);
             }

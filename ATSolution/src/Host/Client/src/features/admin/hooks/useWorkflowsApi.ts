@@ -11,6 +11,13 @@ export function useCreateWorkflowDraft() {
   });
 }
 
+export function useSaveWorkflowDraft() {
+  return useEpicMutation<ApplyWorkflowDraftArg, WorkflowCatalog>({
+    request: workflowActions.saveDraftRequest,
+    selectMutation: (state: RootState) => state.workflow.saveDraft,
+  });
+}
+
 export function useApplyWorkflowDraft() {
   return useEpicMutation<ApplyWorkflowDraftArg, WorkflowCatalog>({
     request: workflowActions.applyDraftRequest,
@@ -22,6 +29,13 @@ export function useActivateWorkflowVersion() {
   return useEpicMutation<string, WorkflowCatalog>({
     request: workflowActions.activateRequest,
     selectMutation: (state: RootState) => state.workflow.activate,
+  });
+}
+
+export function useDeleteWorkflowVersion() {
+  return useEpicMutation<string, WorkflowCatalog>({
+    request: workflowActions.deleteVersionRequest,
+    selectMutation: (state: RootState) => state.workflow.deleteVersion,
   });
 }
 

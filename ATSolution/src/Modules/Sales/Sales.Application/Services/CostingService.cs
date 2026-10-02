@@ -2,6 +2,7 @@ using System.Text.Json;
 using ATSolution.Application;
 using ATSolution.Application.Abstractions.Persistence;
 using ATSolution.Application.Abstractions.Validation;
+using ATSolution.Application.Abstractions.Workflows;
 using ATSolution.Application.Exceptions;
 using ATSolution.SharedKernel.Constants;
 using ATSolution.SharedKernel.Models;
@@ -25,6 +26,7 @@ public sealed class CostingService : ICostingService
     private readonly IRepository<DocumentSequence, Guid> _sequences;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationValidator _validator;
+    private readonly ICostingApprovalFlowProvider _approvalFlowProvider;
 
     public CostingService(
         IRepository<CostingRequest, Guid> costingRequests,
@@ -32,7 +34,8 @@ public sealed class CostingService : ICostingService
         IRepository<Product, Guid> products,
         IRepository<DocumentSequence, Guid> sequences,
         IUnitOfWork unitOfWork,
-        IApplicationValidator validator)
+        IApplicationValidator validator,
+        ICostingApprovalFlowProvider approvalFlowProvider)
     {
         _costingRequests = costingRequests;
         _salesOrders = salesOrders;
@@ -40,6 +43,7 @@ public sealed class CostingService : ICostingService
         _sequences = sequences;
         _unitOfWork = unitOfWork;
         _validator = validator;
+        _approvalFlowProvider = approvalFlowProvider;
     }
 
     public async Task<PaginatedResponse<CostingRequestDto>> ListAsync(
@@ -120,7 +124,10 @@ public sealed class CostingService : ICostingService
             var number = existing?.Number
                 ?? await DocumentNumberGenerator.NextAsync(_sequences, DocumentSequenceTypes.CostingRequest, ct);
             var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
-            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing, resolve);
+            var approvalFlow = existing is null
+                ? await _approvalFlowProvider.GetDefaultCostingFlowAsync(ct)
+                : null;
+            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing, resolve, approvalFlow);
 
             if (existing is null)
             {
@@ -147,6 +154,12 @@ public sealed class CostingService : ICostingService
                     built.Status,
                     built.CoatingStatus,
                     built.ConfigSnapshotJson);
+                existing.BindWorkflow(
+                    built.WorkflowDefinitionId,
+                    built.WorkflowVersionId,
+                    built.WorkflowInstanceId,
+                    built.WorkflowVersionNumber,
+                    built.WorkflowName);
                 await _costingRequests.AddAsync(existing, ct);
                 order.SetCostingRequest(existing.Id);
             }
@@ -190,7 +203,10 @@ public sealed class CostingService : ICostingService
             var number = existing?.Number
                 ?? await DocumentNumberGenerator.NextAsync(_sequences, DocumentSequenceTypes.CostingRequest, ct);
             var resolve = await ProductCostCatalog.LoadAsync(_products, order.Lines.Select(line => line.ProductId), ct);
-            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing, resolve);
+            var approvalFlow = existing is null
+                ? await _approvalFlowProvider.GetDefaultCostingFlowAsync(ct)
+                : null;
+            var built = CostingBuilder.BuildFromSalesOrder(order, number, existing, resolve, approvalFlow);
 
             if (existing is null)
             {
@@ -217,6 +233,12 @@ public sealed class CostingService : ICostingService
                     built.Status,
                     built.CoatingStatus,
                     built.ConfigSnapshotJson);
+                existing.BindWorkflow(
+                    built.WorkflowDefinitionId,
+                    built.WorkflowVersionId,
+                    built.WorkflowInstanceId,
+                    built.WorkflowVersionNumber,
+                    built.WorkflowName);
                 await _costingRequests.AddAsync(existing, ct);
                 order.SetCostingRequest(existing.Id);
             }
@@ -387,10 +409,60 @@ public sealed class CostingService : ICostingService
             .FirstOrDefaultAsync(x => x.Id == command.Id, cancellationToken)
             ?? throw new NotFoundException($"Costing request '{command.Id}' was not found.");
 
+        if (entity.Status is CostingRequestStatuses.Approved or CostingRequestStatuses.Rejected)
+        {
+            throw new ApplicationValidationException(
+            [
+                new ValidationError(
+                    nameof(command.Id),
+                    "Approved or rejected costing is a historical snapshot and cannot be decided again.",
+                    ValidationErrorCodes.InvalidState),
+            ]);
+        }
+
+        if (status == CostingRequestStatuses.Approved
+            && entity.CoatingStatus is not CoatingStatuses.Submitted and not CoatingStatuses.Skipped)
+        {
+            throw new ApplicationValidationException(
+            [
+                new ValidationError(
+                    SalesValidationFields.CoatingStatus,
+                    SalesMessages.EstimationStillPending,
+                    ValidationErrorCodes.InvalidState),
+            ]);
+        }
+
         var levelsElement = JsonColumn.ParseElement(entity.ApprovalLevelsJson);
         string? approvalJson = entity.ApprovalLevelsJson;
         if (levelsElement.HasValue && levelsElement.Value.ValueKind == JsonValueKind.Array)
         {
+            if (levelsElement.Value.GetArrayLength() == 0
+                && status is CostingRequestStatuses.Approved or CostingRequestStatuses.Rejected)
+            {
+                entity.SetStatus(
+                    status,
+                    PrefixedHistory(entity.HistoryJson, action, command.ActorName ?? "System", command.Comment),
+                    approvalJson);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return CostingBuilder.Map(entity);
+            }
+
+            var hasPending = levelsElement.Value.EnumerateArray()
+                .Any(level =>
+                    level.TryGetProperty("status", out var s)
+                    && string.Equals(s.GetString(), "pending", StringComparison.OrdinalIgnoreCase));
+
+            if (!hasPending)
+            {
+                throw new ApplicationValidationException(
+                [
+                    new ValidationError(
+                        nameof(command.Id),
+                        "There is no pending approval level to decide.",
+                        ValidationErrorCodes.InvalidState),
+                ]);
+            }
+
             var updated = new List<object>();
             var decided = false;
             foreach (var level in levelsElement.Value.EnumerateArray())
@@ -398,13 +470,22 @@ public sealed class CostingService : ICostingService
                 var levelStatus = level.TryGetProperty("status", out var s) ? s.GetString() : "waiting";
                 if (!decided && levelStatus == "pending")
                 {
+                    // Request changes keeps the level pending so the same step can approve after edits.
+                    var nextLevelStatus = status == CostingRequestStatuses.Approved
+                        ? "approved"
+                        : status == CostingRequestStatuses.Rejected
+                            ? "rejected"
+                            : "pending";
+
                     updated.Add(new
                     {
                         id = level.TryGetProperty("id", out var id) ? id.GetString() : Guid.NewGuid().ToString(),
                         role = level.TryGetProperty("role", out var role) ? role.GetString() : "",
                         assigneeName = level.TryGetProperty("assigneeName", out var an) ? an.GetString() : "",
-                        status = status == CostingRequestStatuses.Approved ? "approved"
-                            : status == CostingRequestStatuses.Rejected ? "rejected" : "pending",
+                        status = nextLevelStatus,
+                        decidedBy = command.ActorName ?? "System",
+                        decidedAt = DateTimeOffset.UtcNow,
+                        comment = command.Comment,
                     });
                     decided = true;
                     continue;

@@ -1,3 +1,5 @@
+import { ROUTES } from "@/app/config/routes";
+import { clearStoredAuthUser } from "@/app/store/authStorage";
 import type { ApiError } from "@/types/common";
 
 const configuredBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
@@ -25,6 +27,40 @@ export function clearAuthToken(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
   window.sessionStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+type UnauthorizedHandler = () => void;
+
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+/** Lets the app sign out and leave protected routes when a call returns 401. */
+export function setUnauthorizedHandler(handler: UnauthorizedHandler): () => void {
+  unauthorizedHandler = handler;
+  return () => {
+    if (unauthorizedHandler === handler) unauthorizedHandler = null;
+  };
+}
+
+export function isUnauthorizedMessage(message: string): boolean {
+  return message.trim().toLowerCase().replace(/\.+$/, "") === "unauthorized";
+}
+
+function isLoginRequest(path: string): boolean {
+  const pathname = path.split("?")[0]?.replace(/\/$/, "") ?? "";
+  return pathname.endsWith("/api/auth/login");
+}
+
+/** Drop the saved session and return to login. Login failures are left alone. */
+export function expireSession(): void {
+  clearAuthToken();
+  clearStoredAuthUser();
+  if (typeof window === "undefined") return;
+  if (window.location.pathname === ROUTES.login) return;
+  if (unauthorizedHandler) {
+    unauthorizedHandler();
+    return;
+  }
+  window.location.replace(ROUTES.login);
 }
 
 /** Serializes plain filter/query objects into `?key=value`. */
@@ -130,6 +166,9 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && !isLoginRequest(path)) {
+      expireSession();
+    }
     throw toApiError(payload, response.status, traceId);
   }
 

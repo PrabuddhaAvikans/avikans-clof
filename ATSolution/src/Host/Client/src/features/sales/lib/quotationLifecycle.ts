@@ -23,11 +23,7 @@ const SENDABLE: ReadonlySet<QuotationStatusValue> = new Set([
   "sent",
 ]);
 
-const CONVERTIBLE: ReadonlySet<QuotationStatusValue> = new Set([
-  "accepted",
-  "sent",
-  "revised",
-]);
+const CONVERTIBLE: ReadonlySet<QuotationStatusValue> = new Set(["accepted"]);
 
 const APPROVABLE: ReadonlySet<QuotationStatusValue> = new Set([
   "sent",

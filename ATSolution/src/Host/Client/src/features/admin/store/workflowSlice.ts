@@ -27,16 +27,20 @@ export type ApplyWorkflowDraftArg = {
 export type WorkflowState = {
   catalog: Record<string, AsyncEntry<WorkflowCatalog>>;
   createDraft: MutationEntry;
+  saveDraft: MutationEntry;
   applyDraft: MutationEntry;
   activate: MutationEntry;
+  deleteVersion: MutationEntry;
   reset: MutationEntry;
 };
 
 const initialState: WorkflowState = {
   catalog: emptyCache(),
   createDraft: createMutationEntry(),
+  saveDraft: createMutationEntry(),
   applyDraft: createMutationEntry(),
   activate: createMutationEntry(),
+  deleteVersion: createMutationEntry(),
   reset: createMutationEntry(),
 };
 
@@ -82,6 +86,23 @@ const workflowSlice = createSlice({
       setMutationFailure(state.createDraft, action);
     },
 
+    saveDraftRequest(
+      state,
+      _action: PayloadAction<RequestPayload<ApplyWorkflowDraftArg>>,
+    ) {
+      setMutationLoading(state.saveDraft);
+    },
+    saveDraftSuccess(
+      state,
+      action: PayloadAction<SuccessPayload<WorkflowCatalog>>,
+    ) {
+      setMutationSuccess(state.saveDraft);
+      rememberCatalog(state, action);
+    },
+    saveDraftFailure(state, action: PayloadAction<FailurePayload>) {
+      setMutationFailure(state.saveDraft, action);
+    },
+
     applyDraftRequest(
       state,
       _action: PayloadAction<RequestPayload<ApplyWorkflowDraftArg>>,
@@ -111,6 +132,20 @@ const workflowSlice = createSlice({
     },
     activateFailure(state, action: PayloadAction<FailurePayload>) {
       setMutationFailure(state.activate, action);
+    },
+
+    deleteVersionRequest(state, _action: PayloadAction<RequestPayload<string>>) {
+      setMutationLoading(state.deleteVersion);
+    },
+    deleteVersionSuccess(
+      state,
+      action: PayloadAction<SuccessPayload<WorkflowCatalog>>,
+    ) {
+      setMutationSuccess(state.deleteVersion);
+      rememberCatalog(state, action);
+    },
+    deleteVersionFailure(state, action: PayloadAction<FailurePayload>) {
+      setMutationFailure(state.deleteVersion, action);
     },
 
     resetRequest(state, _action: PayloadAction<RequestPayload<void>>) {

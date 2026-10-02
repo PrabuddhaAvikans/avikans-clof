@@ -39,6 +39,15 @@ public sealed class WorkflowsController : ControllerBase
         return Ok(await _workflowService.CreateDraftFromVersionAsync(id, cancellationToken));
     }
 
+    [HttpPost(ApiRoutes.Configuration.SaveVersion)]
+    public async Task<ActionResult<WorkflowCatalogDto>> SaveDraft(
+        Guid id,
+        [FromBody] SaveWorkflowDraftCommand command,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await _workflowService.SaveDraftAsync(id, command, cancellationToken));
+    }
+
     [HttpPost(ApiRoutes.Configuration.ApplyVersion)]
     public async Task<ActionResult<WorkflowCatalogDto>> ApplyDraft(
         Guid id,
@@ -58,6 +67,12 @@ public sealed class WorkflowsController : ControllerBase
     public async Task<ActionResult<WorkflowCatalogDto>> ActivateVersion(Guid id, CancellationToken cancellationToken)
     {
         return Ok(await _workflowService.ActivateVersionAsync(id, cancellationToken));
+    }
+
+    [HttpDelete(ApiRoutes.Configuration.DeleteVersion)]
+    public async Task<ActionResult<WorkflowCatalogDto>> DeleteVersion(Guid id, CancellationToken cancellationToken)
+    {
+        return Ok(await _workflowService.DeleteVersionAsync(id, cancellationToken));
     }
 
     [HttpPost(ApiRoutes.Configuration.ResetCatalog)]

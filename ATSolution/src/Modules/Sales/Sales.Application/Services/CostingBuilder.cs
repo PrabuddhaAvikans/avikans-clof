@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ATSolution.Application.Abstractions.Workflows;
 using Sales.Application.Common;
 using Sales.Application.Costing;
 using Sales.Domain.Common;
@@ -13,7 +14,8 @@ internal static class CostingBuilder
         SalesOrder order,
         string requestNumber,
         CostingRequest? existing,
-        Func<Guid?, Guid?, CatalogCostSnapshot?>? resolveCatalog = null)
+        Func<Guid?, Guid?, CatalogCostSnapshot?>? resolveCatalog = null,
+        CostingApprovalFlowSnapshot? approvalFlow = null)
     {
         var productLines = new List<object>();
         var materials = new List<object>();
@@ -148,12 +150,21 @@ internal static class CostingBuilder
             : JsonColumn.Deserialize(existing.HistoryJson, new List<object>());
 
         var approvalLevels = existing is null
-            ? new List<object>
-            {
-                new { id = Guid.NewGuid(), role = "Costing Lead", assigneeName = "Unassigned", status = "pending" },
-                new { id = Guid.NewGuid(), role = "Sales Manager", assigneeName = "Unassigned", status = "waiting" },
-            }
+            ? BuildApprovalLevels(approvalFlow)
             : JsonColumn.Deserialize(existing.ApprovalLevelsJson, new List<object>());
+
+        if (existing is null && approvalLevels.Count == 0 && status == CostingRequestStatuses.InReview)
+        {
+            status = CostingRequestStatuses.Approved;
+            history.Insert(0, new
+            {
+                id = Guid.NewGuid(),
+                action = "Approved",
+                userName = "System",
+                timestamp = DateTimeOffset.UtcNow,
+                comment = "Costing stage has no approval levels.",
+            });
+        }
 
         var requester = new CostingRequesterDto(
             order.CreatedByName,
@@ -163,8 +174,8 @@ internal static class CostingBuilder
 
         var configSnapshot = existing?.ConfigSnapshotJson ?? JsonColumn.Serialize(new
         {
-            workflowName = "Sales Order Costing",
-            version = 1,
+            workflowName = approvalFlow?.WorkflowDefinitionName ?? "Sales Order Costing",
+            version = approvalFlow?.WorkflowVersionNumber ?? 1,
             capturedAt = DateTimeOffset.UtcNow,
             targetMargin = 25,
         });
@@ -183,7 +194,39 @@ internal static class CostingBuilder
             JsonColumn.Serialize(history),
             status,
             coatingStatus,
-            configSnapshot);
+            configSnapshot,
+            approvalFlow?.WorkflowDefinitionId,
+            approvalFlow?.WorkflowVersionId,
+            null,
+            approvalFlow?.WorkflowVersionNumber,
+            approvalFlow?.WorkflowDefinitionName);
+    }
+
+    private static List<object> BuildApprovalLevels(CostingApprovalFlowSnapshot? approvalFlow)
+    {
+        if (approvalFlow is null)
+        {
+            return
+            [
+                new { id = Guid.NewGuid(), role = "Costing Lead", assigneeName = "Unassigned", status = "pending" },
+                new { id = Guid.NewGuid(), role = "Sales Manager", assigneeName = "Unassigned", status = "waiting" },
+            ];
+        }
+
+        if (approvalFlow.Levels.Count == 0)
+        {
+            return [];
+        }
+
+        return approvalFlow.Levels
+            .Select(level => (object)new
+            {
+                id = Guid.TryParse(level.Id, out var parsed) ? parsed : Guid.NewGuid(),
+                role = level.Role,
+                assigneeName = level.AssigneeName,
+                status = level.Status,
+            })
+            .ToList();
     }
 
     public static bool IsSellingPricePlaceholder(CostingRequest entity)
@@ -655,7 +698,12 @@ internal sealed record CostingBuildResult(
     string HistoryJson,
     string Status,
     string CoatingStatus,
-    string ConfigSnapshotJson);
+    string ConfigSnapshotJson,
+    string? WorkflowDefinitionId = null,
+    string? WorkflowVersionId = null,
+    string? WorkflowInstanceId = null,
+    int? WorkflowVersionNumber = null,
+    string? WorkflowName = null);
 
 internal sealed record SubmittedEstimation(
     string CoatingItemsJson,

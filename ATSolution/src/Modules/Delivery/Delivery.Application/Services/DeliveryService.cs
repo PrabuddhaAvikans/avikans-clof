@@ -12,6 +12,7 @@ using Delivery.Domain.Sequences;
 using DeliveryEntity = Delivery.Domain.Deliveries.Delivery;
 using Identity.Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Sales.Domain.Common;
 using Sales.Domain.SalesOrders;
 
 namespace Delivery.Application.Services;
@@ -98,8 +99,17 @@ public sealed class DeliveryService : IDeliveryService
         return await _unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             var order = await _salesOrders.Query()
+                .Include(o => o.Lines)
                 .FirstOrDefaultAsync(o => o.Id == command.SalesOrderId, ct)
                 ?? throw new NotFoundException($"Sales order '{command.SalesOrderId}' was not found.");
+
+            if (!SalesOrderStatuses.CanDeliver(order.Status))
+            {
+                DeliveryErrors.InvalidState(
+                    "Confirm the sales order before creating a delivery.");
+            }
+
+            ValidateDeliveryQuantities(order, command.Items);
 
             var (driverUserId, driverName) = await ResolveDriverAsync(command.DriverId, ct);
             var lineItemsJson = DeliveryMappers.SerializeItems(command.Items);
@@ -146,6 +156,12 @@ public sealed class DeliveryService : IDeliveryService
             string? lineItemsJson = null;
             if (command.Items is not null)
             {
+                var order = await _salesOrders.Query()
+                    .Include(o => o.Lines)
+                    .FirstOrDefaultAsync(o => o.Id == entity.SalesOrderId, ct)
+                    ?? throw new NotFoundException($"Sales order '{entity.SalesOrderId}' was not found.");
+
+                ValidateDeliveryQuantities(order, command.Items);
                 lineItemsJson = DeliveryMappers.SerializeItems(command.Items);
             }
 
@@ -276,6 +292,13 @@ public sealed class DeliveryService : IDeliveryService
                     continue;
                 }
 
+                var remaining = line.Quantity - line.QuantityDelivered;
+                if (item.QuantityDelivered > remaining)
+                {
+                    DeliveryErrors.InvalidState(
+                        $"Delivery quantity for '{item.ProductName}' exceeds remaining sales order quantity ({remaining}).");
+                }
+
                 line.RecordDelivery(item.QuantityDelivered);
             }
 
@@ -284,6 +307,47 @@ public sealed class DeliveryService : IDeliveryService
             await _unitOfWork.SaveChangesAsync(ct);
             return DeliveryMappers.MapDelivery(entity);
         }, cancellationToken);
+    }
+
+    private static void ValidateDeliveryQuantities(
+        SalesOrder order,
+        IReadOnlyList<DeliveryItemInputDto> items)
+    {
+        foreach (var item in items)
+        {
+            if (item.QuantityDelivered < 0)
+            {
+                DeliveryErrors.InvalidState(
+                    $"Delivery quantity for '{item.ProductName}' cannot be negative.");
+            }
+
+            if (item.QuantityDelivered <= 0)
+            {
+                continue;
+            }
+
+            var line = order.Lines.FirstOrDefault(l => l.ProductId == item.ProductId)
+                ?? throw new ApplicationValidationException(
+                [
+                    new ValidationError(
+                        "items",
+                        $"Product '{item.ProductName}' is not on sales order '{order.Number}'.",
+                        "INVALID_STATE"),
+                ]);
+
+            var remaining = line.Quantity - line.QuantityDelivered;
+            if (item.QuantityDelivered > remaining)
+            {
+                DeliveryErrors.InvalidState(
+                    $"Delivery quantity for '{item.ProductName}' exceeds remaining sales order quantity ({remaining}).");
+            }
+
+            if (item.QuantityDelivered > item.QuantityOrdered && item.QuantityOrdered > 0)
+            {
+                DeliveryErrors.InvalidState(
+                    $"Delivery quantity for '{item.ProductName}' exceeds ordered quantity ({item.QuantityOrdered}).");
+            }
+        }
     }
 
     private async Task<(Guid? UserId, string? Name)> ResolveDriverAsync(

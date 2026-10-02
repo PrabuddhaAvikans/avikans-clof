@@ -178,8 +178,10 @@ public static class ApiRoutes
         public const string Definitions = "definitions";
         public const string PublishVersion = "versions/" + ApiRoutes.ById + "/publish";
         public const string VersionDraft = "versions/" + ApiRoutes.ById + "/draft";
+        public const string SaveVersion = "versions/" + ApiRoutes.ById + "/save";
         public const string ApplyVersion = "versions/" + ApiRoutes.ById + "/apply";
         public const string ActivateVersion = "versions/" + ApiRoutes.ById + "/activate";
+        public const string DeleteVersion = "versions/" + ApiRoutes.ById;
         public const string Instances = "instances";
         public const string InstanceById = "instances/" + ApiRoutes.ById;
     }
